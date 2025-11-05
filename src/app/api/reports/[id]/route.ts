@@ -1,64 +1,81 @@
+/**
+ * API Route: /api/reports/[id]
+ * Récupère un rapport par son ID
+ */
+
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
-import { HouseReport } from '@/lib/types';
 
 /**
- * API pour récupérer un rapport par ID
+ * GET /api/reports/[id]
  */
 export async function GET(
-  req: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const authToken = req.headers.get('Authorization')?.split('Bearer ')[1];
-    if (!authToken) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Vérification de l'authentification
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
     }
 
-    // Vérifier le token Firebase
+    const token = authHeader.substring(7);
     let decodedToken;
+    
     try {
-      if (!adminAuth) {
-        return NextResponse.json({ error: 'Firebase Admin not initialized' }, { status: 500 });
-      }
-      decodedToken = await adminAuth.verifyIdToken(authToken);
+      decodedToken = await adminAuth?.verifyIdToken(token);
     } catch (error) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Invalid authentication token' },
+        { status: 401 }
+      );
+    }
+
+    if (!decodedToken) {
+      return NextResponse.json(
+        { error: 'Invalid authentication token' },
+        { status: 401 }
+      );
     }
 
     const uid = decodedToken.uid;
     const { id: reportId } = await params;
 
-    if (!adminDb) {
-      return NextResponse.json({ error: 'Firebase Admin DB not initialized' }, { status: 500 });
-    }
-
-    // Récupérer le rapport depuis Firestore
+    // Récupérer le rapport
     const reportDoc = await adminDb.collection('reports').doc(reportId).get();
 
     if (!reportDoc.exists) {
-      return NextResponse.json({ error: 'Report not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Report not found' },
+        { status: 404 }
+      );
     }
 
     const reportData = reportDoc.data();
 
     // Vérifier que le rapport appartient à l'utilisateur
-    if (reportData?.uid !== uid) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    if (reportData?.userId !== uid) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 403 }
+      );
     }
 
-    // Retourner le rapport
     return NextResponse.json({
-      report: reportData?.reportData as HouseReport,
-      houseData: reportData?.houseData,
-      createdAt: reportData?.createdAt,
+      report: reportData,
     });
   } catch (error) {
-    console.error('Error fetching report:', error);
+    console.error('Erreur récupération rapport:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }
 }
-

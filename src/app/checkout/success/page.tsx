@@ -75,22 +75,24 @@ function SuccessContent() {
               });
           }
           
-          // Envoyer l'email avec les credentials (en arrière-plan, sans bloquer)
-          if (data.newAccount && data.password) {
-            // Ne pas attendre la réponse de l'email
-            fetch('/api/send-credentials-email', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                email,
-                password: data.password,
-                plan: data.productName,
-              }),
-            }).catch((emailError) => {
-              console.error('Erreur lors de l\'envoi de l\'email:', emailError);
-              // On continue même si l'email échoue
-            });
-          }
+              // Envoyer l'email avec les credentials (en arrière-plan, sans bloquer)
+              if (data.newAccount && data.password) {
+                // Ne pas attendre la réponse de l'email
+                fetch('/api/send-credentials-email', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    email,
+                    password: data.password,
+                    plan: data.productName,
+                    creditsAdded: data.creditsAdded,
+                    totalCredits: data.totalCredits,
+                  }),
+                }).catch((emailError) => {
+                  console.error('Erreur lors de l\'envoi de l\'email:', emailError);
+                  // On continue même si l'email échoue
+                });
+              }
         } else {
           const errorData = await response.json();
           throw new Error(errorData.error || 'Erreur lors du traitement');

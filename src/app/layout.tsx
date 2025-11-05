@@ -5,7 +5,7 @@ import AnalyticsTracker from "./(components)/AnalyticsTracker";
 import PageTracker from "./(components)/PageTracker";
 
 export const viewport: Viewport = {
-  themeColor: "#2563eb",
+  themeColor: "#9333ea",
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
@@ -74,6 +74,16 @@ export const metadata: Metadata = {
   verification: {
     google: process.env.GOOGLE_SITE_VERIFICATION,
   },
+  icons: {
+    icon: [
+      { url: '/favicon.png', sizes: 'any' },
+      { url: '/favicon.png', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/favicon.png', sizes: '180x180', type: 'image/png' },
+    ],
+    shortcut: '/favicon.png',
+  },
 };
 
 export default function RootLayout({
@@ -84,10 +94,7 @@ export default function RootLayout({
   return (
     <html lang="fr" className="scroll-smooth">
       <head>
-        <link rel="icon" href="/favicon.png" sizes="any" />
-        <link rel="apple-touch-icon" href="/favicon.png" />
-        <meta name="theme-color" content="#ffffff" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+        <meta name="theme-color" content="#9333ea" />
       </head>
       <body className="font-sans antialiased">
         <AuthProvider>

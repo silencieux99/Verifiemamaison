@@ -4,7 +4,7 @@ import { adminAuth, adminDb } from '@/lib/firebase-admin';
 import { getPlanBySku } from '@/lib/pricing';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { createOrUpdateUser, addCredits } from '@/lib/user';
+import { createOrUpdateUser, addCredits, getUserCredits } from '@/lib/user';
 import { FieldValue } from '@/lib/firebase-admin';
 
 /**
@@ -106,6 +106,9 @@ export async function POST(req: NextRequest) {
     // Ajouter les crédits
     await addCredits(userId, plan.reports, sku, `Achat ${plan.name}`);
 
+    // Récupérer le total de crédits après l'ajout
+    const totalCredits = await getUserCredits(userId);
+
     // Créer une commande
     await adminDb.collection('orders').add({
       paymentIntentId: paymentIntentId || null,
@@ -131,6 +134,7 @@ export async function POST(req: NextRequest) {
       password: isNewAccount ? password : undefined,
       newAccount: isNewAccount,
       creditsAdded: plan.reports,
+      totalCredits,
       productName: plan.name,
       amount: (paymentIntent?.amount || plan.price * 100) / 100,
     });
