@@ -25,12 +25,17 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-purple-200 bg-white/95 backdrop-blur-lg shadow-md shadow-purple-500/5">
-      <Container className="flex h-20 sm:h-24 md:h-28 items-center justify-between">
+      <Container className="flex h-24 sm:h-28 md:h-32 items-center justify-between">
         <Link href="/" className="flex items-center gap-2" aria-label="VerifieMaMaison.fr - Accueil">
-          <div className="h-14 sm:h-16 md:h-20 flex items-center">
-            <span className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-              VerifieMaMaison
-            </span>
+          <div className="h-16 sm:h-20 md:h-24 flex items-center">
+            <Image
+              src="/logos/logo.png"
+              alt="VerifieMaMaison"
+              width={200}
+              height={80}
+              className="h-full w-auto object-contain"
+              priority
+            />
           </div>
         </Link>
         

@@ -132,12 +132,25 @@ export default function HomeHero() {
     return () => clearTimeout(debounceTimer);
   }, [address]);
 
-  const handleSelectSuggestion = (suggestion: AddressSuggestion) => {
-    setAddress(suggestion.address);
+  const handleSelectSuggestion = (suggestion: AddressSuggestion, e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    
+    // Utiliser le label complet pour l'adresse
+    setAddress(suggestion.label);
     setPostalCode(suggestion.postalCode);
     setCity(suggestion.city);
     setSuggestions([]);
     setShowSuggestions(false);
+    setError(null);
+    
+    // Focus sur le champ code postal pour une meilleure UX
+    setTimeout(() => {
+      const postalCodeInput = document.querySelector('input[placeholder="75001"]') as HTMLInputElement;
+      if (postalCodeInput) {
+        postalCodeInput.focus();
+      }
+    }, 100);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -284,7 +297,7 @@ export default function HomeHero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7 }}
             onSubmit={handleSubmit} 
-            className="w-full max-w-3xl mx-auto"
+            className="w-full max-w-3xl mx-auto relative z-40"
           >
             <div className="relative">
               {/* Glow effect */}
@@ -305,7 +318,7 @@ export default function HomeHero() {
                 </div>
 
                 {/* Input principal d'adresse */}
-                <div className="relative mb-4 sm:mb-6">
+                <div className="relative mb-4 sm:mb-6 z-50">
                   <label className="block text-sm sm:text-base font-medium text-purple-600 mb-2">
                     Adresse du bien
                   </label>
@@ -313,7 +326,7 @@ export default function HomeHero() {
                     <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg sm:rounded-xl blur opacity-0 group-hover:opacity-30 transition duration-300"></div>
                     <div className="relative">
                       <div className="relative">
-                        <div className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-purple-600 z-10">
+                        <div className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-purple-600 z-10 pointer-events-none">
                           <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -325,21 +338,29 @@ export default function HomeHero() {
                           onChange={(e) => {
                             setAddress(e.target.value);
                             setError(null);
-                            setShowSuggestions(true);
+                            if (e.target.value.length >= 3) {
+                              setShowSuggestions(true);
+                            } else {
+                              setShowSuggestions(false);
+                            }
                           }}
                           onFocus={() => {
                             if (suggestions.length > 0) {
                               setShowSuggestions(true);
                             }
                           }}
-                          onBlur={() => {
-                            setTimeout(() => setShowSuggestions(false), 200);
+                          onBlur={(e) => {
+                            // Ne pas fermer si on clique sur une suggestion
+                            const relatedTarget = e.relatedTarget as HTMLElement;
+                            if (!relatedTarget || !relatedTarget.closest('.address-suggestions')) {
+                              setTimeout(() => setShowSuggestions(false), 250);
+                            }
                           }}
                           placeholder="Tapez une adresse..."
                           className="w-full pl-9 sm:pl-12 pr-9 sm:pr-12 py-2.5 sm:py-3 md:py-4 bg-gray-50 border-2 border-gray-300 rounded-lg sm:rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:bg-white transition-all text-base sm:text-base md:text-lg"
                         />
                         {isSearching && (
-                          <div className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 z-10">
+                          <div className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none">
                             <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
                           </div>
                         )}
@@ -347,42 +368,56 @@ export default function HomeHero() {
                     </div>
                   </div>
                   
-                  {/* Suggestions améliorées */}
+                  {/* Suggestions améliorées - z-index très élevé pour passer au-dessus */}
                   {showSuggestions && suggestions.length > 0 && (
                     <motion.div 
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="absolute z-50 w-full mt-2 bg-white/95 backdrop-blur-xl border border-purple-200 rounded-xl shadow-xl overflow-hidden"
+                      exit={{ opacity: 0, y: -10 }}
+                      className="address-suggestions absolute z-[9999] w-full mt-2 bg-white backdrop-blur-xl border border-purple-200 rounded-xl shadow-2xl overflow-hidden max-h-[300px] sm:max-h-[400px] overflow-y-auto"
+                      style={{ 
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                      }}
                     >
                       {suggestions.map((suggestion, index) => (
                         <motion.button
-                          key={index}
+                          key={`${suggestion.label}-${index}`}
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: index * 0.05 }}
                           type="button"
-                          onClick={() => handleSelectSuggestion(suggestion)}
-                          className="w-full text-left px-6 py-4 hover:bg-purple-50 transition-all duration-200 border-b border-gray-200 last:border-b-0 group"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            handleSelectSuggestion(suggestion, e);
+                          }}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleSelectSuggestion(suggestion, e);
+                          }}
+                          className="w-full text-left px-4 sm:px-6 py-3 sm:py-4 hover:bg-purple-50 active:bg-purple-100 transition-all duration-200 border-b border-gray-200 last:border-b-0 group touch-manipulation"
                         >
-                          <div className="flex items-start gap-3">
-                            <div className="text-purple-600 mt-0.5 group-hover:text-purple-700">
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <div className="flex items-start gap-2 sm:gap-3">
+                            <div className="text-purple-600 mt-0.5 group-hover:text-purple-700 flex-shrink-0">
+                              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                               </svg>
                             </div>
-                            <div className="flex-1">
-                              <div className="text-gray-900 font-medium group-hover:text-purple-700 transition-colors">
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm sm:text-base text-gray-900 font-medium group-hover:text-purple-700 transition-colors truncate">
                                 {suggestion.label}
                               </div>
                               {suggestion.postalCode && suggestion.city && (
-                                <div className="text-sm text-gray-600 mt-0.5">
+                                <div className="text-xs sm:text-sm text-gray-600 mt-0.5">
                                   {suggestion.postalCode} • {suggestion.city}
                                 </div>
                               )}
                             </div>
-                            <div className="text-purple-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className="text-purple-600 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                               </svg>
                             </div>
