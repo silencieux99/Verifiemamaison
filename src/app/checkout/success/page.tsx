@@ -2,7 +2,6 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Header } from '@/app/(components)/Header';
 import Container from '@/app/(components)/Container';
 import { CheckCircleIcon, EnvelopeIcon, UserIcon, CreditCardIcon } from '@heroicons/react/24/outline';
 import { signInWithEmailAndPassword } from 'firebase/auth';
@@ -106,7 +105,6 @@ function SuccessContent() {
   if (loading || isConnecting) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-white via-gray-50 to-gray-100">
-        <Header />
         <main className="py-8 sm:py-12 md:py-20">
           <Container>
             <div className="text-center">
@@ -124,7 +122,6 @@ function SuccessContent() {
   if (!result) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-white via-gray-50 to-gray-100">
-        <Header />
         <main className="py-8 sm:py-12 md:py-20">
           <Container>
             <div className="max-w-2xl mx-auto">
@@ -141,7 +138,6 @@ function SuccessContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white via-gray-50 to-gray-100">
-      <Header />
       <main className="py-8 sm:py-12 md:py-20">
         <Container>
           <div className="max-w-2xl mx-auto">
