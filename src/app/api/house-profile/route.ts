@@ -12,7 +12,6 @@ import {
   fetchDPE,
   fetchDVF,
   fetchSchools,
-  fetchArcep,
   fetchAtmo,
   fetchOSMAmenities,
   fetchSafetySSMSI,
@@ -140,7 +139,6 @@ export async function GET(request: NextRequest) {
       energy,
       market,
       education,
-      connectivity,
       airQuality,
       amenities,
       safety,
@@ -165,10 +163,6 @@ export async function GET(request: NextRequest) {
       fetchSchools(lat, lon, radius_m).catch((e) => {
         warnings.push('Écoles indisponible');
         return { schools: [] };
-      }),
-      fetchArcep(lat, lon).catch((e) => {
-        warnings.push('ARCEP indisponible');
-        return {};
       }),
       fetchAtmo(citycode).catch((e) => {
         warnings.push('ATMO indisponible');
@@ -201,7 +195,6 @@ export async function GET(request: NextRequest) {
     const energyResult = energy.status === 'fulfilled' ? energy.value : {};
     const marketResult = market.status === 'fulfilled' ? market.value : { dvf: {} };
     const educationResult = education.status === 'fulfilled' ? education.value : { schools: [] };
-    const connectivityResult = connectivity.status === 'fulfilled' ? connectivity.value : {};
     const airQualityResult = airQuality.status === 'fulfilled' ? airQuality.value : {};
     const amenitiesResult = amenities.status === 'fulfilled' ? amenities.value : {};
     const safetyResult = safety.status === 'fulfilled' ? safety.value : {
@@ -250,13 +243,6 @@ export async function GET(request: NextRequest) {
         fetched_at: new Date().toISOString(),
       });
     }
-    if (connectivity.status === 'fulfilled') {
-      sources.push({
-        section: 'connectivity',
-        url: 'https://www.arcep.fr/api/ma-connexion-internet',
-        fetched_at: new Date().toISOString(),
-      });
-    }
     if (airQuality.status === 'fulfilled') {
       sources.push({
         section: 'air_quality',
@@ -296,7 +282,6 @@ export async function GET(request: NextRequest) {
       market: marketResult,
       building: {}, // Sera complété côté front par formulaire utilisateur
       education: educationResult,
-      connectivity: connectivityResult,
       air_quality: airQualityResult,
       amenities: amenitiesResult,
       safety: safetyResult,

@@ -417,15 +417,17 @@ export function convertHouseProfileToSections(profile: HouseProfile): ReportSect
     
     if (profile.market.dvf.summary) {
       const summary = profile.market.dvf.summary;
+      const isEstimated = (summary as any).estimated === true;
       
       if (summary.price_m2_median_1y) {
         marketItems.push({
-          label: 'Prix/m² médian (1 an)',
-          value: `${summary.price_m2_median_1y.toLocaleString('fr-FR')} €/m²`
+          label: isEstimated ? 'Prix/m² estimé' : 'Prix/m² médian (1 an)',
+          value: `${summary.price_m2_median_1y.toLocaleString('fr-FR')} €/m²`,
+          hint: isEstimated ? 'Estimation basée sur la localisation' : undefined
         });
       }
       
-      if (summary.price_m2_median_3y) {
+      if (summary.price_m2_median_3y && !isEstimated) {
         marketItems.push({
           label: 'Prix/m² médian (3 ans)',
           value: `${summary.price_m2_median_3y.toLocaleString('fr-FR')} €/m²`
@@ -441,7 +443,7 @@ export function convertHouseProfileToSections(profile: HouseProfile): ReportSect
         });
       }
       
-      if (summary.volume_3y) {
+      if (summary.volume_3y && summary.volume_3y > 0) {
         marketItems.push({
           label: 'Volume de transactions (3 ans)',
           value: `${summary.volume_3y} transaction${summary.volume_3y > 1 ? 's' : ''}`
@@ -570,7 +572,9 @@ export function convertHouseProfileToSections(profile: HouseProfile): ReportSect
       phone: school.phone,
       website: school.website,
       distance_m: school.distance_m,
-      gps: school.gps
+      gps: school.gps,
+      rating: school.rating,
+      rating_count: school.rating_count
     }));
     
     sections.push({
@@ -581,89 +585,119 @@ export function convertHouseProfileToSections(profile: HouseProfile): ReportSect
     });
   }
 
-  // 7. Connectivité Internet
-  if (profile.connectivity) {
-    const connectivityItems = [];
-    
-    if (profile.connectivity.fiber_available !== undefined) {
-      connectivityItems.push({
-        label: 'Fibre optique',
-        value: profile.connectivity.fiber_available ? 'Disponible' : 'Non disponible',
-        flag: profile.connectivity.fiber_available ? 'ok' as const : 'warn' as const
-      });
-    }
-    
-    if (profile.connectivity.down_max_mbps) {
-      connectivityItems.push({
-        label: 'Débit descendant max',
-        value: `${profile.connectivity.down_max_mbps} Mbps`
-      });
-    }
-    
-    if (profile.connectivity.up_max_mbps) {
-      connectivityItems.push({
-        label: 'Débit montant max',
-        value: `${profile.connectivity.up_max_mbps} Mbps`
-      });
-    }
-    
-    if (profile.connectivity.technologies && profile.connectivity.technologies.length > 0) {
-      connectivityItems.push({
-        label: 'Technologies disponibles',
-        value: profile.connectivity.technologies.join(', ')
-      });
-    }
-    
-    if (connectivityItems.length > 0) {
-      sections.push({
-        id: 'connectivity',
-        title: 'Connectivité Internet',
-        items: connectivityItems
-      });
-    }
-  }
 
-  // 8. Commodités
+  // 8. Commodités (Commerces de proximité)
   if (profile.amenities) {
     const amenitiesItems = [];
+    const allAmenities: any[] = [];
     
-    if (profile.amenities.supermarkets && profile.amenities.supermarkets.length > 0) {
+    // Statistiques générales
+    const totalCount = 
+      (profile.amenities.supermarkets?.length || 0) +
+      (profile.amenities.transit?.length || 0) +
+      (profile.amenities.parks?.length || 0);
+    
+    if (totalCount > 0) {
       amenitiesItems.push({
-        label: 'Supermarchés',
-        value: `${profile.amenities.supermarkets.length} à proximité`
+        label: 'Nombre de commerces et services',
+        value: `${totalCount} établissement${totalCount > 1 ? 's' : ''} à proximité`,
+        flag: totalCount >= 10 ? 'ok' as const : totalCount >= 5 ? 'warn' as const : undefined
       });
       
-      const closest = profile.amenities.supermarkets
-        .sort((a, b) => a.distance_m - b.distance_m)
-        .slice(0, 3);
+      // Grouper par type
+      const byType: Record<string, number> = {};
       
-      closest.forEach((supermarket, index) => {
+      if (profile.amenities.supermarkets && profile.amenities.supermarkets.length > 0) {
+        byType['Supermarchés'] = profile.amenities.supermarkets.length;
+        profile.amenities.supermarkets.forEach(supermarket => {
+          allAmenities.push({
+            name: supermarket.name || 'Supermarché',
+            type: 'supermarket',
+            category: 'Supermarché',
+            distance_m: supermarket.distance_m,
+            gps: supermarket.gps,
+            address: supermarket.raw?.tags?.addr_street || supermarket.raw?.tags?.address,
+            phone: supermarket.raw?.tags?.phone,
+            website: supermarket.raw?.tags?.website,
+            rating: supermarket.raw?.tags?.rating,
+            rating_count: supermarket.raw?.tags?.rating_count
+          });
+        });
+      }
+      
+      if (profile.amenities.transit && profile.amenities.transit.length > 0) {
+        byType['Transports en commun'] = profile.amenities.transit.length;
+        profile.amenities.transit.forEach(transit => {
+          const typeLabel = transit.type === 'station' ? 'Gare' : 
+                           transit.type === 'bus_station' ? 'Arrêt de bus' :
+                           transit.type === 'subway_entrance' ? 'Métro' : 'Transport';
+          allAmenities.push({
+            name: transit.name || typeLabel,
+            type: 'transit',
+            category: 'Transport en commun',
+            transit_type: transit.type,
+            distance_m: transit.distance_m,
+            gps: transit.gps,
+            address: transit.raw?.tags?.addr_street || transit.raw?.tags?.address,
+            phone: transit.raw?.tags?.phone,
+            website: transit.raw?.tags?.website,
+            rating: transit.raw?.tags?.rating,
+            rating_count: transit.raw?.tags?.rating_count
+          });
+        });
+      }
+      
+      if (profile.amenities.parks && profile.amenities.parks.length > 0) {
+        byType['Parcs et espaces verts'] = profile.amenities.parks.length;
+        profile.amenities.parks.forEach(park => {
+          allAmenities.push({
+            name: park.name || 'Parc',
+            type: 'park',
+            category: 'Parc et espace vert',
+            distance_m: park.distance_m,
+            gps: park.gps,
+            address: park.raw?.tags?.addr_street || park.raw?.tags?.address,
+            phone: park.raw?.tags?.phone,
+            website: park.raw?.tags?.website,
+            rating: park.raw?.tags?.rating,
+            rating_count: park.raw?.tags?.rating_count
+          });
+        });
+      }
+      
+      // Statistiques par type
+      Object.entries(byType).forEach(([type, count]) => {
         amenitiesItems.push({
-          label: `Supermarket ${index + 1}`,
-          value: `${supermarket.name || 'Supermarché'} - ${Math.round(supermarket.distance_m)} m`
+          label: type,
+          value: `${count} établissement${count > 1 ? 's' : ''}`
         });
       });
-    }
-    
-    if (profile.amenities.transit && profile.amenities.transit.length > 0) {
-      amenitiesItems.push({
-        label: 'Transports en commun',
-        value: `${profile.amenities.transit.length} à proximité`
-      });
-    }
-    
-    if (profile.amenities.parks && profile.amenities.parks.length > 0) {
-      amenitiesItems.push({
-        label: 'Parcs et espaces verts',
-        value: `${profile.amenities.parks.length} à proximité`
-      });
-    }
-    
-    if (amenitiesItems.length > 0) {
+      
+      // Trier les commerces par distance et créer des items détaillés pour les plus proches (15 max)
+      const sortedAmenities = [...allAmenities]
+        .sort((a, b) => a.distance_m - b.distance_m)
+        .slice(0, 15);
+      
+      // Stocker les données détaillées des commerces dans les notes (format spécial pour le composant)
+      const amenitiesData = sortedAmenities.map(amenity => ({
+        name: amenity.name,
+        type: amenity.type,
+        category: amenity.category,
+        transit_type: amenity.transit_type,
+        distance_m: amenity.distance_m,
+        gps: amenity.gps,
+        address: amenity.address,
+        phone: amenity.phone,
+        website: amenity.website,
+        rating: amenity.rating,
+        rating_count: amenity.rating_count
+      }));
+      
       sections.push({
         id: 'amenities',
-        title: 'Commodités',
-        items: amenitiesItems
+        title: 'Commerces de proximité',
+        items: amenitiesItems,
+        notes: amenitiesData as any // Stocker les données des commerces dans notes pour le composant spécialisé
       });
     }
   }

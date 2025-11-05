@@ -89,6 +89,7 @@ export interface HouseProfileMarket {
       price_m2_median_3y?: number;
       volume_3y?: number;
       trend_label?: "hausse" | "baisse" | "stable" | null;
+      estimated?: boolean; // Indique si le prix est estimé (pas de données DVF réelles)
     };
     raw?: any;
   };
@@ -243,6 +244,8 @@ export interface HouseProfileEducation {
       lon: number;
     };
     distance_m?: number;
+    rating?: number; // Note Google (0-5)
+    rating_count?: number; // Nombre d'avis
     raw?: any;
   }>;
 }
@@ -252,6 +255,7 @@ export interface HouseProfileConnectivity {
   down_max_mbps?: number;
   up_max_mbps?: number;
   technologies?: string[];
+  operators?: string[];
   raw?: any;
 }
 
@@ -361,7 +365,7 @@ export interface HouseProfile {
   market: HouseProfileMarket;
   building: HouseProfileBuilding;
   education: HouseProfileEducation;
-  connectivity: HouseProfileConnectivity;
+  connectivity?: HouseProfileConnectivity;
   air_quality: HouseProfileAirQuality;
   amenities: HouseProfileAmenities;
   safety: HouseProfileSafety;

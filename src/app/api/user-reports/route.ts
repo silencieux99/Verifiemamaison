@@ -1,8 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { adminAuth, adminDb, isFirebaseAdminInitialized } from '@/lib/firebase-admin';
 
 export async function GET(request: NextRequest) {
   try {
+    // Vérifier que Firebase Admin est initialisé
+    if (!isFirebaseAdminInitialized() || !adminAuth || !adminDb) {
+      console.error('❌ Firebase Admin non initialisé');
+      return NextResponse.json(
+        { 
+          error: 'Firebase Admin not initialized',
+          message: 'Server configuration error. Please check Firebase Admin credentials.'
+        },
+        { status: 500 }
+      );
+    }
+
     // Vérification de l'authentification
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -16,10 +28,14 @@ export async function GET(request: NextRequest) {
     let decodedToken;
     
     try {
-      decodedToken = await adminAuth?.verifyIdToken(token);
-    } catch (error) {
+      decodedToken = await adminAuth.verifyIdToken(token);
+    } catch (error: any) {
+      console.error('❌ Erreur vérification token:', error);
       return NextResponse.json(
-        { error: 'Invalid authentication token' },
+        { 
+          error: 'Invalid authentication token',
+          details: error.message 
+        },
         { status: 401 }
       );
     }

@@ -269,7 +269,7 @@ export async function fetchDPE(
 }
 
 /**
- * Récupération des transactions DVF
+ * Récupération des transactions DVF et estimation du prix au m²
  */
 export async function fetchDVF(
   lat: number,
@@ -281,9 +281,8 @@ export async function fetchDVF(
   };
   
   try {
-    // API DVF (simplifié - peut nécessiter des coordonnées ou code INSEE)
-    // Note: L'API DVF réelle peut avoir des limitations
-    const dvfUrl = `https://api.cquest.org/dvf?code_commune=${citycode}&lat=${lat}&lon=${lon}&distance=500`;
+    // Tentative 1: API DVF de Christian Quest
+    const dvfUrl = `https://api.cquest.org/dvf?code_commune=${citycode}&lat=${lat}&lon=${lon}&distance=1000`;
     
     try {
       const response = await fetchWithRetry(dvfUrl, {}, 1);
@@ -291,19 +290,25 @@ export async function fetchDVF(
         const data = await response.json();
         market.dvf.raw = data;
         
-        if (Array.isArray(data)) {
+        if (Array.isArray(data) && data.length > 0) {
           const transactions = data
-            .filter((t: any) => t.date_mutation && t.valeur_fonciere && t.surface_reelle_bati)
+            .filter((t: any) => 
+              t.date_mutation && 
+              t.valeur_fonciere && 
+              t.surface_reelle_bati &&
+              t.valeur_fonciere > 0 &&
+              t.surface_reelle_bati > 0
+            )
             .map((t: any) => ({
               date: t.date_mutation,
               type: t.nature_mutation === 'Vente' ? (t.type_local === 'Maison' ? 'maison' : 'appartement') : 'autre',
               surface_m2: t.surface_reelle_bati,
               price_eur: t.valeur_fonciere,
               price_m2_eur: Math.round(t.valeur_fonciere / t.surface_reelle_bati),
-              address_hint: t.adresse_numero + ' ' + t.adresse_nom_voie,
+              address_hint: (t.adresse_numero || '') + ' ' + (t.adresse_nom_voie || ''),
               raw: t,
             }))
-            .slice(0, 20); // Limiter à 20 transactions
+            .slice(0, 20);
           
           market.dvf.transactions = transactions;
           
@@ -316,8 +321,8 @@ export async function fetchDVF(
             const recent1y = transactions.filter((t: any) => new Date(t.date) >= oneYearAgo);
             const recent3y = transactions.filter((t: any) => new Date(t.date) >= threeYearsAgo);
             
-            const prices1y = recent1y.map((t: any) => t.price_m2_eur).filter((p: any) => p);
-            const prices3y = recent3y.map((t: any) => t.price_m2_eur).filter((p: any) => p);
+            const prices1y = recent1y.map((t: any) => t.price_m2_eur).filter((p: any) => p && p > 100 && p < 50000);
+            const prices3y = recent3y.map((t: any) => t.price_m2_eur).filter((p: any) => p && p > 100 && p < 50000);
             
             if (prices1y.length > 0) {
               prices1y.sort((a, b) => a - b);
@@ -345,18 +350,183 @@ export async function fetchDVF(
                   }
                 }
               }
+              
+              return market; // Succès, on retourne les données DVF
             }
           }
         }
       }
     } catch (e) {
-      // Ignore si indisponible
+      console.log('API DVF non disponible, utilisation de l\'estimation');
     }
+    
+    // Fallback: Estimation basée sur la localisation
+    // Si pas de données DVF, on estime selon la région/ville
+    const estimatedPrice = estimatePriceM2ByLocation(citycode, lat, lon);
+    
+    if (estimatedPrice) {
+      market.dvf.summary = {
+        price_m2_median_1y: estimatedPrice,
+        volume_3y: 0,
+        trend_label: "stable",
+        estimated: true // Indiquer que c'est une estimation
+      };
+    }
+    
   } catch (error) {
-    // Continue
+    console.error('Erreur fetchDVF:', error);
   }
   
   return market;
+}
+
+/**
+ * Estime le prix au m² basé sur la localisation
+ * Utilise les codes INSEE et coordonnées GPS pour estimer
+ */
+function estimatePriceM2ByLocation(citycode: string, lat: number, lon: number): number | null {
+  // Départements (2 premiers chiffres du code commune)
+  const dept = citycode.substring(0, 2);
+  
+  // Paris et petite couronne (75, 92, 93, 94)
+  if (dept === '75') return 10000; // Paris
+  if (['92', '93', '94'].includes(dept)) return 5000; // Petite couronne
+  
+  // Grande couronne (77, 78, 91, 95)
+  if (['77', '78', '91', '95'].includes(dept)) return 3500;
+  
+  // Grandes métropoles
+  const bigCities: Record<string, number> = {
+    '69': 5500, // Lyon
+    '13': 4500, // Marseille
+    '06': 5000, // Nice
+    '31': 4000, // Toulouse
+    '33': 4500, // Bordeaux
+    '44': 4000, // Nantes
+    '59': 3500, // Lille
+    '67': 3800, // Strasbourg
+    '34': 3800, // Montpellier
+    '35': 3500, // Rennes
+  };
+  
+  if (bigCities[dept]) return bigCities[dept];
+  
+  // Villes moyennes et zones rurales
+  return 2500;
+}
+
+/**
+ * Enrichit une école avec les données Google Places (rating, etc.)
+ */
+async function enrichSchoolWithGooglePlaces(school: any): Promise<any> {
+  // Utiliser GOOGLE_PLACES_API_KEY ou GEMINI_API_KEY comme fallback
+  const googleApiKey = process.env.GOOGLE_PLACES_API_KEY || process.env.GEMINI_API_KEY;
+  
+  if (!googleApiKey || !school.gps) {
+    return school; // Pas de clé API ou pas de coordonnées GPS
+  }
+  
+  try {
+    // Recherche textuelle de l'école avec type "school"
+    const searchQuery = `${school.name} ${school.city || ''} ${school.postcode || ''} school`.trim();
+    const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(searchQuery)}&key=${googleApiKey}&language=fr&type=school`;
+    
+    const searchResponse = await fetchWithRetry(searchUrl, {}, 1);
+    if (searchResponse.ok) {
+      const searchData = await searchResponse.json();
+      
+      if (searchData.results && searchData.results.length > 0) {
+        // Prioriser les résultats avec rating
+        const resultsWithRating = searchData.results.filter((r: any) => r.rating);
+        const resultsToCheck = resultsWithRating.length > 0 ? resultsWithRating : searchData.results;
+        
+        // Trouver le résultat le plus proche (par distance)
+        let bestMatch = resultsToCheck[0];
+        let minDistance = Infinity;
+        let bestScore = -1;
+        
+        for (const result of resultsToCheck) {
+          if (result.geometry && school.gps) {
+            const distance = haversineDistance(
+              school.gps.lat,
+              school.gps.lon,
+              result.geometry.location.lat,
+              result.geometry.location.lng
+            );
+            
+            // Score de matching basé sur la distance et le nom
+            const schoolNameLower = school.name.toLowerCase();
+            const resultNameLower = result.name.toLowerCase();
+            
+            // Vérifier la correspondance du nom
+            const nameWords = schoolNameLower.split(/\s+/).filter(w => w.length > 3);
+            let nameScore = 0;
+            for (const word of nameWords) {
+              if (resultNameLower.includes(word)) {
+                nameScore += word.length;
+              }
+            }
+            
+            // Score combiné : distance (plus petit = mieux) + correspondance nom
+            // Prioriser les résultats avec rating
+            const ratingBonus = result.rating ? 1000 : 0;
+            const score = ratingBonus + nameScore * 10 - (distance / 10);
+            
+            // Accepter si distance < 500m ou nom correspond bien
+            if ((distance < 500 || nameScore > 0) && score > bestScore) {
+              minDistance = distance;
+              bestMatch = result;
+              bestScore = score;
+            }
+          }
+        }
+        
+        // Si on a trouvé un match raisonnable (moins de 500m ou nom similaire)
+        if (minDistance < 500 || bestMatch.name.toLowerCase().includes(school.name.toLowerCase().substring(0, 10)) || 
+            school.name.toLowerCase().includes(bestMatch.name.toLowerCase().substring(0, 10))) {
+          // Récupérer les détails si on a un place_id
+          if (bestMatch.place_id) {
+            const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${bestMatch.place_id}&fields=rating,user_ratings_total,formatted_phone_number,website&key=${googleApiKey}&language=fr`;
+            
+            try {
+              const detailsResponse = await fetchWithRetry(detailsUrl, {}, 1);
+              if (detailsResponse.ok) {
+                const detailsData = await detailsResponse.json();
+                
+                if (detailsData.result) {
+                  // Enrichir avec les données Google Places
+                  return {
+                    ...school,
+                    rating: detailsData.result.rating,
+                    rating_count: detailsData.result.user_ratings_total,
+                    phone: school.phone || detailsData.result.formatted_phone_number,
+                    website: school.website || detailsData.result.website,
+                  };
+                }
+              }
+            } catch (e) {
+              // Si les détails échouent, utiliser au moins les données de la recherche
+              console.warn('Erreur récupération détails Google Places:', e);
+            }
+          }
+          
+          // Utiliser au moins les données de la recherche (rating peut être disponible)
+          if (bestMatch.rating !== undefined) {
+            return {
+              ...school,
+              rating: bestMatch.rating,
+              rating_count: bestMatch.user_ratings_total,
+            };
+          }
+        }
+      }
+    }
+  } catch (error) {
+    // Ignore les erreurs Google Places (peut être quota, clé invalide, etc.)
+    console.warn('Erreur Google Places pour école:', school.name, error);
+  }
+  
+  return school;
 }
 
 /**
@@ -379,7 +549,7 @@ export async function fetchSchools(
       const data = await response.json();
       
       if (data.records && Array.isArray(data.records)) {
-        education.schools = data.records.map((record: any) => {
+        const schools = data.records.map((record: any) => {
           const fields = record.fields || {};
           const geo = record.geometry?.coordinates || [];
           
@@ -397,6 +567,20 @@ export async function fetchSchools(
             raw: record,
           };
         });
+        
+        // Enrichir avec Google Places si la clé API est disponible
+        const googleApiKey = process.env.GOOGLE_PLACES_API_KEY || process.env.GEMINI_API_KEY;
+        if (googleApiKey) {
+          // Enrichir les écoles en parallèle (avec limite pour éviter les quotas)
+          const enrichedSchools = await Promise.all(
+            schools.slice(0, 10).map(school => enrichSchoolWithGooglePlaces(school))
+          );
+          
+          // Ajouter les écoles restantes sans enrichissement
+          education.schools = [...enrichedSchools, ...schools.slice(10)];
+        } else {
+          education.schools = schools;
+        }
       }
     }
   } catch (error) {
@@ -406,40 +590,6 @@ export async function fetchSchools(
   return education;
 }
 
-/**
- * Récupération de la connectivité ARCEP
- */
-export async function fetchArcep(
-  lat: number,
-  lon: number
-): Promise<HouseProfile['connectivity']> {
-  const connectivity: HouseProfile['connectivity'] = {};
-  
-  try {
-    // API ARCEP "Ma Connexion Internet" (simplifié)
-    const arcepUrl = `https://www.arcep.fr/api/ma-connexion-internet?lat=${lat}&lon=${lon}`;
-    
-    try {
-      const response = await fetchWithRetry(arcepUrl, {}, 1);
-      if (response.ok) {
-        const data = await response.json();
-        connectivity.raw = data;
-        
-        // Normalisation
-        connectivity.fiber_available = data.fibre_ftth || data.fibre_ftte || false;
-        connectivity.down_max_mbps = data.debit_max || data.debit_descendant_max;
-        connectivity.up_max_mbps = data.debit_remontant_max;
-        connectivity.technologies = data.technologies || [];
-      }
-    } catch (e) {
-      // Ignore si indisponible
-    }
-  } catch (error) {
-    // Continue
-  }
-  
-  return connectivity;
-}
 
 /**
  * Récupération de la qualité de l'air ATMO

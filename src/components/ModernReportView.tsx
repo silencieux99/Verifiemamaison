@@ -7,7 +7,7 @@ import {
       Home, MapPin, TrendingUp, Zap, Leaf, DollarSign, Activity,
       Info, ChevronRight, Download, Share2,
       AlertCircle, Clock, Users, FileText, Eye, Building2,
-      School, Wifi, ShoppingCart, Droplets, User, Phone, Globe, GraduationCap, BookOpen, Baby
+      School, ShoppingCart, Droplets, User, Phone, Globe, GraduationCap, BookOpen, Baby
 } from 'lucide-react';
 import type { ReportSection, AIVerification } from '@/types/report.types';
 import { 
@@ -100,14 +100,7 @@ export default function ModernReportView({
       });
     }
     
-    // 4. Bonus pour connectivité
-    const connectivitySection = sections.find(s => s.id === 'connectivity');
-    const fiberItem = connectivitySection?.items.find(i => i.label.includes('Fibre'));
-    if (fiberItem && String(fiberItem.value).includes('Disponible')) {
-      calculatedScore += 5;
-    }
-    
-    // 5. Bonus pour commodités
+    // 4. Bonus pour commodités
     const amenitiesSection = sections.find(s => s.id === 'amenities');
     if (amenitiesSection && amenitiesSection.items.length > 2) {
       calculatedScore += 3;
@@ -337,7 +330,6 @@ export default function ModernReportView({
       market: DollarSign,
       urbanism: Building2,
       education: School,
-      connectivity: Wifi,
       amenities: ShoppingCart,
       air_quality: Droplets,
       safety: AlertCircle,
@@ -534,36 +526,6 @@ export default function ModernReportView({
                   </div>
                 </motion.div>
 
-                {/* Fibre */}
-                <motion.div 
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 1.0 }}
-                  className="bg-white rounded-2xl p-4 shadow-md hover:shadow-lg transition-shadow border border-gray-100"
-                >
-                  <div className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-50 mb-3">
-                    <Wifi className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <div className="text-xs text-gray-500 font-medium mb-1">Fibre</div>
-                  <div className="text-lg font-bold text-gray-900 leading-tight">
-                    {(() => {
-                      const connectivitySection = sections.find(s => s.id === 'connectivity');
-                      const fiberItem = connectivitySection?.items.find(i => 
-                        i.label.includes('Fibre') || i.label.includes('fibre')
-                      );
-                      if (fiberItem && fiberItem.value) {
-                        const value = String(fiberItem.value).trim();
-                        // Si c'est "Disponible" ou "Non disponible", afficher juste "Oui" ou "Non"
-                        if (value.toLowerCase().includes('disponible')) {
-                          return value.toLowerCase().includes('non') ? 'Non' : 'Oui';
-                        }
-                        return value.split(' ')[0]; // Prendre le premier mot
-                      }
-                      return '—';
-                    })()}
-                  </div>
-                </motion.div>
-
                 {/* Écoles */}
                 <motion.div 
                   initial={{ opacity: 0, y: 20 }}
@@ -751,36 +713,6 @@ export default function ModernReportView({
                                 return num + ' €';
                               }
                               return priceStr.split('€')[0].trim() + ' €';
-                            }
-                            return '—';
-                          })()}
-                        </div>
-                      </motion.div>
-
-                      {/* Fibre */}
-                      <motion.div 
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.4 }}
-                        className="bg-white rounded-2xl p-4 shadow-md hover:shadow-lg transition-shadow border border-gray-100"
-                      >
-                        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-50 mb-3">
-                          <Wifi className="w-5 h-5 text-blue-600" />
-                        </div>
-                        <div className="text-xs text-gray-500 font-medium mb-1">Fibre</div>
-                        <div className="text-lg font-bold text-gray-900 leading-tight">
-                          {(() => {
-                            const connectivitySection = sections.find(s => s.id === 'connectivity');
-                            const fiberItem = connectivitySection?.items.find(i => 
-                              i.label.includes('Fibre') || i.label.includes('fibre')
-                            );
-                            if (fiberItem && fiberItem.value) {
-                              const value = String(fiberItem.value).trim();
-                              // Si c'est "Disponible" ou "Non disponible", afficher juste "Oui" ou "Non"
-                              if (value.toLowerCase().includes('disponible')) {
-                                return value.toLowerCase().includes('non') ? 'Non' : 'Oui';
-                              }
-                              return value.split(' ')[0]; // Prendre le premier mot
                             }
                             return '—';
                           })()}
@@ -1257,8 +1189,225 @@ export default function ModernReportView({
                     {section.title}
                   </h2>
 
-                  {/* Section spécialisée pour les écoles */}
-                  {section.id === 'education' && section.notes && Array.isArray(section.notes) && section.notes.length > 0 && typeof section.notes[0] === 'object' ? (
+                  {/* Section spécialisée pour les commerces de proximité */}
+                  {section.id === 'amenities' && section.notes && Array.isArray(section.notes) && section.notes.length > 0 && typeof section.notes[0] === 'object' ? (
+                    <>
+                      {/* Statistiques */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
+                        {section.items.map((item, idx) => (
+                          <motion.div
+                            key={idx}
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: idx * 0.05 }}
+                            className={cn(
+                              "p-4 rounded-xl border transition-all hover:shadow-md",
+                              item.flag === 'ok' ? "border-green-200 bg-green-50/50" :
+                              item.flag === 'warn' ? "border-yellow-200 bg-yellow-50/50" :
+                              item.flag === 'risk' ? "border-red-200 bg-red-50/50" :
+                              "border-gray-200 bg-white"
+                            )}
+                          >
+                            <div className="flex items-center gap-2 mb-2">
+                              {item.flag === 'ok' && <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />}
+                              {item.flag === 'warn' && <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0" />}
+                              {item.flag === 'risk' && <XCircle className="w-5 h-5 text-red-600 flex-shrink-0" />}
+                              {!item.flag && <Info className="w-5 h-5 text-gray-600 flex-shrink-0" />}
+                              <span className="text-sm font-medium text-gray-700">{item.label}</span>
+                            </div>
+                            <span className={cn(
+                              "font-bold text-lg ml-7",
+                              item.flag === 'ok' ? "text-green-700" :
+                              item.flag === 'warn' ? "text-yellow-700" :
+                              item.flag === 'risk' ? "text-red-700" :
+                              "text-gray-900"
+                            )}>
+                              {String(item.value)}
+                            </span>
+                          </motion.div>
+                        ))}
+                      </div>
+
+                      {/* Liste des commerces */}
+                      <div>
+                        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                          <ShoppingCart className="w-5 h-5 text-purple-600" />
+                          Commerces et services à proximité
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {(section.notes as any[]).map((amenity: any, idx: number) => {
+                            // Icône selon le type de commerce
+                            const getAmenityIcon = (type: string) => {
+                              if (type === 'supermarket') return ShoppingCart;
+                              if (type === 'transit') return Activity;
+                              if (type === 'park') return Leaf;
+                              return ShoppingCart;
+                            };
+
+                            // Couleur selon le type
+                            const getAmenityColor = (type: string) => {
+                              if (type === 'supermarket') return 'from-green-500 to-emerald-500';
+                              if (type === 'transit') return 'from-blue-500 to-cyan-500';
+                              if (type === 'park') return 'from-green-600 to-teal-600';
+                              return 'from-gray-500 to-gray-600';
+                            };
+
+                            const AmenityIcon = getAmenityIcon(amenity.type);
+                            const gradientColor = getAmenityColor(amenity.type);
+
+                            return (
+                              <motion.div
+                                key={idx}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: idx * 0.1 }}
+                                className="bg-white rounded-xl border-2 border-gray-200 hover:border-purple-300 transition-all hover:shadow-lg overflow-hidden flex flex-col"
+                              >
+                                {/* Contenu */}
+                                <div className="p-4 flex-1 flex flex-col">
+                                  <div className="flex items-start gap-4 mb-3">
+                                    <div className={cn(
+                                      "rounded-lg p-3 flex-shrink-0 bg-gradient-to-br",
+                                      gradientColor
+                                    )}>
+                                      <AmenityIcon className="w-6 h-6 text-white" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <h4 className="font-bold text-gray-800 text-base sm:text-lg leading-tight break-words">{amenity.name || 'Commerce'}</h4>
+                                      <div className="flex items-center gap-2 flex-wrap mt-1.5">
+                                        <span className="text-xs text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full font-medium">
+                                          {amenity.category || amenity.type}
+                                        </span>
+                                        {amenity.transit_type && (
+                                          <span className="text-xs text-gray-600 bg-blue-100 px-2 py-0.5 rounded-full font-medium">
+                                            {amenity.transit_type === 'station' ? 'Gare' : 
+                                             amenity.transit_type === 'bus_station' ? 'Bus' :
+                                             amenity.transit_type === 'subway_entrance' ? 'Métro' : amenity.transit_type}
+                                          </span>
+                                        )}
+                                      </div>
+                                      {/* Rating Google */}
+                                      {amenity.rating !== undefined && amenity.rating !== null ? (
+                                        <div className="flex items-center gap-2 mt-2 flex-wrap">
+                                          <div className="flex items-center gap-0.5">
+                                            {[1, 2, 3, 4, 5].map((star) => (
+                                              <svg
+                                                key={star}
+                                                className={cn(
+                                                  "w-4 h-4",
+                                                  star <= Math.round(amenity.rating) 
+                                                    ? "text-yellow-400 fill-current" 
+                                                    : "text-gray-300"
+                                                )}
+                                                viewBox="0 0 20 20"
+                                                fill="currentColor"
+                                              >
+                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                              </svg>
+                                            ))}
+                                          </div>
+                                          <span className="text-sm font-semibold text-gray-700">
+                                            {typeof amenity.rating === 'number' ? amenity.rating.toFixed(1) : amenity.rating}
+                                          </span>
+                                          {amenity.rating_count && (
+                                            <span className="text-xs text-gray-500">
+                                              ({amenity.rating_count} avis)
+                                            </span>
+                                          )}
+                                          <div className="flex items-center gap-1 ml-1">
+                                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                                              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                                              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                                              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                                              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                                            </svg>
+                                            <span className="text-xs text-gray-500 font-medium">Google</span>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <div className="flex items-center gap-2 mt-2">
+                                          <div className="flex items-center gap-1">
+                                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                                              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                                              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                                              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                                              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                                            </svg>
+                                            <span className="text-xs text-gray-500 font-medium">Google</span>
+                                          </div>
+                                          <span className="text-xs text-gray-400 italic">Note non disponible</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <div className="space-y-3 mt-2 text-sm">
+                                    {/* Distance */}
+                                    {amenity.distance_m && (
+                                      <div className="flex items-center gap-2 text-gray-600">
+                                        <MapPin className="w-4 h-4 text-purple-600 flex-shrink-0" />
+                                        <span className="font-semibold text-purple-600">
+                                          {Math.round(amenity.distance_m)} m
+                                        </span>
+                                        <span className="text-gray-500">de distance</span>
+                                      </div>
+                                    )}
+
+                                    {/* Adresse */}
+                                    {amenity.address && (
+                                      <div className="flex items-start gap-2 text-gray-700">
+                                        <MapPin className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                                        <div className="flex-1">
+                                          <div>{amenity.address}</div>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Footer avec les actions */}
+                                <div className="p-4 bg-gray-50 border-t border-gray-200 mt-auto">
+                                  <div className="flex flex-wrap items-center justify-start gap-x-4 gap-y-2">
+                                    {amenity.phone && (
+                                      <a
+                                        href={`tel:${amenity.phone}`}
+                                        className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-purple-600 transition-colors font-medium"
+                                      >
+                                        <Phone className="w-4 h-4" />
+                                        <span>Appeler</span>
+                                      </a>
+                                    )}
+                                    {amenity.website && (
+                                      <a
+                                        href={amenity.website.startsWith('http') ? amenity.website : `https://${amenity.website}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-purple-600 transition-colors font-medium"
+                                      >
+                                        <Globe className="w-4 h-4" />
+                                        <span>Site web</span>
+                                      </a>
+                                    )}
+                                    {amenity.gps && (
+                                      <a
+                                        href={`https://www.google.com/maps/search/?api=1&query=${amenity.gps.lat},${amenity.gps.lon}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-purple-600 transition-colors font-medium"
+                                      >
+                                        <MapPin className="w-4 h-4" />
+                                        <span>Carte</span>
+                                      </a>
+                                    )}
+                                  </div>
+                                </div>
+                              </motion.div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </>
+                  ) : section.id === 'education' && section.notes && Array.isArray(section.notes) && section.notes.length > 0 && typeof section.notes[0] === 'object' ? (
                     <>
                       {/* Statistiques */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
@@ -1334,70 +1483,128 @@ export default function ModernReportView({
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: idx * 0.1 }}
-                                className="bg-white rounded-xl border-2 border-gray-200 hover:border-purple-300 transition-all hover:shadow-lg overflow-hidden"
+                                className="bg-white rounded-xl border-2 border-gray-200 hover:border-purple-300 transition-all hover:shadow-lg overflow-hidden flex flex-col"
                               >
-                                {/* En-tête avec gradient */}
-                                <div className={cn("bg-gradient-to-r p-4 text-white", gradientColor)}>
-                                  <div className="flex items-start justify-between gap-3">
-                                    <div className="flex items-start gap-3 flex-1">
-                                      <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3 flex-shrink-0">
-                                        <SchoolIcon className="w-6 h-6" />
+                                {/* Contenu */}
+                                <div className="p-4 flex-1 flex flex-col">
+                                  <div className="flex items-start gap-4 mb-3">
+                                    <div className={cn(
+                                      "rounded-lg p-3 flex-shrink-0 bg-gradient-to-br",
+                                      gradientColor
+                                    )}>
+                                      <SchoolIcon className="w-6 h-6 text-white" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <h4 className="font-bold text-gray-800 text-base sm:text-lg leading-tight break-words">{school.name || 'École'}</h4>
+                                      <div className="flex items-center gap-2 flex-wrap mt-1.5">
+                                        <span className="text-xs text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full font-medium">
+                                          {school.kind || 'École'}
+                                        </span>
+                                        <span className={cn(
+                                          "text-xs px-2 py-0.5 rounded-full font-medium",
+                                          isPublic ? "bg-blue-100 text-blue-800" : "bg-yellow-100 text-yellow-800"
+                                        )}>
+                                          {isPublic ? 'Public' : 'Privé'}
+                                        </span>
                                       </div>
-                                      <div className="flex-1 min-w-0">
-                                        <h4 className="font-bold text-lg mb-1 truncate">{school.name || 'École'}</h4>
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                          <span className="text-xs bg-white/20 px-2 py-1 rounded-full">
-                                            {school.kind || 'École'}
+                                      {/* Rating Google */}
+                                      {school.rating !== undefined && school.rating !== null ? (
+                                        <div className="flex items-center gap-2 mt-2 flex-wrap">
+                                          <div className="flex items-center gap-0.5">
+                                            {[1, 2, 3, 4, 5].map((star) => (
+                                              <svg
+                                                key={star}
+                                                className={cn(
+                                                  "w-4 h-4",
+                                                  star <= Math.round(school.rating) 
+                                                    ? "text-yellow-400 fill-current" 
+                                                    : "text-gray-300"
+                                                )}
+                                                viewBox="0 0 20 20"
+                                                fill="currentColor"
+                                              >
+                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                              </svg>
+                                            ))}
+                                          </div>
+                                          <span className="text-sm font-semibold text-gray-700">
+                                            {typeof school.rating === 'number' ? school.rating.toFixed(1) : school.rating}
                                           </span>
-                                          <span className={cn(
-                                            "text-xs px-2 py-1 rounded-full",
-                                            isPublic ? "bg-white/20" : "bg-yellow-500/30"
-                                          )}>
-                                            {isPublic ? 'Public' : 'Privé'}
-                                          </span>
+                                          {school.rating_count && (
+                                            <span className="text-xs text-gray-500">
+                                              ({school.rating_count} avis)
+                                            </span>
+                                          )}
+                                          <div className="flex items-center gap-1 ml-1">
+                                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                                              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                                              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                                              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                                              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                                            </svg>
+                                            <span className="text-xs text-gray-500 font-medium">Google</span>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        // Si pas de rating, afficher quand même le logo Google avec "Note non disponible"
+                                        <div className="flex items-center gap-2 mt-2">
+                                          <div className="flex items-center gap-1">
+                                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                                              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                                              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                                              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                                              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                                            </svg>
+                                            <span className="text-xs text-gray-500 font-medium">Google</span>
+                                          </div>
+                                          <span className="text-xs text-gray-400 italic">Note non disponible</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <div className="space-y-3 mt-2 text-sm">
+                                    {/* Distance */}
+                                    {school.distance_m && (
+                                      <div className="flex items-center gap-2 text-gray-600">
+                                        <MapPin className="w-4 h-4 text-purple-600 flex-shrink-0" />
+                                        <span className="font-semibold text-purple-600">
+                                          {Math.round(school.distance_m)} m
+                                        </span>
+                                        <span className="text-gray-500">de distance</span>
+                                      </div>
+                                    )}
+
+                                    {/* Adresse */}
+                                    {(school.address || school.postcode || school.city) && (
+                                      <div className="flex items-start gap-2 text-gray-700">
+                                        <MapPin className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                                        <div className="flex-1">
+                                          {school.address && <div className="mb-1">{school.address}</div>}
+                                          {(school.postcode || school.city) && (
+                                            <div className="text-gray-500">
+                                              {school.postcode && school.city 
+                                                ? `${school.postcode} ${school.city}`
+                                                : school.postcode || school.city
+                                              }
+                                            </div>
+                                          )}
                                         </div>
                                       </div>
-                                    </div>
+                                    )}
                                   </div>
                                 </div>
 
-                                {/* Contenu */}
-                                <div className="p-4 space-y-3">
-                                  {/* Distance */}
-                                  {school.distance_m && (
-                                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                                      <MapPin className="w-4 h-4 text-purple-600 flex-shrink-0" />
-                                      <span className="font-semibold text-purple-600">
-                                        {Math.round(school.distance_m)} m
-                                      </span>
-                                      <span className="text-gray-500">de distance</span>
-                                    </div>
-                                  )}
-
-                                  {/* Adresse */}
-                                  {(school.address || school.city) && (
-                                    <div className="flex items-start gap-2 text-sm text-gray-700">
-                                      <MapPin className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
-                                      <div className="flex-1">
-                                        {school.address && <div>{school.address}</div>}
-                                        {(school.postcode || school.city) && (
-                                          <div className="text-gray-500">
-                                            {school.postcode} {school.city}
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  )}
-
-                                  {/* Contact */}
-                                  <div className="flex flex-wrap gap-3 pt-2 border-t border-gray-100">
+                                {/* Footer avec les actions */}
+                                <div className="p-4 bg-gray-50 border-t border-gray-200 mt-auto">
+                                  <div className="flex flex-wrap items-center justify-start gap-x-4 gap-y-2">
                                     {school.phone && (
                                       <a
                                         href={`tel:${school.phone}`}
-                                        className="flex items-center gap-2 text-sm text-purple-600 hover:text-purple-700 transition-colors"
+                                        className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-purple-600 transition-colors font-medium"
                                       >
                                         <Phone className="w-4 h-4" />
-                                        <span>{school.phone}</span>
+                                        <span>Appeler</span>
                                       </a>
                                     )}
                                     {school.website && (
@@ -1405,10 +1612,21 @@ export default function ModernReportView({
                                         href={school.website.startsWith('http') ? school.website : `https://${school.website}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="flex items-center gap-2 text-sm text-purple-600 hover:text-purple-700 transition-colors"
+                                        className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-purple-600 transition-colors font-medium"
                                       >
                                         <Globe className="w-4 h-4" />
-                                        <span className="truncate max-w-[150px]">Site web</span>
+                                        <span>Site web</span>
+                                      </a>
+                                    )}
+                                    {school.gps && (
+                                      <a
+                                        href={`https://www.google.com/maps/search/?api=1&query=${school.gps.lat},${school.gps.lon}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-purple-600 transition-colors font-medium"
+                                      >
+                                        <MapPin className="w-4 h-4" />
+                                        <span>Carte</span>
                                       </a>
                                     )}
                                   </div>
