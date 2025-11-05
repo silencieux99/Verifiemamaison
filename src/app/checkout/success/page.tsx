@@ -36,63 +36,63 @@ function SuccessContent() {
         console.warn('No payment_intent in URL, trying to process anyway...');
       }
 
-        try {
-          setLoading(true);
-          // Attendre un peu que le webhook soit traité (si payment_intent existe)
-          if (paymentIntentId) {
-            await new Promise(resolve => setTimeout(resolve, 2000));
+      try {
+        setLoading(true);
+        // Attendre un peu que le webhook soit traité (si payment_intent existe)
+        if (paymentIntentId) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+        
+        const response = await fetch('/api/handle-payment-success', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            paymentIntentId: paymentIntentId || undefined, 
+            email, 
+            sku: plan 
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setResult(data);
+          
+          // Connexion automatique si nouveau compte
+          if (data.newAccount && data.password && email) {
+            setIsConnecting(true);
+            try {
+              const userCredential = await signInWithEmailAndPassword(auth, email, data.password);
+              console.log('Connexion automatique réussie:', userCredential.user.uid);
+              // L'AuthContext mettra à jour automatiquement firebaseUser via onAuthStateChanged
+            } catch (error: any) {
+              console.error('Erreur lors de la connexion automatique:', error);
+              // On continue même si la connexion échoue
+            } finally {
+              setIsConnecting(false);
+            }
           }
           
-          const response = await fetch('/api/handle-payment-success', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              paymentIntentId: paymentIntentId || undefined, 
-              email, 
-              sku: plan 
-            }),
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            setResult(data);
-            
-            // Connexion automatique si nouveau compte
-            if (data.newAccount && data.password && email) {
-              setIsConnecting(true);
-              try {
-                const userCredential = await signInWithEmailAndPassword(auth, email, data.password);
-                console.log('Connexion automatique réussie:', userCredential.user.uid);
-                // L'AuthContext mettra à jour automatiquement firebaseUser via onAuthStateChanged
-              } catch (error: any) {
-                console.error('Erreur lors de la connexion automatique:', error);
-                // On continue même si la connexion échoue
-              } finally {
-                setIsConnecting(false);
-              }
+          // Envoyer l'email avec les credentials
+          if (data.newAccount && data.password) {
+            try {
+              await fetch('/api/send-credentials-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  email,
+                  password: data.password,
+                  plan: data.productName,
+                }),
+              });
+            } catch (emailError) {
+              console.error('Erreur lors de l\'envoi de l\'email:', emailError);
+              // On continue même si l'email échoue
             }
-            
-            // Envoyer l'email avec les credentials
-            if (data.newAccount && data.password) {
-              try {
-                await fetch('/api/send-credentials-email', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    email,
-                    password: data.password,
-                    plan: data.productName,
-                  }),
-                });
-              } catch (emailError) {
-                console.error('Erreur lors de l\'envoi de l\'email:', emailError);
-                // On continue même si l'email échoue
-              }
-            }
-          } else {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Erreur lors du traitement');
           }
+        } else {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Erreur lors du traitement');
+        }
       } catch (error) {
         console.error('Erreur:', error);
       } finally {
