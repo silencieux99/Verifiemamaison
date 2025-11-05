@@ -38,8 +38,9 @@ function SuccessContent() {
       try {
         setLoading(true);
         // Attendre un peu que le webhook soit traité (si payment_intent existe)
+        // Réduit à 500ms pour être plus rapide
         if (paymentIntentId) {
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
         
         const response = await fetch('/api/handle-payment-success', {
@@ -56,37 +57,39 @@ function SuccessContent() {
           const data = await response.json();
           setResult(data);
           
-          // Connexion automatique si nouveau compte
+          // Afficher le résultat immédiatement sans attendre les autres actions
+          setLoading(false);
+          
+          // Connexion automatique si nouveau compte (en arrière-plan)
           if (data.newAccount && data.password && email) {
             setIsConnecting(true);
-            try {
-              const userCredential = await signInWithEmailAndPassword(auth, email, data.password);
-              console.log('Connexion automatique réussie:', userCredential.user.uid);
-              // L'AuthContext mettra à jour automatiquement firebaseUser via onAuthStateChanged
-            } catch (error: any) {
-              console.error('Erreur lors de la connexion automatique:', error);
-              // On continue même si la connexion échoue
-            } finally {
-              setIsConnecting(false);
-            }
+            // Faire la connexion sans attendre
+            signInWithEmailAndPassword(auth, email, data.password)
+              .then((userCredential) => {
+                console.log('Connexion automatique réussie:', userCredential.user.uid);
+                setIsConnecting(false);
+              })
+              .catch((error: any) => {
+                console.error('Erreur lors de la connexion automatique:', error);
+                setIsConnecting(false);
+              });
           }
           
-          // Envoyer l'email avec les credentials
+          // Envoyer l'email avec les credentials (en arrière-plan, sans bloquer)
           if (data.newAccount && data.password) {
-            try {
-              await fetch('/api/send-credentials-email', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  email,
-                  password: data.password,
-                  plan: data.productName,
-                }),
-              });
-            } catch (emailError) {
+            // Ne pas attendre la réponse de l'email
+            fetch('/api/send-credentials-email', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email,
+                password: data.password,
+                plan: data.productName,
+              }),
+            }).catch((emailError) => {
               console.error('Erreur lors de l\'envoi de l\'email:', emailError);
               // On continue même si l'email échoue
-            }
+            });
           }
         } else {
           const errorData = await response.json();
@@ -94,7 +97,6 @@ function SuccessContent() {
         }
       } catch (error) {
         console.error('Erreur:', error);
-      } finally {
         setLoading(false);
       }
     };

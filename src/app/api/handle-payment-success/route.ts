@@ -57,31 +57,50 @@ export async function POST(req: NextRequest) {
       const userRecord = await adminAuth?.getUserByEmail(email);
       if (userRecord) {
         userId = userRecord.uid;
-      } else {
-        // Créer un nouveau compte
-        const userRecord = await adminAuth?.createUser({
-          email,
-          password,
-        });
-        userId = userRecord.uid;
-        isNewAccount = true;
-
-        // Créer l'utilisateur dans Firestore
-        await adminDb.collection('users').doc(userId).set({
-          uid: userId,
-          email,
-          createdAt: FieldValue.serverTimestamp(),
-          updatedAt: FieldValue.serverTimestamp(),
-        });
       }
     } catch (error: any) {
-      if (error.code === 'auth/email-already-exists') {
-        // Récupérer l'utilisateur existant
-        const userRecord = await adminAuth?.getUserByEmail(email);
-        userId = userRecord!.uid;
+      // Si l'utilisateur n'existe pas (auth/user-not-found), on le crée
+      if (error.code === 'auth/user-not-found') {
+        // Créer un nouveau compte
+        try {
+          const newUserRecord = await adminAuth?.createUser({
+            email,
+            password,
+          });
+          if (newUserRecord) {
+            userId = newUserRecord.uid;
+            isNewAccount = true;
+
+            // Créer l'utilisateur dans Firestore
+            await adminDb.collection('users').doc(userId).set({
+              uid: userId,
+              email,
+              createdAt: FieldValue.serverTimestamp(),
+              updatedAt: FieldValue.serverTimestamp(),
+            });
+          }
+        } catch (createError: any) {
+          // Si l'email existe déjà (race condition), récupérer l'utilisateur
+          if (createError.code === 'auth/email-already-exists') {
+            const existingUser = await adminAuth?.getUserByEmail(email);
+            if (existingUser) {
+              userId = existingUser.uid;
+            } else {
+              throw createError;
+            }
+          } else {
+            throw createError;
+          }
+        }
       } else {
+        // Autre erreur, on la propage
         throw error;
       }
+    }
+
+    // Si userId n'est toujours pas défini (cas où l'utilisateur existe mais n'a pas été trouvé)
+    if (!userId) {
+      throw new Error('Impossible de créer ou récupérer l\'utilisateur');
     }
 
     // Ajouter les crédits

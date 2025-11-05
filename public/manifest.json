@@ -1,0 +1,17 @@
+{
+  "name": "VerifieMaMaison.fr",
+  "short_name": "VerifieMaMaison",
+  "description": "Analysez votre bien immobilier avant d'acheter",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#9333ea",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
+
