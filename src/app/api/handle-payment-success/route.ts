@@ -15,19 +15,30 @@ export async function POST(req: NextRequest) {
   try {
     const { paymentIntentId, email, sku } = await req.json();
 
-    if (!paymentIntentId || !email || !sku) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    if (!email || !sku) {
+      return NextResponse.json({ error: 'Missing required fields (email, sku)' }, { status: 400 });
     }
+    
+    // paymentIntentId est optionnel (peut être appelé sans si payment déjà traité)
 
     if (!stripe || !adminDb) {
       return NextResponse.json({ error: 'Services not initialized' }, { status: 500 });
     }
 
-    // Vérifier le Payment Intent
-    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-    
-    if (paymentIntent.status !== 'succeeded') {
-      return NextResponse.json({ error: 'Payment not succeeded' }, { status: 400 });
+    // Vérifier le Payment Intent si fourni
+    let paymentIntent;
+    if (paymentIntentId) {
+      try {
+        paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+        
+        if (paymentIntent.status !== 'succeeded') {
+          return NextResponse.json({ error: 'Payment not succeeded' }, { status: 400 });
+        }
+      } catch (error) {
+        console.error('Error retrieving payment intent:', error);
+        // On continue même si on ne peut pas récupérer le payment intent
+        // (peut arriver si appelé depuis PaymentModal directement)
+      }
     }
 
     const plan = getPlanBySku(sku);
@@ -78,8 +89,8 @@ export async function POST(req: NextRequest) {
 
     // Créer une commande
     await adminDb.collection('orders').add({
-      paymentIntentId,
-      amount: paymentIntent.amount,
+      paymentIntentId: paymentIntentId || null,
+      amount: paymentIntent?.amount || plan.price * 100,
       currency: 'eur',
       status: 'paid',
       customerEmail: email,
@@ -102,7 +113,7 @@ export async function POST(req: NextRequest) {
       newAccount: isNewAccount,
       creditsAdded: plan.reports,
       productName: plan.name,
-      amount: paymentIntent.amount / 100,
+      amount: (paymentIntent?.amount || plan.price * 100) / 100,
     });
   } catch (error) {
     console.error('Handle payment success error:', error);

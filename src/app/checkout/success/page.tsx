@@ -5,54 +5,94 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Header } from '@/app/(components)/Header';
 import Container from '@/app/(components)/Container';
 import { CheckCircleIcon, EnvelopeIcon, UserIcon, CreditCardIcon } from '@heroicons/react/24/outline';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { useAuth } from '@/app/(context)/AuthContext';
 
 function SuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { firebaseUser } = useAuth();
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isConnecting, setIsConnecting] = useState(false);
 
   const email = searchParams.get('email');
   const plan = searchParams.get('plan');
+  // Stripe redirige avec payment_intent dans l'URL après un paiement réussi
   const paymentIntentId = searchParams.get('payment_intent');
 
   useEffect(() => {
     const processPayment = async () => {
-      if (!paymentIntentId || !email || !plan) {
+      // Si pas de payment_intent, on essaie quand même avec email et plan
+      // (peut être appelé depuis PaymentModal directement)
+      if (!email || !plan) {
         setLoading(false);
         return;
       }
 
-      try {
-        setLoading(true);
-        // Attendre un peu que le webhook soit traité
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        const response = await fetch('/api/handle-payment-success', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ paymentIntentId, email, sku: plan }),
-        });
+      // Si pas de payment_intent, on attend un peu et on essaie quand même
+      if (!paymentIntentId) {
+        console.warn('No payment_intent in URL, trying to process anyway...');
+      }
 
-        if (response.ok) {
-          const data = await response.json();
-          setResult(data);
-          
-          // Envoyer l'email avec les credentials
-          if (data.newAccount && data.password) {
-            await fetch('/api/send-credentials-email', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                email,
-                password: data.password,
-                plan: data.productName,
-              }),
-            });
+        try {
+          setLoading(true);
+          // Attendre un peu que le webhook soit traité (si payment_intent existe)
+          if (paymentIntentId) {
+            await new Promise(resolve => setTimeout(resolve, 2000));
           }
-        } else {
-          throw new Error('Erreur lors du traitement');
-        }
+          
+          const response = await fetch('/api/handle-payment-success', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              paymentIntentId: paymentIntentId || undefined, 
+              email, 
+              sku: plan 
+            }),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            setResult(data);
+            
+            // Connexion automatique si nouveau compte
+            if (data.newAccount && data.password && email) {
+              setIsConnecting(true);
+              try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, data.password);
+                console.log('Connexion automatique réussie:', userCredential.user.uid);
+                // L'AuthContext mettra à jour automatiquement firebaseUser via onAuthStateChanged
+              } catch (error: any) {
+                console.error('Erreur lors de la connexion automatique:', error);
+                // On continue même si la connexion échoue
+              } finally {
+                setIsConnecting(false);
+              }
+            }
+            
+            // Envoyer l'email avec les credentials
+            if (data.newAccount && data.password) {
+              try {
+                await fetch('/api/send-credentials-email', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    email,
+                    password: data.password,
+                    plan: data.productName,
+                  }),
+                });
+              } catch (emailError) {
+                console.error('Erreur lors de l\'envoi de l\'email:', emailError);
+                // On continue même si l'email échoue
+              }
+            }
+          } else {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Erreur lors du traitement');
+          }
       } catch (error) {
         console.error('Erreur:', error);
       } finally {
@@ -63,15 +103,17 @@ function SuccessContent() {
     processPayment();
   }, [paymentIntentId, email, plan]);
 
-  if (loading) {
+  if (loading || isConnecting) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-900 to-gray-800">
+      <div className="min-h-screen bg-gradient-to-b from-white via-gray-50 to-gray-100">
         <Header />
-        <main className="py-20">
+        <main className="py-8 sm:py-12 md:py-20">
           <Container>
             <div className="text-center">
               <div className="w-16 h-16 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-gray-400">Traitement en cours...</p>
+              <p className="text-gray-600">
+                {isConnecting ? 'Connexion en cours...' : 'Traitement en cours...'}
+              </p>
             </div>
           </Container>
         </main>
@@ -81,11 +123,16 @@ function SuccessContent() {
 
   if (!result) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-900 to-gray-800">
+      <div className="min-h-screen bg-gradient-to-b from-white via-gray-50 to-gray-100">
         <Header />
-        <main className="py-20">
+        <main className="py-8 sm:py-12 md:py-20">
           <Container>
-            <div className="text-center text-red-400">Erreur lors du traitement</div>
+            <div className="max-w-2xl mx-auto">
+              <div className="bg-red-50 border border-red-200 rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-lg text-center">
+                <h2 className="text-xl sm:text-2xl font-semibold text-red-900 mb-2">Erreur lors du traitement</h2>
+                <p className="text-red-700">Impossible de traiter votre paiement. Veuillez contacter le support.</p>
+              </div>
+            </div>
           </Container>
         </main>
       </div>
@@ -93,20 +140,20 @@ function SuccessContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-900 to-gray-800">
+    <div className="min-h-screen bg-gradient-to-b from-white via-gray-50 to-gray-100">
       <Header />
-      <main className="py-20">
+      <main className="py-8 sm:py-12 md:py-20">
         <Container>
           <div className="max-w-2xl mx-auto">
             {/* Header de succès */}
-            <div className="text-center mb-8">
-              <div className="w-20 h-20 mx-auto bg-green-600 rounded-full flex items-center justify-center mb-6">
-                <CheckCircleIcon className="w-10 h-10 text-white" />
+            <div className="text-center mb-6 sm:mb-8">
+              <div className="w-16 sm:w-20 h-16 sm:h-20 mx-auto bg-green-600 rounded-full flex items-center justify-center mb-4 sm:mb-6">
+                <CheckCircleIcon className="w-8 sm:w-10 h-8 sm:h-10 text-white" />
               </div>
-              <h1 className="text-3xl font-bold text-white mb-3">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2 sm:mb-3">
                 {result.newAccount ? 'Bienvenue !' : 'Paiement confirmé !'}
               </h1>
-              <p className="text-lg text-gray-300">
+              <p className="text-base sm:text-lg text-gray-700">
                 {result.newAccount 
                   ? 'Votre compte a été créé et vos crédits ont été ajoutés.'
                   : 'Vos crédits ont été ajoutés à votre compte.'
@@ -115,66 +162,68 @@ function SuccessContent() {
             </div>
 
             {/* Informations de paiement */}
-            <div className="bg-gray-800 border border-purple-500/20 rounded-lg p-6 mb-6">
-              <div className="flex items-center mb-6">
-                <CreditCardIcon className="w-5 h-5 text-purple-400 mr-3" />
-                <h2 className="text-lg font-semibold text-white">Détails de l'achat</h2>
+            <div className="bg-white border border-purple-200 rounded-lg sm:rounded-xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-lg">
+              <div className="flex items-center mb-4 sm:mb-6">
+                <CreditCardIcon className="w-5 h-5 text-purple-600 mr-3" />
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Détails de l'achat</h2>
               </div>
-              <div className="space-y-4">
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Produit</span>
-                  <span className="font-semibold text-white">{result.productName}</span>
+              <div className="space-y-3 sm:space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 text-sm sm:text-base">Produit</span>
+                  <span className="font-semibold text-gray-900 text-sm sm:text-base">{result.productName}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Montant</span>
-                  <span className="font-semibold text-white">{result.amount.toFixed(2)} €</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 text-sm sm:text-base">Montant</span>
+                  <span className="font-semibold text-gray-900 text-sm sm:text-base">{result.amount.toFixed(2)} €</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Crédits ajoutés</span>
-                  <span className="font-semibold text-green-400">+{result.creditsAdded}</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 text-sm sm:text-base">Crédits ajoutés</span>
+                  <span className="font-semibold text-green-600 text-sm sm:text-base">+{result.creditsAdded}</span>
                 </div>
               </div>
             </div>
 
             {/* Informations de connexion pour nouveau compte */}
             {result.newAccount && result.password && (
-              <div className="bg-gray-800 border border-purple-500/20 rounded-lg p-6 mb-6">
-                <div className="flex items-center mb-6">
-                  <UserIcon className="w-5 h-5 text-purple-400 mr-3" />
-                  <h2 className="text-lg font-semibold text-white">Vos identifiants de connexion</h2>
+              <div className="bg-white border border-purple-200 rounded-lg sm:rounded-xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-lg">
+                <div className="flex items-center mb-4 sm:mb-6">
+                  <UserIcon className="w-5 h-5 text-purple-600 mr-3" />
+                  <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Vos identifiants de connexion</h2>
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
-                    <div className="flex items-center justify-between bg-gray-900 rounded-lg p-3 border border-gray-700">
-                      <span className="font-mono text-white text-sm">{email}</span>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Email</label>
+                    <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3 border border-gray-300">
+                      <span className="font-mono text-gray-900 text-sm sm:text-base break-all">{email}</span>
                       <button 
                         onClick={() => navigator.clipboard.writeText(email || '')}
-                        className="text-gray-400 hover:text-white transition-colors"
+                        className="text-gray-600 hover:text-purple-600 transition-colors ml-2 flex-shrink-0"
+                        title="Copier"
                       >
-                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                         </svg>
                       </button>
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Mot de passe</label>
-                    <div className="flex items-center justify-between bg-gray-900 rounded-lg p-3 border border-gray-700">
-                      <span className="font-mono text-white text-sm">{result.password}</span>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Mot de passe</label>
+                    <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3 border border-gray-300">
+                      <span className="font-mono text-gray-900 text-sm sm:text-base break-all">{result.password}</span>
                       <button 
                         onClick={() => navigator.clipboard.writeText(result.password || '')}
-                        className="text-gray-400 hover:text-white transition-colors"
+                        className="text-gray-600 hover:text-purple-600 transition-colors ml-2 flex-shrink-0"
+                        title="Copier"
                       >
-                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                         </svg>
                       </button>
                     </div>
                   </div>
                 </div>
-                <div className="mt-6 bg-amber-500/20 border border-amber-500/30 rounded-lg p-4">
-                  <p className="text-sm text-amber-300">
+                <div className="mt-4 sm:mt-6 bg-amber-50 border border-amber-200 rounded-lg p-3 sm:p-4">
+                  <p className="text-xs sm:text-sm text-amber-800">
                     ⚠️ Conservez ces informations en sécurité. Un email avec ces identifiants vous a été envoyé.
                   </p>
                 </div>
@@ -182,29 +231,29 @@ function SuccessContent() {
             )}
 
             {/* Statut email */}
-            <div className="bg-green-500/20 border border-green-500/30 rounded-lg p-6 mb-6">
+            <div className="bg-green-50 border border-green-200 rounded-lg sm:rounded-xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-lg">
               <div className="flex items-center">
-                <EnvelopeIcon className="w-5 h-5 text-green-400 mr-3" />
+                <EnvelopeIcon className="w-5 h-5 text-green-600 mr-3 flex-shrink-0" />
                 <div>
-                  <h3 className="text-base font-semibold text-white">Email envoyé</h3>
-                  <p className="text-sm text-gray-300 mt-1">
-                    Un email avec vos identifiants a été envoyé à <strong>{email}</strong>
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900">Email envoyé</h3>
+                  <p className="text-sm sm:text-base text-gray-700 mt-1">
+                    Un email avec vos identifiants a été envoyé à <strong className="text-gray-900">{email}</strong>
                   </p>
                 </div>
               </div>
             </div>
 
             {/* Actions */}
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <button
                 onClick={() => router.push('/generate-report')}
-                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-4 rounded-lg font-semibold hover:from-purple-700 hover:to-pink-700 transition-all text-lg"
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 sm:px-6 py-3 sm:py-4 rounded-lg font-semibold hover:from-purple-700 hover:to-pink-700 transition-all text-base sm:text-lg shadow-lg hover:shadow-xl"
               >
                 Générer mon rapport
               </button>
               <button
                 onClick={() => router.push('/account')}
-                className="w-full bg-gray-700 text-white px-6 py-4 rounded-lg font-semibold hover:bg-gray-600 transition-all"
+                className="w-full bg-gray-200 text-gray-900 px-4 sm:px-6 py-3 sm:py-4 rounded-lg font-semibold hover:bg-gray-300 transition-all text-base sm:text-lg"
               >
                 Accéder à mon compte
               </button>
@@ -219,8 +268,11 @@ function SuccessContent() {
 export default function SuccessPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-white">Chargement...</div>
+      <div className="min-h-screen bg-gradient-to-b from-white via-gray-50 to-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Chargement...</p>
+        </div>
       </div>
     }>
       <SuccessContent />

@@ -41,44 +41,45 @@ export default function AccountPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-900 to-gray-800">
+    <div className="min-h-screen bg-gradient-to-b from-white via-gray-50 to-gray-100">
       <Header />
-      <main className="py-20">
+      <main className="py-8 sm:py-12 md:py-20">
         <Container>
           <div className="max-w-4xl mx-auto">
-            <h1 className="text-4xl font-bold mb-8">
-              <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6 sm:mb-8">
+              <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                 Mon compte
               </span>
             </h1>
 
-            <div className="bg-gray-800 border border-purple-500/20 rounded-lg p-6 mb-6">
-              <h2 className="text-2xl font-semibold text-white mb-4">Mes crédits</h2>
+            <div className="bg-white border border-purple-200 rounded-lg sm:rounded-xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-lg">
+              <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-3 sm:mb-4">Mes crédits</h2>
               {loading ? (
-                <p className="text-gray-400">Chargement...</p>
+                <p className="text-gray-600">Chargement...</p>
               ) : (
-                <p className="text-3xl font-bold text-white">
+                <p className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">
                   {credits !== null ? `${credits} rapport${credits > 1 ? 's' : ''} disponible${credits > 1 ? 's' : ''}` : '0 rapport disponible'}
                 </p>
               )}
               <button
                 onClick={() => router.push('/checkout')}
-                className="mt-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-2 rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/30 transition-all duration-200"
+                className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/30 transition-all duration-200 text-sm sm:text-base"
               >
                 Acheter des crédits
               </button>
             </div>
 
-            <div className="bg-gray-800 border border-purple-500/20 rounded-lg p-6 mb-6">
-              <h2 className="text-2xl font-semibold text-white mb-4">Mes rapports</h2>
-              <p className="text-gray-400 mb-4">Vos rapports générés apparaîtront ici.</p>
+            <div className="bg-white border border-purple-200 rounded-lg sm:rounded-xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-lg">
+              <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-3 sm:mb-4">Mes rapports</h2>
+              <p className="text-gray-600 mb-4">Vos rapports générés apparaîtront ici.</p>
+              {/* TODO: Liste des rapports générés */}
             </div>
 
-            <div className="bg-gray-800 border border-purple-500/20 rounded-lg p-6">
-              <h2 className="text-2xl font-semibold text-white mb-4">Générer un rapport</h2>
+            <div className="bg-white border border-purple-200 rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-lg">
+              <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-3 sm:mb-4">Générer un rapport</h2>
               <button
                 onClick={() => router.push('/generate-report')}
-                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-pink-700 transition-all"
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 sm:px-6 py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-pink-700 transition-all text-sm sm:text-base"
               >
                 Générer un nouveau rapport
               </button>
