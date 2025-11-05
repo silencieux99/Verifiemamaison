@@ -29,7 +29,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       if (fbUser) {
         setFirebaseUser(fbUser);
-        const tokenResult = await fbUser.getIdTokenResult();
+        // Forcer le refresh du token pour obtenir les custom claims à jour
+        const tokenResult = await fbUser.getIdTokenResult(true);
         const appUser: AppUser = {
           ...fbUser,
           admin: tokenResult.claims.admin === true,

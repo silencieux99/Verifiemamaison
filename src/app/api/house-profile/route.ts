@@ -16,10 +16,12 @@ import {
   fetchAtmo,
   fetchOSMAmenities,
   fetchSafetySSMSI,
+  fetchPappers,
   computeRecommendations,
   getCachedProfile,
   setCachedProfile,
 } from '@/lib/house-profile-utils';
+import { analyzeWithOpenAI } from '@/lib/ai-analysis';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30; // 30 secondes max pour Next.js
@@ -142,6 +144,7 @@ export async function GET(request: NextRequest) {
       airQuality,
       amenities,
       safety,
+      pappers,
     ] = await Promise.allSettled([
       fetchGeoRisques(lat, lon).catch((e) => {
         warnings.push('GéoRisques indisponible');
@@ -186,6 +189,10 @@ export async function GET(request: NextRequest) {
           notes: ['Données indisponibles'],
         };
       }),
+      fetchPappers(address, lat, lon, citycode).catch((e) => {
+        warnings.push('Pappers Immo indisponible');
+        return {};
+      }),
     ]);
 
     // Extraction des résultats
@@ -205,6 +212,7 @@ export async function GET(request: NextRequest) {
       indicators: [],
       notes: ['Données indisponibles'],
     };
+    const pappersResult = pappers.status === 'fulfilled' ? pappers.value : {};
 
     // Ajout des sources pour chaque section réussie
     if (risks.status === 'fulfilled') {
@@ -270,6 +278,13 @@ export async function GET(request: NextRequest) {
         fetched_at: new Date().toISOString(),
       });
     }
+    if (pappers.status === 'fulfilled' && pappers.value && Object.keys(pappers.value).length > 0) {
+      sources.push({
+        section: 'pappers',
+        url: 'https://pappers.fr/immo',
+        fetched_at: new Date().toISOString(),
+      });
+    }
 
     // Construction du profil complet
     const profile: Partial<HouseProfile> = {
@@ -285,15 +300,33 @@ export async function GET(request: NextRequest) {
       air_quality: airQualityResult,
       amenities: amenitiesResult,
       safety: safetyResult,
+      pappers: Object.keys(pappersResult).length > 0 ? pappersResult : undefined,
     };
 
     // Génération des recommandations
     const recommendations = computeRecommendations(profile);
 
+    // Analyse IA avec OpenAI ChatGPT (en parallèle, ne bloque pas si ça échoue)
+    let aiAnalysis = null;
+    try {
+      aiAnalysis = await analyzeWithOpenAI(profile);
+      if (aiAnalysis) {
+        sources.push({
+          section: 'ai_analysis',
+          url: 'https://platform.openai.com',
+          fetched_at: new Date().toISOString(),
+        });
+      }
+    } catch (error) {
+      console.warn('Erreur analyse IA OpenAI:', error);
+      warnings.push('Analyse IA indisponible');
+    }
+
     // Profil final
     const finalProfile: HouseProfile = {
       ...profile,
       recommendations,
+      ai_analysis: aiAnalysis || undefined,
       meta: {
         generated_at: new Date().toISOString(),
         processing_ms: Date.now() - startTime,

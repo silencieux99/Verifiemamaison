@@ -28,6 +28,19 @@ export default function AdminLoginPage() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       // Force a token refresh to get custom claims immediately
       await userCredential.user.getIdToken(true);
+      
+      // Attendre un peu pour que AuthContext se mette à jour avec les claims
+      // et vérifier que l'utilisateur a bien le rôle admin
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Vérifier à nouveau les claims
+      const tokenResult = await userCredential.user.getIdTokenResult(true);
+      if (!tokenResult.claims.admin) {
+        setError('Vous n\'avez pas les droits administrateur. Contactez un administrateur.');
+        await auth.signOut();
+        return;
+      }
+      
       router.push('/admin');
     } catch (err: any) {
       if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {

@@ -110,6 +110,29 @@ export async function POST(request: NextRequest) {
     const reportId = uuidv4();
     const orderId = `report_${reportId}`;
 
+    // Fonction pour supprimer récursivement tous les champs 'raw' pour réduire la taille
+    function removeRawFields(obj: any): any {
+      if (obj === null || obj === undefined) return obj;
+      if (Array.isArray(obj)) {
+        return obj.map(item => removeRawFields(item));
+      }
+      if (typeof obj === 'object') {
+        const cleaned: any = {};
+        for (const key in obj) {
+          if (key === 'raw') {
+            // Supprimer les champs raw
+            continue;
+          }
+          cleaned[key] = removeRawFields(obj[key]);
+        }
+        return cleaned;
+      }
+      return obj;
+    }
+
+    // Nettoyer les données en supprimant les champs raw (surtout pappers.raw qui peut être très volumineux)
+    const cleanedProfileData = removeRawFields(profileData) as HouseProfile;
+
     // Créer le rapport dans Firestore
     const reportData = {
       id: reportId,
@@ -124,14 +147,16 @@ export async function POST(request: NextRequest) {
         gps: profileData.location.gps,
         admin: profileData.location.admin,
       },
-      // Toutes les données agrégées
-      profileData: profileData as HouseProfile,
+      // Données agrégées nettoyées (sans raw)
+      profileData: cleanedProfileData,
       // Données du rapport
       report: {
         generatedAt: FieldValue.serverTimestamp(),
         status: 'complete',
-        score: calculateReportScore(profileData),
-        summary: generateReportSummary(profileData),
+        // Utiliser le score IA si disponible, sinon calcul basique
+        score: profileData.ai_analysis?.score ?? calculateReportScore(profileData),
+        // Utiliser la synthèse IA si disponible, sinon génération basique
+        summary: profileData.ai_analysis?.summary ?? generateReportSummary(profileData),
       },
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),

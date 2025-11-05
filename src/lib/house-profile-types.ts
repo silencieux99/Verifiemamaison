@@ -94,6 +94,126 @@ export interface HouseProfileMarket {
   };
 }
 
+export interface HouseProfilePappers {
+  owners?: Array<{
+    name?: string;
+    type?: "personne_physique" | "personne_morale" | string;
+    company_name?: string;
+    siren?: string;
+    siret?: string;
+    legal_form?: string;
+    address?: string;
+    code_naf?: string;
+    effectif?: string;
+    raw?: any;
+  }>;
+  owner?: {
+    name?: string;
+    type?: "personne_physique" | "personne_morale" | string;
+    company_name?: string;
+    siren?: string;
+    siret?: string;
+    legal_form?: string;
+    address?: string;
+  };
+  transactions?: Array<{
+    id?: string;
+    date?: string;
+    type?: string;
+    price_eur?: number;
+    surface_m2?: number;
+    price_m2_eur?: number;
+    nature?: string;
+    nombre_pieces?: number;
+    nombre_lots?: number;
+    surface_terrain?: number;
+    address?: string;
+    raw?: any;
+  }>;
+  cadastral?: {
+    parcel?: string;
+    section?: string;
+    prefixe?: string;
+    numero_plan?: string;
+    surface_m2?: number;
+    references?: string[];
+    autres_adresses?: Array<{
+      adresse: string;
+      sources: string[];
+    }>;
+  };
+  coproprietes?: Array<{
+    name?: string;
+    numero_immatriculation?: string;
+    mandat_en_cours?: string;
+    nombre_total_lots?: number;
+    nombre_lots_habitation?: number;
+    type_syndic?: string;
+    manager?: string;
+    periode_construction?: string;
+    adresse?: string;
+    raw?: any;
+  }>;
+  copropriete?: {
+    exists?: boolean;
+    name?: string;
+    manager?: string;
+  };
+  building_permits?: Array<{
+    date?: string;
+    type?: string;
+    statut?: string;
+    description?: string;
+    zone_operatoire?: string;
+    adresse?: string;
+    raw?: any;
+  }>;
+  buildings?: Array<{
+    numero?: string;
+    nature?: string;
+    usage?: string;
+    annee_construction?: number;
+    nombre_logements?: number;
+    surface?: number;
+    adresse?: string;
+    raw?: any;
+  }>;
+  dpe?: Array<{
+    classe_bilan?: string;
+    type_installation_chauffage?: string;
+    type_energie_chauffage?: string;
+    date_etablissement?: string;
+    adresse?: string;
+    raw?: any;
+  }>;
+  occupants?: Array<{
+    denomination?: string;
+    siren?: string;
+    siret?: string;
+    categorie_juridique?: string;
+    code_naf?: string;
+    effectif?: string;
+    address?: string;
+    raw?: any;
+  }>;
+  business?: {
+    has_business?: boolean;
+    company_name?: string;
+    siren?: string;
+    activity?: string;
+  };
+  fonds_de_commerce?: Array<{
+    denomination?: string;
+    siren?: string;
+    code_naf?: string;
+    date_vente?: string;
+    prix_vente?: number;
+    adresse?: string;
+    raw?: any;
+  }>;
+  raw?: any;
+}
+
 export interface HouseProfileBuilding {
   declared?: {
     property_type?: "maison" | "appartement" | "immeuble" | string;
@@ -202,6 +322,36 @@ export interface HouseProfileMeta {
   warnings?: string[];
 }
 
+export interface HouseProfileAIAnalysis {
+  score: number; // Score global sur 100
+  summary: string; // Synthèse générale du bien
+  market_analysis: {
+    estimated_value_m2?: number;
+    market_trend?: 'hausse' | 'baisse' | 'stable';
+    market_comment?: string;
+    price_comparison?: string;
+  };
+  neighborhood_analysis: {
+    shops_analysis?: string;
+    amenities_score?: number;
+    transport_score?: number;
+    quality_of_life?: string;
+  };
+  risks_analysis: {
+    overall_risk_level?: 'faible' | 'moyen' | 'élevé';
+    main_risks?: string[];
+    risk_comment?: string;
+  };
+  investment_potential?: {
+    score?: number;
+    comment?: string;
+    recommendations?: string[];
+  };
+  strengths?: string[];
+  weaknesses?: string[];
+  recommendations?: string[];
+}
+
 export interface HouseProfile {
   query: HouseProfileQuery;
   location: HouseProfileLocation;
@@ -215,7 +365,9 @@ export interface HouseProfile {
   air_quality: HouseProfileAirQuality;
   amenities: HouseProfileAmenities;
   safety: HouseProfileSafety;
+  pappers?: HouseProfilePappers;
   recommendations: HouseProfileRecommendations;
+  ai_analysis?: HouseProfileAIAnalysis;
   meta: HouseProfileMeta;
 }
 

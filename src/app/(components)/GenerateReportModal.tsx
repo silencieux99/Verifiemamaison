@@ -292,34 +292,50 @@ export function GenerateReportModal({ isOpen, onClose, onSuccess }: GenerateRepo
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-gray-900 rounded-lg p-4 font-mono text-sm"
+              className="bg-gray-900 rounded-xl p-5 font-mono text-sm shadow-xl border border-purple-500/30 relative overflow-hidden"
             >
-              <div className="flex items-center mb-3">
-                <div className="flex space-x-2">
-                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                  <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                </div>
-                <span className="text-gray-400 ml-3">Terminal</span>
-              </div>
-              <div className="space-y-1 min-h-[200px]">
-                <AnimatePresence>
-                  {terminalLogs.map((log, index) => (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      className="text-green-400"
-                    >
-                      <span className="text-gray-500">$</span> {log}
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-                {isGenerating && (
-                  <div className="text-green-400">
-                    <span className="text-gray-500">$</span> <span className="animate-pulse">▋</span>
+              {/* Gradient overlay subtil */}
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-900/10 via-transparent to-pink-900/10 pointer-events-none"></div>
+              
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-4 pb-3 border-b border-purple-500/30">
+                  <div className="flex items-center gap-3">
+                    <div className="flex space-x-2">
+                      <div className="w-3 h-3 bg-red-400 rounded-full shadow-sm"></div>
+                      <div className="w-3 h-3 bg-yellow-400 rounded-full shadow-sm"></div>
+                      <div className="w-3 h-3 bg-emerald-400 rounded-full shadow-sm"></div>
+                    </div>
+                    <span className="text-purple-400 ml-2 text-xs font-semibold tracking-wider">VERIFIE MA MAISON</span>
                   </div>
-                )}
+                  <div className="text-gray-500 text-xs">Terminal</div>
+                </div>
+                <div className="space-y-1.5 min-h-[200px] max-h-[300px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-purple-500/50 scrollbar-track-gray-800">
+                  <AnimatePresence>
+                    {terminalLogs.map((log, index) => (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="text-emerald-400 hover:text-emerald-300 transition-colors"
+                      >
+                        <span className="text-purple-400 mr-2 font-semibold">$</span>
+                        <span>{log}</span>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                  {isGenerating && (
+                    <motion.div 
+                      className="text-emerald-400"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ repeat: Infinity, duration: 1.5 }}
+                    >
+                      <span className="text-purple-400 mr-2 font-semibold">$</span>
+                      <span className="animate-pulse">▋</span>
+                    </motion.div>
+                  )}
+                </div>
               </div>
             </motion.div>
           )}

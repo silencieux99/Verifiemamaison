@@ -16,17 +16,22 @@ export default function AdminLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
 
-  // Check if we're on the login page
+  // Check if we're on the login page or register page (pages publiques)
   const isLoginPage = pathname === '/admin/login';
+  const isRegisterPage = pathname === '/admin/register';
+  const isPublicPage = isLoginPage || isRegisterPage;
 
   useEffect(() => {
-    // Vérifier l'admin access sur toutes les routes admin
-    if (!authLoading && (!user || !user.admin)) {
-      if (pathname !== '/admin/login') {
-        router.push('/admin/login');
-      }
+    // Attendre que l'authentification soit complètement chargée
+    if (authLoading) {
+      return;
     }
-  }, [user, authLoading, router, pathname]);
+    
+    // Vérifier l'admin access sur toutes les routes admin (sauf login et register)
+    if (!isPublicPage && (!user || !user.admin)) {
+      router.push('/admin/login');
+    }
+  }, [user, authLoading, router, pathname, isPublicPage]);
 
   useEffect(() => {
     // Initialiser le dark mode depuis le localStorage ou prefers-color-scheme
@@ -48,8 +53,8 @@ export default function AdminLayout({
     localStorage.setItem('admin-dark-mode', JSON.stringify(darkMode));
   }, [darkMode]);
 
-  // Afficher loading pendant la vérification auth (sauf sur la page de login)
-  if (authLoading && !isLoginPage) {
+  // Afficher loading pendant la vérification auth (sauf sur les pages publiques)
+  if (authLoading && !isPublicPage) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
@@ -60,8 +65,8 @@ export default function AdminLayout({
     );
   }
 
-  // Si on est sur la page de login, la rendre directement sans layout admin
-  if (isLoginPage) {
+  // Si on est sur une page publique (login ou register), la rendre directement sans layout admin
+  if (isPublicPage) {
     return <>{children}</>;
   }
 

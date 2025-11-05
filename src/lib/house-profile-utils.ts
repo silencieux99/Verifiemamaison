@@ -3,7 +3,7 @@
  * Fonctions pour interroger les différentes sources de données
  */
 
-import { HouseProfile } from './house-profile-types';
+import { HouseProfile, HouseProfilePappers } from './house-profile-types';
 
 // Cache simple en mémoire (LRU-like)
 const cache = new Map<string, { data: HouseProfile; timestamp: number }>();
@@ -666,6 +666,39 @@ export function computeRecommendations(profile: Partial<HouseProfile>): HousePro
     reasons.push('marché en hausse');
   }
   
+  // Analyse Pappers - Propriétaires
+  if (profile.pappers?.owners && profile.pappers.owners.length > 0) {
+    const personneMorale = profile.pappers.owners.some((o) => o.type === 'personne_morale');
+    if (personneMorale) {
+      items.push({
+        title: 'Vérifier le propriétaire (SCI/Promoteur)',
+        reason: 'Propriétaire personne morale identifié via Pappers',
+        priority: 2,
+        related_sections: ['pappers'],
+      });
+    }
+  }
+  
+  // Analyse Pappers - Copropriété
+  if (profile.pappers?.coproprietes && profile.pappers.coproprietes.length > 0) {
+    items.push({
+      title: 'Consulter les règles de copropriété',
+      reason: 'Copropriété identifiée via Pappers',
+      priority: 2,
+      related_sections: ['pappers'],
+    });
+  }
+  
+  // Analyse Pappers - Fonds de commerce
+  if (profile.pappers?.fonds_de_commerce && profile.pappers.fonds_de_commerce.length > 0) {
+    items.push({
+      title: 'Vérifier les contraintes commerciales',
+      reason: 'Local commercial / Fonds de commerce identifié',
+      priority: 2,
+      related_sections: ['pappers'],
+    });
+  }
+  
   const summary = reasons.length > 0
     ? `Quartier avec ${reasons.join(', ')}. ${items.length > 0 ? 'Vérifications recommandées: ' + items.map(i => i.title).join(', ') : ''}`
     : 'Bien analysé - aucune recommandation prioritaire basée sur les données disponibles.';
@@ -725,5 +758,242 @@ export function setCachedProfile(
       cache.delete(firstKey);
     }
   }
+}
+
+/**
+ * Récupération des données Pappers Immobilier
+ * API gratuite pour les données immobilières
+ */
+export async function fetchPappers(
+  address: string,
+  lat: number,
+  lon: number,
+  citycode: string
+): Promise<HouseProfilePappers> {
+  const pappers: HouseProfilePappers = {};
+  
+  // Clé API Pappers Immo
+  const apiKey = process.env.PAPPERS_IMMO_API_KEY || '26ea0f0d8ab7efb4541df9e4fb5ed7a784400bb9df8433b4';
+  
+  try {
+    // API Pappers Immobilier - Documentation officielle
+    // URL: https://api-immobilier.pappers.fr/v1/parcelles
+    // Paramètre adresse pour rechercher par adresse
+    // Paramètre bases pour sélectionner les données (proprietaires, ventes, batiments, dpe, occupants, permis, fonds_de_commerce, coproprietes)
+    const baseUrl = 'https://api-immobilier.pappers.fr/v1';
+    const params = new URLSearchParams({
+      adresse: address,
+      bases: 'proprietaires,ventes,batiments,dpe,occupants,permis,fonds_de_commerce,coproprietes',
+      par_page: '1', // Limiter à 1 résultat pour l'adresse exacte
+      champs_supplementaires: 'adresse', // Inclure les adresses complètes
+    });
+    
+    const url = `${baseUrl}/parcelles?${params.toString()}`;
+    
+    const response = await fetchWithRetry(url, {
+      method: 'GET',
+      headers: {
+        'api-key': apiKey,
+        'Accept': 'application/json',
+      },
+    }, 1);
+    
+    if (!response.ok) {
+      // Si la requête échoue, on retourne un objet vide
+      console.warn(`Pappers Immo API error: ${response.status} ${response.statusText}`);
+      return {};
+    }
+    
+    const data = await response.json();
+    pappers.raw = data;
+    
+    // L'API retourne un objet avec un champ 'resultats' qui est un tableau
+    // ou directement un tableau, ou un objet ParcelleFiche
+    let parcelle = null;
+    
+    if (Array.isArray(data)) {
+      parcelle = data.length > 0 ? data[0] : null;
+    } else if (data.resultats && Array.isArray(data.resultats)) {
+      parcelle = data.resultats.length > 0 ? data.resultats[0] : null;
+    } else if (data.numero) {
+      // C'est directement un objet ParcelleFiche
+      parcelle = data;
+    }
+    
+    if (!parcelle) {
+      // Aucune parcelle trouvée pour cette adresse
+      return {};
+    }
+    
+    // Extraction des données selon la structure de l'API Pappers Immobilier
+    // Structure basée sur la documentation OpenAPI
+    
+    // Informations cadastrales de base (avec toutes les données)
+    if (parcelle.numero) {
+      pappers.cadastral = {
+        parcel: parcelle.numero,
+        section: parcelle.section,
+        prefixe: parcelle.prefixe,
+        numero_plan: parcelle.numero_plan,
+        surface_m2: parcelle.contenance,
+        references: parcelle.numero ? [parcelle.numero] : [],
+        autres_adresses: parcelle.autres_adresses?.map((a: any) => ({
+          adresse: a.adresse,
+          sources: a.sources || [],
+        })),
+      };
+    }
+    
+    // TOUS les propriétaires (pas seulement le premier)
+    if (parcelle.proprietaires && Array.isArray(parcelle.proprietaires) && parcelle.proprietaires.length > 0) {
+      pappers.owners = parcelle.proprietaires.map((owner: any) => {
+        // Extraire le nom depuis différentes sources possibles
+        let name = owner.denomination || owner.nom_entreprise;
+        if (!name && (owner.nom || owner.prenom)) {
+          name = `${owner.prenom || ''} ${owner.nom || ''}`.trim();
+        }
+        
+        return {
+          name: name,
+          type: owner.siren ? 'personne_morale' : 'personne_physique',
+          company_name: owner.denomination || owner.nom_entreprise,
+          siren: owner.siren,
+          siret: owner.siret,
+          legal_form: owner.categorie_juridique,
+          address: owner.adresse || owner.siege?.adresse_ligne_1 || 
+                   (owner.siege ? `${owner.siege.adresse_ligne_1 || ''} ${owner.siege.code_postal || ''} ${owner.siege.ville || ''}`.trim() : undefined),
+          code_naf: owner.code_naf || owner.activite_principale,
+          effectif: owner.tranche_effectif,
+          raw: owner,
+        };
+      });
+      
+      // Garder aussi le premier pour compatibilité
+      pappers.owner = pappers.owners[0];
+    }
+    
+    // TOUTES les ventes / Transactions (avec tous les détails)
+    if (parcelle.ventes && Array.isArray(parcelle.ventes) && parcelle.ventes.length > 0) {
+      pappers.transactions = parcelle.ventes.map((v: any) => ({
+        id: v.id,
+        date: v.date,
+        type: v.type_local || v.nature,
+        price_eur: v.valeur_fonciere,
+        surface_m2: v.surface_reelle_bati,
+        price_m2_eur: v.valeur_fonciere && v.surface_reelle_bati 
+          ? Math.round(v.valeur_fonciere / v.surface_reelle_bati) 
+          : undefined,
+        nature: v.nature,
+        nombre_pieces: v.nombre_pieces,
+        nombre_lots: v.nombre_lots,
+        surface_terrain: v.surface_terrain,
+        address: v.adresse,
+        raw: v,
+      }));
+    }
+    
+    // TOUTES les copropriétés
+    if (parcelle.coproprietes && Array.isArray(parcelle.coproprietes) && parcelle.coproprietes.length > 0) {
+      pappers.coproprietes = parcelle.coproprietes.map((copro: any) => ({
+        name: copro.nom,
+        numero_immatriculation: copro.numero_immatriculation,
+        mandat_en_cours: copro.mandat_en_cours,
+        nombre_total_lots: copro.nombre_total_lots,
+        nombre_lots_habitation: copro.nombre_lots_a_usage_habitation,
+        type_syndic: copro.type_syndic,
+        manager: copro.syndic_professionnel?.nom_entreprise,
+        periode_construction: copro.periode_construction,
+        adresse: copro.adresse,
+        raw: copro,
+      }));
+      
+      // Garder aussi la première pour compatibilité
+      pappers.copropriete = {
+        exists: true,
+        name: pappers.coproprietes[0].name,
+        manager: pappers.coproprietes[0].manager,
+      };
+    }
+    
+    // TOUS les permis de construire
+    if (parcelle.permis && Array.isArray(parcelle.permis) && parcelle.permis.length > 0) {
+      pappers.building_permits = parcelle.permis.map((p: any) => ({
+        date: p.date_autorisation,
+        type: p.statut,
+        statut: p.statut,
+        description: p.zone_operatoire || p.description,
+        zone_operatoire: p.zone_operatoire,
+        adresse: p.adresse,
+        raw: p,
+      }));
+    }
+    
+    // TOUS les bâtiments
+    if (parcelle.batiments && Array.isArray(parcelle.batiments) && parcelle.batiments.length > 0) {
+      pappers.buildings = parcelle.batiments.map((b: any) => ({
+        numero: b.numero,
+        nature: b.nature,
+        usage: b.usage,
+        annee_construction: b.annee_construction,
+        nombre_logements: b.nombre_logements,
+        surface: b.surface,
+        adresse: b.adresse,
+        raw: b,
+      }));
+    }
+    
+    // TOUS les DPE
+    if (parcelle.dpe && Array.isArray(parcelle.dpe) && parcelle.dpe.length > 0) {
+      pappers.dpe = parcelle.dpe.map((d: any) => ({
+        classe_bilan: d.classe_bilan,
+        type_installation_chauffage: d.type_installation_chauffage,
+        type_energie_chauffage: d.type_energie_chauffage,
+        date_etablissement: d.date_etablissement,
+        adresse: d.adresse,
+        raw: d,
+      }));
+    }
+    
+    // TOUS les occupants
+    if (parcelle.occupants && Array.isArray(parcelle.occupants) && parcelle.occupants.length > 0) {
+      pappers.occupants = parcelle.occupants.map((o: any) => ({
+        denomination: o.denomination,
+        siren: o.siren,
+        siret: o.siret,
+        categorie_juridique: o.categorie_juridique,
+        code_naf: o.code_naf,
+        effectif: o.tranche_effectif,
+        address: o.adresse,
+        raw: o,
+      }));
+    }
+    
+    // TOUS les fonds de commerce
+    if (parcelle.fonds_de_commerce && Array.isArray(parcelle.fonds_de_commerce) && parcelle.fonds_de_commerce.length > 0) {
+      pappers.fonds_de_commerce = parcelle.fonds_de_commerce.map((fdc: any) => ({
+        denomination: fdc.denomination,
+        siren: fdc.siren,
+        code_naf: fdc.code_naf,
+        date_vente: fdc.date_vente,
+        prix_vente: fdc.prix_vente,
+        adresse: fdc.adresse,
+        raw: fdc,
+      }));
+      
+      // Garder aussi le premier pour compatibilité business
+      const firstFdc = pappers.fonds_de_commerce[0];
+      pappers.business = {
+        has_business: true,
+        company_name: firstFdc.denomination,
+        siren: firstFdc.siren,
+        activity: firstFdc.code_naf,
+      };
+    }
+  } catch (error) {
+    // En cas d'erreur, on retourne un objet vide pour ne pas bloquer l'agrégateur
+    console.warn('Erreur Pappers Immo:', error);
+  }
+  
+  return pappers;
 }
 
