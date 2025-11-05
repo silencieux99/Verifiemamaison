@@ -1,0 +1,8 @@
+<svg width="200" height="60" viewBox="0 0 200 60" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="60" fill="#B8A678"/>
+  <g>
+    <text x="50%" y="35%" dominant-baseline="middle" text-anchor="middle" font-size="22" font-weight="bold" font-family="Arial, sans-serif" fill="#000">CENTURY</text>
+    <circle cx="100" cy="40" r="15" fill="none" stroke="#000" stroke-width="2"/>
+    <text x="50%" y="68%" dominant-baseline="middle" text-anchor="middle" font-size="24" font-weight="bold" font-family="Arial, sans-serif" fill="#000">21</text>
+  </g>
+</svg>

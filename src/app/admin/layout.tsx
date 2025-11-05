@@ -1,0 +1,102 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import { useAuth } from '@/app/(context)/AuthContext';
+import { AdminSidebar, AdminTopbar, AdminToast } from './(components)';
+
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
+
+  // Check if we're on the login page
+  const isLoginPage = pathname === '/admin/login';
+
+  useEffect(() => {
+    // Vérifier l'admin access sur toutes les routes admin
+    if (!authLoading && (!user || !user.admin)) {
+      if (pathname !== '/admin/login') {
+        router.push('/admin/login');
+      }
+    }
+  }, [user, authLoading, router, pathname]);
+
+  useEffect(() => {
+    // Initialiser le dark mode depuis le localStorage ou prefers-color-scheme
+    const saved = localStorage.getItem('admin-dark-mode');
+    if (saved !== null) {
+      setDarkMode(JSON.parse(saved));
+    } else {
+      setDarkMode(window.matchMedia('(prefers-color-scheme: dark)').matches);
+    }
+  }, []);
+
+  useEffect(() => {
+    // Appliquer le dark mode
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('admin-dark-mode', JSON.stringify(darkMode));
+  }, [darkMode]);
+
+  // Afficher loading pendant la vérification auth (sauf sur la page de login)
+  if (authLoading && !isLoginPage) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-3 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400 text-sm">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Si on est sur la page de login, la rendre directement sans layout admin
+  if (isLoginPage) {
+    return <>{children}</>;
+  }
+
+  // Ne pas render les composants admin si pas connecté ou pas admin (mais pas sur login)
+  if (!user || !user.admin) {
+    return null;
+  }
+
+  return (
+    <div className={`min-h-screen bg-gray-50 dark:bg-gray-900 ${darkMode ? 'dark' : ''}`}>
+      {/* Sidebar Desktop */}
+      <AdminSidebar 
+        isOpen={sidebarOpen} 
+        onClose={() => setSidebarOpen(false)}
+        darkMode={darkMode}
+      />
+      
+      {/* Main Content */}
+      <div className="lg:pl-64">
+        {/* Topbar */}
+        <AdminTopbar 
+          onMenuClick={() => setSidebarOpen(true)}
+          darkMode={darkMode}
+          onToggleDarkMode={() => setDarkMode(!darkMode)}
+        />
+        
+        {/* Page Content */}
+        <main className="px-4 sm:px-6 lg:px-8 py-6">
+          {children}
+        </main>
+      </div>
+
+      {/* Toast Container */}
+      <AdminToast />
+    </div>
+  );
+}
+

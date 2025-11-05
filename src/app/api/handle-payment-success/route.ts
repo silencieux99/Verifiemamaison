@@ -1,0 +1,115 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { stripe } from '@/lib/stripe';
+import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { getPlanBySku } from '@/lib/pricing';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { createOrUpdateUser, addCredits } from '@/lib/user';
+import { FieldValue } from '@/lib/firebase-admin';
+
+/**
+ * API pour gérer le succès du paiement
+ * Crée un compte automatiquement, ajoute les crédits, génère un mot de passe
+ */
+export async function POST(req: NextRequest) {
+  try {
+    const { paymentIntentId, email, sku } = await req.json();
+
+    if (!paymentIntentId || !email || !sku) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    if (!stripe || !adminDb) {
+      return NextResponse.json({ error: 'Services not initialized' }, { status: 500 });
+    }
+
+    // Vérifier le Payment Intent
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    
+    if (paymentIntent.status !== 'succeeded') {
+      return NextResponse.json({ error: 'Payment not succeeded' }, { status: 400 });
+    }
+
+    const plan = getPlanBySku(sku);
+    if (!plan) {
+      return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
+    }
+
+    // Générer un mot de passe aléatoire
+    const password = Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12).toUpperCase() + '!1';
+
+    let userId: string;
+    let isNewAccount = false;
+
+    // Vérifier si l'utilisateur existe déjà
+    try {
+      const userRecord = await adminAuth?.getUserByEmail(email);
+      if (userRecord) {
+        userId = userRecord.uid;
+      } else {
+        // Créer un nouveau compte
+        const userRecord = await adminAuth?.createUser({
+          email,
+          password,
+        });
+        userId = userRecord.uid;
+        isNewAccount = true;
+
+        // Créer l'utilisateur dans Firestore
+        await adminDb.collection('users').doc(userId).set({
+          uid: userId,
+          email,
+          createdAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+      }
+    } catch (error: any) {
+      if (error.code === 'auth/email-already-exists') {
+        // Récupérer l'utilisateur existant
+        const userRecord = await adminAuth?.getUserByEmail(email);
+        userId = userRecord!.uid;
+      } else {
+        throw error;
+      }
+    }
+
+    // Ajouter les crédits
+    await addCredits(userId, plan.reports, sku, `Achat ${plan.name}`);
+
+    // Créer une commande
+    await adminDb.collection('orders').add({
+      paymentIntentId,
+      amount: paymentIntent.amount,
+      currency: 'eur',
+      status: 'paid',
+      customerEmail: email,
+      customerUid: userId,
+      sku,
+      productName: plan.name,
+      creditsAdded: plan.reports,
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+      pdfGenerated: false,
+      emailSent: false,
+    });
+
+    // Envoyer l'email avec les credentials (sera fait dans un autre endpoint)
+    
+    return NextResponse.json({
+      success: true,
+      userId,
+      password: isNewAccount ? password : undefined,
+      newAccount: isNewAccount,
+      creditsAdded: plan.reports,
+      productName: plan.name,
+      amount: paymentIntent.amount / 100,
+    });
+  } catch (error) {
+    console.error('Handle payment success error:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+

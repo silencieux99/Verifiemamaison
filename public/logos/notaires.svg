@@ -1,0 +1,8 @@
+<svg width="200" height="80" viewBox="0 0 200 80" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="80" fill="#8B0000"/>
+  <g fill="white">
+    <path d="M20 20 h10 v40 h-10 z M35 20 h10 v25 l15-25 h10 v40 h-10 v-25 l-15 25 h-10 z" opacity="0.3"/>
+    <text x="50%" y="40%" dominant-baseline="middle" text-anchor="middle" font-size="20" font-weight="bold" font-family="Georgia, serif">NOTAIRES</text>
+    <text x="50%" y="65%" dominant-baseline="middle" text-anchor="middle" font-size="14" font-family="Georgia, serif">de France</text>
+  </g>
+</svg>

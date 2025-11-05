@@ -1,0 +1,57 @@
+{
+  "name": "verifiemamaison",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --hostname=0.0.0.0",
+    "type-check": "tsc --noEmit",
+    "prebuild": "npm run type-check && node scripts/check_env.js || true",
+    "build": "next build",
+    "start": "next start",
+    "postinstall": "npm install tailwindcss@^3.4.8 autoprefixer@^10.4.14 postcss@^8.4.27 --no-audit --no-fund || true"
+  },
+  "dependencies": {
+    "@fontsource/inter": "5.2.6",
+    "@headlessui/react": "^2.2.7",
+    "@heroicons/react": "^2.2.0",
+    "@radix-ui/react-progress": "^1.1.7",
+    "@radix-ui/react-tabs": "^1.1.13",
+    "@stripe/react-stripe-js": "^3.10.0",
+    "@stripe/stripe-js": "^7.9.0",
+    "autoprefixer": "^10.4.14",
+    "classnames": "^2.5.1",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "dotenv": "^17.2.2",
+    "firebase": "^12.2.1",
+    "firebase-admin": "^13.5.0",
+    "framer-motion": "^12.23.24",
+    "jspdf": "^3.0.2",
+    "lucide-react": "^0.542.0",
+    "next": "15.4.4",
+    "node-fetch": "^3.3.2",
+    "nodemailer": "^7.0.6",
+    "pdfkit": "^0.17.2",
+    "postcss": "^8.4.27",
+    "puppeteer-core": "^24.18.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-intersection-observer": "^9.16.0",
+    "recharts": "^3.2.1",
+    "resend": "^6.0.2",
+    "stripe": "^18.5.0",
+    "tailwind-merge": "^2.0.0",
+    "tailwindcss": "^3.4.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/puppeteer": "^5.4.7",
+    "@types/react": "^18.3.24",
+    "@types/react-dom": "^18.3.7",
+    "puppeteer": "^24.18.0",
+    "typescript": "5.9.2"
+  },
+  "engines": {
+    "node": "22.x"
+  }
+}
