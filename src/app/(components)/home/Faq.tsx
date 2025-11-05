@@ -38,39 +38,39 @@ export default function Faq() {
   ];
 
   return (
-    <section id="faq" className="py-20 bg-gray-900">
+    <section id="faq" className="py-12 sm:py-16 md:py-20 bg-white">
       <Container>
-        <div className="text-center mb-16">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-            <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+        <div className="text-center mb-8 sm:mb-12 md:mb-16">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4">
+            <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
               Questions fréquentes
             </span>
           </h2>
-          <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+          <p className="text-gray-600 text-sm sm:text-base md:text-lg max-w-2xl mx-auto px-4">
             Tout ce que vous devez savoir sur VerifieMaMaison
           </p>
         </div>
 
-        <div className="max-w-3xl mx-auto space-y-4">
+        <div className="max-w-3xl mx-auto space-y-3 sm:space-y-4 px-4">
           {faqs.map((faq, index) => (
             <div
               key={index}
-              className="bg-gray-800/50 border border-purple-500/20 rounded-lg overflow-hidden"
+              className="bg-white border border-purple-200 rounded-lg sm:rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow"
             >
               <button
                 onClick={() => setOpenIndex(openIndex === index ? null : index)}
-                className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-800 transition-colors"
+                className="w-full px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between text-left hover:bg-purple-50 transition-colors"
               >
-                <span className="text-white font-semibold pr-4">{faq.question}</span>
+                <span className="text-gray-900 font-semibold pr-4 text-sm sm:text-base">{faq.question}</span>
                 <ChevronDownIcon
-                  className={`h-5 w-5 text-purple-400 flex-shrink-0 transition-transform ${
+                  className={`h-5 w-5 text-purple-600 flex-shrink-0 transition-transform ${
                     openIndex === index ? 'transform rotate-180' : ''
                   }`}
                 />
               </button>
               {openIndex === index && (
-                <div className="px-6 py-4 border-t border-purple-500/20">
-                  <p className="text-gray-300">{faq.answer}</p>
+                <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-purple-200 bg-gray-50">
+                  <p className="text-gray-700 text-sm sm:text-base leading-relaxed">{faq.answer}</p>
                 </div>
               )}
             </div>
