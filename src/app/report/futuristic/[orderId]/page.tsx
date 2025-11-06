@@ -29,9 +29,10 @@ async function getReportData(orderId: string) {
 export default async function FuturisticReportPage({
   params,
 }: {
-  params: { orderId: string };
+  params: Promise<{ orderId: string }>;
 }) {
-  const reportData = await getReportData(params.orderId);
+  const { orderId } = await params;
+  const reportData = await getReportData(orderId);
 
   if (!reportData) {
     notFound();
@@ -44,7 +45,7 @@ export default async function FuturisticReportPage({
       sections={sections}
       vehicleInfo={vehicleInfo}
       ai={ai}
-      reportId={params.orderId}
+      reportId={orderId}
       pdfUrl={pdfUrl}
     />
   );
