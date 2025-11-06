@@ -532,14 +532,6 @@ export default function HomeHero() {
                     </div>
                     <div className="h-6 sm:h-7 md:h-8 flex items-center opacity-70 hover:opacity-100 transition-opacity">
                       <img 
-                        src="/payment-icons/cb.svg" 
-                        alt="Carte Bancaire" 
-                        className="h-full w-auto object-contain"
-                        loading="lazy"
-                      />
-                    </div>
-                    <div className="h-6 sm:h-7 md:h-8 flex items-center opacity-70 hover:opacity-100 transition-opacity">
-                      <img 
                         src="/payment-icons/paypal.svg" 
                         alt="PayPal" 
                         className="h-full w-auto object-contain"
@@ -548,7 +540,7 @@ export default function HomeHero() {
                     </div>
                     <div className="h-6 sm:h-7 md:h-8 flex items-center opacity-70 hover:opacity-100 transition-opacity">
                       <img 
-                        src="/payment-icons/american-express.svg" 
+                        src="/payment-icons/american_express.svg" 
                         alt="American Express" 
                         className="h-full w-auto object-contain"
                         loading="lazy"

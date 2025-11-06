@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useState } from 'react';
+import { Fragment, useState, useRef } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { useRouter } from 'next/navigation';
 import { pricingPlans } from '@/lib/pricing';
@@ -21,6 +21,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   const [customerEmail, setCustomerEmail] = useState('');
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const intentCreatedRef = useRef(false); // Protection contre les doubles créations de PaymentIntent
 
   const handlePlanSelect = (plan: typeof pricingPlans[0]) => {
     setSelectedPlan(plan);
@@ -32,7 +33,15 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
       return;
     }
 
+    // Protection contre les doubles clics
+    if (loading || intentCreatedRef.current) {
+      console.log('Création de PaymentIntent déjà en cours');
+      return;
+    }
+
+    intentCreatedRef.current = true;
     setLoading(true);
+    
     try {
       // Créer un Payment Intent côté serveur
       const response = await fetch('/api/create-payment-intent', {
@@ -55,6 +64,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     } catch (error: any) {
       console.error('Erreur:', error);
       alert(error.message || 'Une erreur est survenue');
+      intentCreatedRef.current = false; // Réinitialiser en cas d'erreur
     } finally {
       setLoading(false);
     }
@@ -163,10 +173,17 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                       {/* Bouton continuer */}
                       <button
                         onClick={handleContinueToPayment}
-                        disabled={loading || !customerEmail}
+                        disabled={loading || !customerEmail || intentCreatedRef.current}
                         className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 sm:px-6 py-3 sm:py-3.5 rounded-lg font-semibold hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                       >
-                        {loading ? 'Chargement...' : `Continuer vers le paiement - ${selectedPlan.priceLabel}`}
+                        {loading ? (
+                          <>
+                            <span className="inline-block animate-spin mr-2">⏳</span>
+                            Préparation du paiement...
+                          </>
+                        ) : (
+                          `Continuer vers le paiement - ${selectedPlan.priceLabel}`
+                        )}
                       </button>
                     </>
                   ) : clientSecret ? (
@@ -195,26 +212,50 @@ function CheckoutForm({ onSuccess, onCancel, email, plan }: { onSuccess: () => v
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
+  const processingRef = useRef(false); // Protection contre les doubles clics
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!stripe || !elements) return;
 
-    setLoading(true);
-    const { error } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: `${window.location.origin}/checkout/success?email=${encodeURIComponent(email)}&plan=${plan.sku}`,
-      },
-    });
-
-    if (error) {
-      console.error('Erreur paiement:', error);
-      alert(error.message);
-    } else {
-      onSuccess();
+    // Protection contre les doubles clics
+    if (processingRef.current) {
+      console.log('Paiement déjà en cours, ignore le clic');
+      return;
     }
-    setLoading(false);
+
+    processingRef.current = true;
+    setLoading(true);
+
+    try {
+      const { error, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: `${window.location.origin}/checkout/success?email=${encodeURIComponent(email)}&plan=${plan.sku}`,
+        },
+        redirect: 'if_required', // Éviter la redirection automatique sauf pour 3DS
+      });
+
+      if (error) {
+        console.error('Erreur paiement:', error);
+        alert(error.message);
+        processingRef.current = false;
+      } else if (paymentIntent && paymentIntent.status === 'succeeded') {
+        // Paiement réussi
+        onSuccess();
+      } else if (paymentIntent && paymentIntent.status === 'requires_action') {
+        // 3D Secure en cours - Stripe gère automatiquement
+        console.log('3D Secure authentication required');
+        // Ne pas réinitialiser processingRef ici car le paiement est toujours en cours
+      } else {
+        processingRef.current = false;
+      }
+    } catch (err) {
+      console.error('Erreur lors du paiement:', err);
+      processingRef.current = false;
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -232,10 +273,17 @@ function CheckoutForm({ onSuccess, onCancel, email, plan }: { onSuccess: () => v
         </button>
         <button
           type="submit"
-          disabled={!stripe || loading}
-          className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2.5 sm:py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50 text-sm sm:text-base"
+          disabled={!stripe || loading || processingRef.current}
+          className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2.5 sm:py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
         >
-          {loading ? 'Traitement...' : `Payer ${plan.priceLabel}`}
+          {loading ? (
+            <>
+              <span className="inline-block animate-spin mr-2">⏳</span>
+              Traitement en cours...
+            </>
+          ) : (
+            `Payer ${plan.priceLabel}`
+          )}
         </button>
       </div>
     </form>
