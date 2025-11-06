@@ -503,6 +503,60 @@ export default function HomeHero() {
                   </div>
                 </motion.button>
 
+                {/* Icônes de moyens de paiement */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.75 }}
+                  className="mt-4 sm:mt-6"
+                >
+                  <p className="text-center text-xs sm:text-sm text-gray-500 mb-2 sm:mb-3">
+                    Paiement sécurisé accepté
+                  </p>
+                  <div className="flex items-center justify-center gap-2 sm:gap-3 md:gap-4 flex-wrap">
+                    <div className="h-6 sm:h-7 md:h-8 flex items-center opacity-70 hover:opacity-100 transition-opacity">
+                      <img 
+                        src="/payment-icons/visa.svg" 
+                        alt="Visa" 
+                        className="h-full w-auto object-contain"
+                        loading="lazy"
+                      />
+                    </div>
+                    <div className="h-6 sm:h-7 md:h-8 flex items-center opacity-70 hover:opacity-100 transition-opacity">
+                      <img 
+                        src="/payment-icons/mastercard.svg" 
+                        alt="Mastercard" 
+                        className="h-full w-auto object-contain"
+                        loading="lazy"
+                      />
+                    </div>
+                    <div className="h-6 sm:h-7 md:h-8 flex items-center opacity-70 hover:opacity-100 transition-opacity">
+                      <img 
+                        src="/payment-icons/cb.svg" 
+                        alt="Carte Bancaire" 
+                        className="h-full w-auto object-contain"
+                        loading="lazy"
+                      />
+                    </div>
+                    <div className="h-6 sm:h-7 md:h-8 flex items-center opacity-70 hover:opacity-100 transition-opacity">
+                      <img 
+                        src="/payment-icons/paypal.svg" 
+                        alt="PayPal" 
+                        className="h-full w-auto object-contain"
+                        loading="lazy"
+                      />
+                    </div>
+                    <div className="h-6 sm:h-7 md:h-8 flex items-center opacity-70 hover:opacity-100 transition-opacity">
+                      <img 
+                        src="/payment-icons/american-express.svg" 
+                        alt="American Express" 
+                        className="h-full w-auto object-contain"
+                        loading="lazy"
+                      />
+                    </div>
+                  </div>
+                </motion.div>
+
                 {/* Trust badges */}
                 <div className="mt-6 flex items-center justify-center gap-6 text-xs text-gray-600">
                   <div className="flex items-center gap-2">
