@@ -11,7 +11,8 @@ import {
   UserGroupIcon,
   CogIcon,
   XMarkIcon,
-  CreditCardIcon
+  CreditCardIcon,
+  GlobeAltIcon
 } from '@heroicons/react/24/outline';
 
 interface AdminSidebarProps {
@@ -22,6 +23,7 @@ interface AdminSidebarProps {
 
 const navigation = [
   { name: 'Dashboard', href: '/admin', icon: HomeIcon },
+  { name: 'Visiteurs', href: '/admin/visitors', icon: GlobeAltIcon },
   { name: 'Commandes', href: '/admin/orders', icon: ShoppingCartIcon },
   { name: 'Rapports', href: '/admin/reports', icon: DocumentTextIcon },
   { name: 'Utilisateurs', href: '/admin/users', icon: UserGroupIcon },
