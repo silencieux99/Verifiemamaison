@@ -17,6 +17,30 @@ export interface AIVerification {
   summary?: string;
   recommendations?: string[];
   risks?: string[];
+  market_analysis?: {
+    estimated_value_m2?: number;
+    market_trend?: 'hausse' | 'baisse' | 'stable';
+    market_comment?: string;
+    price_comparison?: string;
+  };
+  neighborhood_analysis?: {
+    shops_analysis?: string;
+    amenities_score?: number;
+    transport_score?: number;
+    quality_of_life?: string;
+  };
+  risks_analysis?: {
+    overall_risk_level?: 'faible' | 'moyen' | 'élevé';
+    main_risks?: string[];
+    risk_comment?: string;
+  };
+  investment_potential?: {
+    score?: number;
+    comment?: string;
+    recommendations?: string[];
+  };
+  strengths?: string[];
+  weaknesses?: string[];
 }
 
 export interface ReportDoc {

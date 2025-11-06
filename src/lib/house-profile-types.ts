@@ -76,12 +76,18 @@ export interface HouseProfileEnergy {
 export interface HouseProfileMarket {
   dvf: {
     transactions?: Array<{
+      id?: string;
       date: string;
       type: "maison" | "appartement" | "autre" | string;
       surface_m2?: number;
       price_eur?: number;
       price_m2_eur?: number;
       address_hint?: string;
+      address?: string;
+      latitude?: number;
+      longitude?: number;
+      lat?: number;
+      lon?: number;
       raw?: any;
     }>;
     summary?: {
