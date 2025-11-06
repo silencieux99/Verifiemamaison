@@ -80,6 +80,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Données manquantes' }, { status: 400 });
     }
 
+    // Ignorer les visites sur les pages admin
+    if (path?.startsWith('/admin')) {
+      return NextResponse.json({ success: true, ignored: 'admin_page' });
+    }
+
     // Extraire des informations utiles de l'user agent
     const isMobile = /Mobile|Android|iPhone|iPad/i.test(userAgent || '');
     const isBot = /bot|crawler|spider|crawling/i.test(userAgent || '');

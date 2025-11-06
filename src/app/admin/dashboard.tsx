@@ -120,7 +120,10 @@ export default function Dashboard() {
           })
           .filter((v: any) => {
             // Filtrer les sessions vraiment actives (moins de 2 minutes)
-            return v.isActive && v.lastSeenMillis >= twoMinutesAgo;
+            // ET exclure les sessions sur les pages admin
+            const path = v.path || v.lastPath || '/';
+            const isAdminPath = path.startsWith('/admin');
+            return v.isActive && v.lastSeenMillis >= twoMinutesAgo && !isAdminPath;
           })
           .sort((a: any, b: any) => b.lastSeenMillis - a.lastSeenMillis);
 
@@ -214,7 +217,13 @@ export default function Dashboard() {
           activeSessionsQuery,
           (snapshot) => {
             // Compter toutes les sessions uniques qui ont commencé depuis minuit
-            setTodayVisitors(snapshot.size);
+            // Exclure les sessions sur les pages admin
+            const validSessions = snapshot.docs.filter((doc) => {
+              const data = doc.data();
+              const path = data.path || data.lastPath || '/';
+              return !path.startsWith('/admin');
+            });
+            setTodayVisitors(validSessions.length);
           },
           (error) => {
             console.error('Erreur écoute sessions actives:', error);
@@ -228,7 +237,9 @@ export default function Dashboard() {
               const uniqueSessions = new Set<string>();
               fallbackSnapshot.docs.forEach((doc) => {
                 const data = doc.data();
-                if (data.sessionId) {
+                // Exclure les visites sur les pages admin
+                const path = data.path || '/';
+                if (data.sessionId && !path.startsWith('/admin')) {
                   uniqueSessions.add(data.sessionId);
                 }
               });

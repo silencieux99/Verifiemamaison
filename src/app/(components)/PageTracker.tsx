@@ -2,20 +2,33 @@
 
 import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/app/(context)/AuthContext';
 
 /**
  * Composant de tracking des pages visitées en temps réel
  * Enregistre chaque visite dans Firestore pour l'admin
  * Envoie un heartbeat régulier pour maintenir la session active
+ * N'enregistre PAS les visites des admins ou sur les pages admin
  */
 export default function PageTracker() {
   const pathname = usePathname();
+  const { user, loading: authLoading } = useAuth();
   const lastTrackedPath = useRef<string | null>(null);
   const sessionId = useRef<string | null>(null);
   const heartbeatInterval = useRef<NodeJS.Timeout | null>(null);
 
+  // Ne pas tracker si l'utilisateur est admin ou si on est sur une page admin
+  const isAdminPage = pathname?.startsWith('/admin');
+  const isAdmin = user?.admin === true;
+  const shouldTrack = !isAdminPage && !isAdmin && !authLoading;
+
   // Fonction pour tracker une visite ou envoyer un heartbeat
   const trackVisit = async (isHeartbeat = false) => {
+    // Ne pas tracker si on est admin ou sur une page admin
+    if (!shouldTrack) {
+      return;
+    }
+
     try {
       // Générer un ID de session unique si pas déjà fait
       if (!sessionId.current) {
@@ -60,6 +73,11 @@ export default function PageTracker() {
 
   // Tracker le changement de page
   useEffect(() => {
+    // Ne pas tracker si on est admin ou sur une page admin
+    if (!shouldTrack) {
+      return;
+    }
+    
     // Éviter de tracker la même page deux fois de suite
     if (lastTrackedPath.current === pathname) {
       return;
@@ -75,10 +93,15 @@ export default function PageTracker() {
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [pathname]);
+  }, [pathname, shouldTrack]);
 
   // Heartbeat régulier pour maintenir la session active (toutes les 20 secondes)
   useEffect(() => {
+    // Ne pas tracker si on est admin ou sur une page admin
+    if (!shouldTrack) {
+      return;
+    }
+
     // Démarrer le heartbeat après un court délai initial
     const startHeartbeat = setTimeout(() => {
       heartbeatInterval.current = setInterval(() => {
@@ -93,10 +116,15 @@ export default function PageTracker() {
         clearInterval(heartbeatInterval.current);
       }
     };
-  }, []);
+  }, [shouldTrack]);
 
   // Envoyer un signal de déconnexion quand l'utilisateur quitte
   useEffect(() => {
+    // Ne pas tracker si on est admin ou sur une page admin
+    if (!shouldTrack) {
+      return;
+    }
+
     const handleBeforeUnload = () => {
       // Envoyer une dernière requête pour marquer la session comme inactive
       if (sessionId.current) {
@@ -115,7 +143,7 @@ export default function PageTracker() {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       window.removeEventListener('pagehide', handleBeforeUnload);
     };
-  }, []);
+  }, [shouldTrack]);
 
   return null;
 }
