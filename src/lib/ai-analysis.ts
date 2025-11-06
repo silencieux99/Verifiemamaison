@@ -96,7 +96,7 @@ Génère une analyse JSON structurée avec les champs suivants. IMPORTANT: Répo
 
 {
   "score": <nombre entre 0 et 100>,
-  "summary": "<synthèse générale du bien en 3-4 phrases>",
+  "summary": "<synthèse générale du bien très détaillée et complète (minimum 8-10 phrases, jusqu'à 15 phrases). Analyse en profondeur tous les aspects : localisation, risques, marché immobilier, commodités, transports, écoles, qualité de vie, potentiel d'investissement, points forts et faibles. Sois exhaustif et donne une vision complète du bien pour un acheteur potentiel>",
   "market_analysis": {
     "estimated_value_m2": <estimation €/m² réaliste. Si données DVF disponibles, utilise-les. Sinon, estime selon la région/ville (ex: Paris 8000-12000€/m², grandes villes 3000-5000€/m², petites villes 1500-2500€/m², campagne 1000-2000€/m²). IMPORTANT: Toujours fournir une estimation réaliste, même approximative>,
     "market_trend": "<hausse|baisse|stable>. Si données DVF disponibles, utilise la tendance. Sinon, estime selon le contexte général du marché immobilier français>",
@@ -176,7 +176,7 @@ export async function analyzeWithOpenAI(profile: Partial<HouseProfile>): Promise
             },
           ],
           temperature: 0.7,
-          max_tokens: 2048,
+          max_tokens: 4000,
           response_format: { type: 'json_object' }, // Force JSON response
         }),
       }

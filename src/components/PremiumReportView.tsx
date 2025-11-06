@@ -1,14 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { 
   Home, MapPin, Shield, Zap, TrendingUp, School, ShoppingCart,
-  Brain, Download, Share2, ChevronLeft, ChevronRight, Menu, X,
-  CheckCircle, AlertCircle, AlertTriangle, Info, Calendar,
-  Clock, Users, Building2, Droplets, Phone, Globe, Heart,
-  Star, ArrowUp, ArrowDown, Minus, ExternalLink, Copy,
-  FileText, Camera, Navigation, Gauge, Activity, Sparkles
+  Brain, Download, Share2, CheckCircle, AlertCircle, AlertTriangle, Info, Calendar,
+  Camera, Copy, Sparkles, Star, Navigation, ExternalLink, Phone, Activity
 } from 'lucide-react';
 import { 
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, 
@@ -17,6 +14,7 @@ import {
 } from 'recharts';
 import { cn } from '@/lib/utils';
 import type { ReportSection, AIVerification } from '@/types/report.types';
+import { enrichDVFComparables } from '@/lib/dvf-comparables';
 
 // Configuration du thème
 const theme = {
@@ -186,7 +184,6 @@ export default function PremiumReportView({
   pdfUrl
 }: PremiumReportViewProps) {
   const [activeTab, setActiveTab] = useState('overview');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ container: containerRef });
@@ -266,6 +263,7 @@ export default function PremiumReportView({
         <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5" />
       </div>
       
+      {/* Header simplifié sans menu hamburger */}
       <header className="sticky top-0 z-50 backdrop-blur-xl bg-black/50 border-b border-white/[0.08]">
         <motion.div 
           className="absolute top-0 left-0 h-0.5 bg-gradient-to-r from-blue-500 to-purple-500"
@@ -284,15 +282,15 @@ export default function PremiumReportView({
               </div>
             </div>
             
-            <div className="hidden md:flex items-center gap-2">
+            <div className="flex items-center gap-2">
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={handleShare}
-                className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors flex items-center gap-2"
+                className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors flex items-center gap-2"
               >
                 {copied ? <Copy className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
-                <span className="text-sm">{copied ? 'Copié!' : 'Partager'}</span>
+                <span className="text-sm hidden sm:inline">{copied ? 'Copié!' : 'Partager'}</span>
               </motion.button>
               
               {pdfUrl && (
@@ -301,27 +299,21 @@ export default function PremiumReportView({
                   download
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors flex items-center gap-2"
+                  className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors flex items-center gap-2"
                 >
                   <Download className="w-4 h-4" />
-                  <span className="text-sm">PDF</span>
+                  <span className="text-sm hidden sm:inline">PDF</span>
                 </motion.a>
               )}
             </div>
-            
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-lg bg-white/5 border border-white/10"
-            >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
           </div>
         </div>
       </header>
       
-      <div className="hidden md:block sticky top-16 z-40 backdrop-blur-xl bg-black/30 border-b border-white/[0.08]">
+      {/* Navigation horizontale scrollable - visible sur tous les écrans */}
+      <div className="sticky top-16 z-40 backdrop-blur-xl bg-black/30 border-b border-white/[0.08]">
         <div className="container mx-auto px-4">
-          <div className="flex gap-1 py-2 overflow-x-auto scrollbar-hide">
+          <div className="flex gap-2 py-3 overflow-x-auto scrollbar-hide">
             {navigationTabs.map((tab) => {
               const Icon = tab.icon;
               return (
@@ -329,13 +321,13 @@ export default function PremiumReportView({
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={cn(
-                    'flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all whitespace-nowrap',
+                    'flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all whitespace-nowrap flex-shrink-0',
                     activeTab === tab.id
-                      ? 'bg-white/10 text-white border border-white/20'
-                      : 'text-white/60 hover:text-white hover:bg-white/5'
+                      ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border border-blue-500/30 shadow-lg shadow-blue-500/10'
+                      : 'text-white/60 hover:text-white hover:bg-white/5 border border-transparent'
                   )}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className="w-4 h-4 flex-shrink-0" />
                   <span className="text-sm font-medium">{tab.label}</span>
                 </button>
               );
@@ -343,63 +335,6 @@ export default function PremiumReportView({
           </div>
         </div>
       </div>
-      
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="fixed inset-x-0 top-16 z-40 md:hidden backdrop-blur-xl bg-black/95 border-b border-white/[0.08]"
-          >
-            <div className="container mx-auto px-4 py-4">
-              <div className="grid grid-cols-2 gap-2">
-                {navigationTabs.map((tab) => {
-                  const Icon = tab.icon;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => {
-                        setActiveTab(tab.id);
-                        setMobileMenuOpen(false);
-                      }}
-                      className={cn(
-                        'flex items-center gap-2 px-3 py-3 rounded-xl transition-all',
-                        activeTab === tab.id
-                          ? 'bg-white/10 text-white border border-white/20'
-                          : 'text-white/60 bg-white/5'
-                      )}
-                    >
-                      <Icon className="w-4 h-4" />
-                      <span className="text-sm">{tab.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-              
-              <div className="flex gap-2 mt-4">
-                <button
-                  onClick={handleShare}
-                  className="flex-1 py-3 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center gap-2"
-                >
-                  <Share2 className="w-4 h-4" />
-                  <span className="text-sm">Partager</span>
-                </button>
-                {pdfUrl && (
-                  <a
-                    href={pdfUrl}
-                    download
-                    className="flex-1 py-3 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center gap-2"
-                  >
-                    <Download className="w-4 h-4" />
-                    <span className="text-sm">PDF</span>
-                  </a>
-                )}
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
       
       <main 
         ref={containerRef}
@@ -429,45 +364,69 @@ export default function PremiumReportView({
                       </div>
                     </div>
                     
-                    <div className="flex flex-col md:flex-row gap-8 items-center">
+                    {/* Score et Prix au m² en haut */}
+                    <div className="flex flex-col md:flex-row gap-6 items-center md:items-start mb-8">
                       <PremiumGauge value={globalScore} label="Score Global" size="lg" />
                       
-                      <div className="flex-1 space-y-4">
-                        {ai.summary && (
-                          <div className="prose prose-invert max-w-none">
-                            <p className="text-white/80 leading-relaxed">{ai.summary}</p>
+                      {/* Badge Prix au m² */}
+                      <PremiumCard className="p-6 flex-shrink-0" delay={0.1}>
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center">
+                            <TrendingUp className="w-5 h-5 text-green-400" />
+                          </div>
+                          <div className="text-xs text-white/50 uppercase tracking-wider">Prix au m²</div>
+                        </div>
+                        <div className="text-3xl font-bold text-green-400">
+                          {(() => {
+                            const marketPrice = sections.find(s => s.id === 'market')?.items.find(i => i.label.includes('Prix'))?.value;
+                            if (marketPrice) return marketPrice;
+                            
+                            const estimatedPrice = ai.market_analysis?.estimated_value_m2;
+                            if (estimatedPrice && typeof estimatedPrice === 'number') {
+                              return `${Math.round(estimatedPrice).toLocaleString('fr-FR')} €/m²`;
+                            }
+                            
+                            return 'N/A';
+                          })()}
+                        </div>
+                        {ai.market_analysis?.market_trend && (
+                          <div className="text-xs text-white/50 mt-2 flex items-center gap-1">
+                            <TrendingUp className={cn(
+                              "w-3 h-3",
+                              ai.market_analysis.market_trend === 'hausse' ? "text-green-400" :
+                              ai.market_analysis.market_trend === 'baisse' ? "text-red-400" :
+                              "text-gray-400"
+                            )} />
+                            <span>Tendance: {ai.market_analysis.market_trend}</span>
                           </div>
                         )}
-                        
-                        <div className="flex flex-wrap gap-2">
-                          <StatusBadge type="success" icon={<CheckCircle className="w-3 h-3" />}>
-                            Données vérifiées
-                          </StatusBadge>
-                          <StatusBadge type="info" icon={<Sparkles className="w-3 h-3" />}>
-                            Analyse IA complète
-                          </StatusBadge>
-                          <StatusBadge type="neutral" icon={<Calendar className="w-3 h-3" />}>
-                            {new Date().toLocaleDateString('fr-FR')}
-                          </StatusBadge>
+                      </PremiumCard>
+                    </div>
+                    
+                    {/* Synthèse IA détaillée */}
+                    <div className="space-y-4">
+                      {ai.summary && (
+                        <div className="prose prose-invert max-w-none">
+                          <div className="text-white/90 leading-relaxed text-base whitespace-pre-line">
+                            {ai.summary}
+                          </div>
                         </div>
+                      )}
+                      
+                      <div className="flex flex-wrap gap-2 pt-4 border-t border-white/10">
+                        <StatusBadge type="success" icon={<CheckCircle className="w-3 h-3" />}>
+                          Données vérifiées
+                        </StatusBadge>
+                        <StatusBadge type="info" icon={<Sparkles className="w-3 h-3" />}>
+                          Analyse IA complète
+                        </StatusBadge>
+                        <StatusBadge type="neutral" icon={<Calendar className="w-3 h-3" />}>
+                          {new Date().toLocaleDateString('fr-FR')}
+                        </StatusBadge>
                       </div>
                     </div>
                   </PremiumCard>
                 )}
-                
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <PremiumCard className="p-4" delay={0.1}>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-                        <TrendingUp className="w-5 h-5 text-green-400" />
-                      </div>
-                    </div>
-                    <div className="text-2xl font-bold">
-                      {sections.find(s => s.id === 'market')?.items.find(i => i.label.includes('Prix'))?.value || 'N/A'}
-                    </div>
-                    <div className="text-xs text-white/50 mt-1">Prix au m²</div>
-                  </PremiumCard>
-                </div>
               </motion.div>
             )}
             
@@ -786,54 +745,740 @@ export default function PremiumReportView({
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {sections.find(s => s.id === 'market')?.items.map((item, index) => (
-                      <motion.div
-                        key={index}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: index * 0.05 }}
-                        className="backdrop-blur-xl bg-white/[0.02] border border-white/[0.08] rounded-xl p-4"
-                      >
-                        <div className="text-sm text-white/60 mb-2 truncate">{item.label}</div>
-                        <div className="text-2xl font-bold text-green-400 break-words">{item.value}</div>
-                        {item.hint && <div className="text-xs text-white/50 mt-2 line-clamp-2 break-words">{item.hint}</div>}
-                      </motion.div>
-                    ))}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {sections.find(s => s.id === 'market')?.items.map((item, index) => {
+                      const isPrice = item.label.includes('Prix');
+                      const isTrend = item.label.includes('Tendance');
+                      const isVolume = item.label.includes('Volume') || item.label.includes('Nombre');
+                      
+                      return (
+                        <motion.div
+                          key={index}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: index * 0.05 }}
+                          className={cn(
+                            "backdrop-blur-xl border rounded-xl p-4",
+                            isPrice ? "bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/30" :
+                            isTrend ? "bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border-blue-500/30" :
+                            "bg-white/[0.02] border-white/[0.08]"
+                          )}
+                        >
+                          <div className="flex items-center gap-2 mb-2">
+                            {isPrice && <TrendingUp className="w-4 h-4 text-green-400" />}
+                            {isTrend && (
+                              <TrendingUp className={cn(
+                                "w-4 h-4",
+                                item.flag === 'ok' ? "text-green-400" :
+                                item.flag === 'warn' ? "text-red-400" :
+                                "text-gray-400"
+                              )} />
+                            )}
+                            {isVolume && <Activity className="w-4 h-4 text-blue-400" />}
+                            <div className="text-xs text-white/50 uppercase tracking-wider truncate">{item.label}</div>
+                          </div>
+                          <div className={cn(
+                            "text-xl md:text-2xl font-bold break-words",
+                            isPrice ? "text-green-400" :
+                            isTrend ? (item.flag === 'ok' ? "text-green-400" : item.flag === 'warn' ? "text-red-400" : "text-gray-400") :
+                            "text-white"
+                          )}>
+                            {item.value}
+                          </div>
+                          {item.hint && (
+                            <div className="text-xs text-white/50 mt-2 line-clamp-2 break-words flex items-start gap-1">
+                              <Info className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                              <span>{item.hint}</span>
+                            </div>
+                          )}
+                          {item.flag && (
+                            <div className="mt-2">
+                              <StatusBadge 
+                                type={item.flag === 'ok' ? 'success' : item.flag === 'warn' ? 'warning' : 'neutral'}
+                              >
+                                {item.flag === 'ok' ? '✅ Positif' : item.flag === 'warn' ? '⚠️ Attention' : 'ℹ️ Info'}
+                              </StatusBadge>
+                            </div>
+                          )}
+                        </motion.div>
+                      );
+                    })}
                   </div>
                 </PremiumCard>
 
-                {/* Transactions récentes (DVF) */}
+                {/* Comparables DVF - Section améliorée avec statistiques */}
                 {(() => {
                   const txSection = sections.find(s => s.id === 'market_transactions');
                   if (!txSection || !txSection.items || txSection.items.length === 0) return null;
+                  
+                  // Parser les données des transactions depuis le format actuel
+                  const parseTransaction = (item: any) => {
+                    const valueStr = String(item.value || '');
+                    const parts = valueStr.split(' • ');
+                    const dateStr = item.label?.replace('Vente ', '').split(' - ')[1] || '';
+                    
+                    // Extraire les valeurs numériques
+                    const surfaceMatch = parts[1]?.match(/(\d+)\s*m²/);
+                    const priceMatch = parts[2]?.match(/([\d\s]+)\s*€/);
+                    const priceM2Match = parts[3]?.match(/([\d\s]+)\s*€\/m²/);
+                    
+                    return {
+                      date: dateStr,
+                      type: parts[0] || '',
+                      surface: surfaceMatch ? parseInt(surfaceMatch[1]) : null,
+                      surfaceStr: parts[1] || '',
+                      price: priceMatch ? parseInt(priceMatch[1].replace(/\s/g, '')) : null,
+                      priceStr: parts[2] || '',
+                      priceM2: priceM2Match ? parseInt(priceM2Match[1].replace(/\s/g, '')) : null,
+                      priceM2Str: parts[3] || '',
+                      address: item.hint || ''
+                    };
+                  };
+                  
+                  // Parser toutes les transactions
+                  const transactions = txSection.items.map(parseTransaction).filter(tx => tx.priceM2 !== null);
+                  
+                  // Calculer les statistiques
+                  const stats = enrichDVFComparables(
+                    transactions.map((tx, idx) => ({
+                      id: `tx-${idx}`,
+                      date: tx.date,
+                      price: tx.price || 0,
+                      price_m2: tx.priceM2 || 0,
+                      surface: tx.surface || 0,
+                      type: tx.type,
+                      address: tx.address,
+                    }))
+                  );
+                  
                   return (
-                    <PremiumCard className="p-6 md:p-8">
-                      <div className="flex items-start gap-4 mb-4">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center flex-shrink-0">
-                          <TrendingUp className="w-6 h-6 text-green-400" />
-                        </div>
-                        <div className="flex-1">
-                          <h2 className="text-xl font-semibold mb-1">Transactions récentes (DVF)</h2>
-                          <p className="text-sm text-white/60">Ventes comparables autour de l'adresse</p>
-                        </div>
-                      </div>
-                      <div className="divide-y divide-white/10 rounded-xl border border-white/10">
-                        {txSection.items.map((t, idx) => (
-                          <div key={idx} className="flex flex-col gap-1 p-3">
-                            <div className="flex items-center gap-2 text-sm">
-                              <span className="text-white/60 truncate max-w-[50%]">{t.label}</span>
-                              <span className="ml-auto text-white font-medium truncate max-w-[50%] text-right">{String(t.value)}</span>
-                            </div>
-                            {t.hint && (
-                              <div className="text-xs text-white/50 line-clamp-2 break-words">{t.hint}</div>
-                            )}
+                    <div className="space-y-6">
+                      {/* Statistiques des comparables */}
+                      <PremiumCard className="p-6 md:p-8">
+                        <div className="flex items-start gap-4 mb-6">
+                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                            <TrendingUp className="w-6 h-6 text-green-400" />
                           </div>
-                        ))}
-                      </div>
-                    </PremiumCard>
+                          <div className="flex-1">
+                            <h2 className="text-xl font-semibold mb-1">Comparables DVF</h2>
+                            <p className="text-sm text-white/60">Transactions réelles autour de l'adresse</p>
+                          </div>
+                        </div>
+                        
+                        {/* Grille de statistiques */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.1 }}
+                            className="backdrop-blur-xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/30 rounded-xl p-4"
+                          >
+                            <div className="text-xs text-white/50 mb-2 uppercase tracking-wider">Nombre</div>
+                            <div className="text-2xl font-bold text-green-400">{stats.count}</div>
+                            <div className="text-xs text-white/50 mt-1">transaction{stats.count > 1 ? 's' : ''}</div>
+                          </motion.div>
+                          
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.15 }}
+                            className="backdrop-blur-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/30 rounded-xl p-4"
+                          >
+                            <div className="text-xs text-white/50 mb-2 uppercase tracking-wider">Prix médian</div>
+                            <div className="text-2xl font-bold text-blue-400">
+                              {stats.avgPriceM2 > 0 ? `${stats.avgPriceM2.toLocaleString('fr-FR')} €/m²` : 'N/A'}
+                            </div>
+                            <div className="text-xs text-white/50 mt-1">au m²</div>
+                          </motion.div>
+                          
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.2 }}
+                            className="backdrop-blur-xl bg-white/[0.02] border border-white/[0.08] rounded-xl p-4"
+                          >
+                            <div className="text-xs text-white/50 mb-2 uppercase tracking-wider">Prix min</div>
+                            <div className="text-xl font-bold text-white">
+                              {stats.minPriceM2 > 0 ? `${stats.minPriceM2.toLocaleString('fr-FR')} €/m²` : 'N/A'}
+                            </div>
+                          </motion.div>
+                          
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.25 }}
+                            className="backdrop-blur-xl bg-white/[0.02] border border-white/[0.08] rounded-xl p-4"
+                          >
+                            <div className="text-xs text-white/50 mb-2 uppercase tracking-wider">Prix max</div>
+                            <div className="text-xl font-bold text-white">
+                              {stats.maxPriceM2 > 0 ? `${stats.maxPriceM2.toLocaleString('fr-FR')} €/m²` : 'N/A'}
+                            </div>
+                          </motion.div>
+                        </div>
+                        
+                        {/* Info badge */}
+                        <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                          <Info className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
+                          <div className="text-xs text-white/70">
+                            <strong>Données DVF :</strong> Transactions réelles enregistrées par l'administration fiscale. 
+                            Données publiques et fiables pour comparer les prix du marché.
+                          </div>
+                        </div>
+                      </PremiumCard>
+                      
+                      {/* Liste des transactions */}
+                      <PremiumCard className="p-6 md:p-8">
+                        <h3 className="text-lg font-semibold mb-4">Détail des transactions</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {transactions.map((tx, idx) => (
+                            <motion.div
+                              key={idx}
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: idx * 0.05 }}
+                              className="backdrop-blur-xl bg-white/[0.02] border border-white/[0.08] rounded-xl p-5 hover:border-white/[0.15] transition-all group"
+                            >
+                              <div className="flex items-start justify-between gap-3 mb-4">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                                      <span className="text-xs font-bold text-green-400">#{idx + 1}</span>
+                                    </div>
+                                    <div className="text-sm font-semibold text-white">{tx.date}</div>
+                                  </div>
+                                  {tx.address && (
+                                    <div className="text-xs text-white/60 mb-2 flex items-start gap-1.5">
+                                      <MapPin className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-white/40" />
+                                      <span className="line-clamp-2">{tx.address}</span>
+                                    </div>
+                                  )}
+                                </div>
+                                {tx.type && (
+                                  <span className={cn(
+                                    "text-xs px-2.5 py-1 rounded-full border flex-shrink-0",
+                                    tx.type === 'maison' 
+                                      ? "bg-orange-500/20 text-orange-300 border-orange-500/30"
+                                      : tx.type === 'appartement'
+                                      ? "bg-blue-500/20 text-blue-300 border-blue-500/30"
+                                      : "bg-gray-500/20 text-gray-300 border-gray-500/30"
+                                  )}>
+                                    {tx.type === 'maison' ? '🏠 Maison' : tx.type === 'appartement' ? '🏢 Appartement' : tx.type}
+                                  </span>
+                                )}
+                              </div>
+                              
+                              <div className="grid grid-cols-3 gap-3 pt-4 border-t border-white/10">
+                                {tx.surface && (
+                                  <div>
+                                    <div className="text-xs text-white/50 mb-1">Surface</div>
+                                    <div className="text-sm font-semibold text-white">{tx.surface} m²</div>
+                                  </div>
+                                )}
+                                {tx.price && (
+                                  <div>
+                                    <div className="text-xs text-white/50 mb-1">Prix total</div>
+                                    <div className="text-sm font-semibold text-green-400">
+                                      {tx.price.toLocaleString('fr-FR')} €
+                                    </div>
+                                  </div>
+                                )}
+                                {tx.priceM2 && (
+                                  <div className="col-span-3">
+                                    <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20">
+                                      <div>
+                                        <div className="text-xs text-white/50 mb-1">Prix au m²</div>
+                                        <div className="text-lg font-bold text-green-400">
+                                          {tx.priceM2.toLocaleString('fr-FR')} €/m²
+                                        </div>
+                                      </div>
+                                      <TrendingUp className="w-5 h-5 text-green-400/50" />
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </motion.div>
+                          ))}
+                        </div>
+                      </PremiumCard>
+                    </div>
                   );
                 })()}
+              </motion.div>
+            )}
+
+            {/* Section Éducation */}
+            {activeTab === 'education' && (
+              <motion.div
+                key="education"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="space-y-6"
+              >
+                <PremiumCard className="p-6 md:p-8">
+                  <div className="flex items-start gap-4 mb-6">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 flex items-center justify-center flex-shrink-0">
+                      <School className="w-6 h-6 text-blue-400" />
+                    </div>
+                    <div className="flex-1">
+                      <h2 className="text-xl font-semibold mb-1">Établissements Scolaires</h2>
+                      <p className="text-sm text-white/60">Écoles à proximité du bien</p>
+                    </div>
+                  </div>
+                  
+                  {/* Statistiques générales */}
+                  {sections.find(s => s.id === 'education')?.items && sections.find(s => s.id === 'education')!.items.length > 0 && (
+                    <div className="mb-6 grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {sections.find(s => s.id === 'education')!.items.slice(0, 4).map((item, index) => (
+                        <div key={index} className="backdrop-blur-xl bg-white/[0.02] border border-white/[0.08] rounded-lg p-3">
+                          <div className="text-xs text-white/50 mb-1">{item.label}</div>
+                          <div className="text-sm font-semibold text-white">{item.value}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* Cartes des écoles style Google Maps */}
+                  <div className="space-y-4">
+                    {(() => {
+                      const educationSection = sections.find(s => s.id === 'education');
+                      const schoolsData = educationSection?.notes as any[] || [];
+                      
+                      if (schoolsData.length === 0) {
+                        return (
+                          <div className="text-center py-8 text-white/50">
+                            <School className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                            <p>Aucune école trouvée à proximité</p>
+                          </div>
+                        );
+                      }
+                      
+                      return schoolsData.map((school, index) => {
+                        const getSchoolTypeLabel = (kind: string) => {
+                          const labels: Record<string, string> = {
+                            'maternelle': 'École maternelle',
+                            'élémentaire': 'École élémentaire',
+                            'collège': 'Collège',
+                            'lycée': 'Lycée',
+                            'autre': 'Établissement'
+                          };
+                          return labels[kind] || kind.charAt(0).toUpperCase() + kind.slice(1);
+                        };
+                        
+                        const formatDistance = (distance_m?: number) => {
+                          if (!distance_m) return '';
+                          if (distance_m < 1000) return `${Math.round(distance_m)} m`;
+                          return `${(distance_m / 1000).toFixed(1)} km`;
+                        };
+                        
+                        const getMapImageUrl = (gps?: { lat: number; lon: number }) => {
+                          if (!gps) return null;
+                          const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY;
+                          if (apiKey) {
+                            return `https://maps.googleapis.com/maps/api/staticmap?center=${gps.lat},${gps.lon}&zoom=16&size=400x200&maptype=roadmap&markers=color:blue%7C${gps.lat},${gps.lon}&key=${apiKey}`;
+                          }
+                          return null;
+                        };
+                        
+                        return (
+                          <motion.div
+                            key={index}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.1 }}
+                            className="backdrop-blur-xl bg-white/[0.02] border border-white/[0.08] rounded-xl overflow-hidden hover:border-white/[0.15] transition-all"
+                          >
+                            <div className="flex flex-col md:flex-row">
+                              {/* Image/Photo style Google Maps */}
+                              <div className="relative w-full md:w-48 h-32 md:h-auto bg-gradient-to-br from-blue-500/10 to-indigo-500/10 flex-shrink-0">
+                                {getMapImageUrl(school.gps) ? (
+                                  <img
+                                    src={getMapImageUrl(school.gps)!}
+                                    alt={school.name}
+                                    className="w-full h-full object-cover"
+                                    loading="lazy"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center">
+                                    <School className="w-12 h-12 text-blue-400/30" />
+                                  </div>
+                                )}
+                                {school.distance_m && (
+                                  <div className="absolute top-2 right-2 px-2 py-1 rounded-md bg-black/70 backdrop-blur-sm text-xs font-medium text-white">
+                                    {formatDistance(school.distance_m)}
+                                  </div>
+                                )}
+                              </div>
+                              
+                              {/* Contenu de la carte */}
+                              <div className="flex-1 p-4 md:p-5">
+                                <div className="flex items-start justify-between gap-3 mb-2">
+                                  <div className="flex-1 min-w-0">
+                                    <h3 className="text-lg font-semibold text-white mb-1 truncate">
+                                      {school.name}
+                                    </h3>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className="text-xs px-2 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                                        {getSchoolTypeLabel(school.kind)}
+                                      </span>
+                                      {school.public_private && (
+                                        <span className={cn(
+                                          "text-xs px-2 py-1 rounded-full border",
+                                          school.public_private === 'public'
+                                            ? "bg-green-500/20 text-green-300 border-green-500/30"
+                                            : "bg-purple-500/20 text-purple-300 border-purple-500/30"
+                                        )}>
+                                          {school.public_private === 'public' ? 'Public' : 'Privé'}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Note Google avec étoiles */}
+                                  {school.rating && (
+                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                      <div className="flex items-center gap-0.5">
+                                        {[...Array(5)].map((_, i) => {
+                                          const starValue = i + 1;
+                                          const rating = school.rating || 0;
+                                          const isFull = starValue <= Math.floor(rating);
+                                          const isHalf = !isFull && starValue - 0.5 <= rating;
+                                          
+                                          return (
+                                            <div key={i} className="relative w-4 h-4">
+                                              {/* Étoile de fond (vide) */}
+                                              <Star className="absolute inset-0 w-4 h-4 text-gray-500/40 fill-gray-500/20" />
+                                              {/* Étoile pleine ou demi */}
+                                              {isFull ? (
+                                                <Star className="absolute inset-0 w-4 h-4 text-yellow-400 fill-yellow-400" />
+                                              ) : isHalf ? (
+                                                <div className="absolute inset-0 overflow-hidden">
+                                                  <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" style={{ clipPath: 'inset(0 50% 0 0)' }} />
+                                                </div>
+                                              ) : null}
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                      <div className="flex items-center gap-1">
+                                        <span className="text-sm font-semibold text-white">
+                                          {school.rating.toFixed(1)}
+                                        </span>
+                                        {school.rating_count && (
+                                          <span className="text-xs text-white/50">
+                                            ({school.rating_count.toLocaleString('fr-FR')})
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                {/* Adresse */}
+                                {(school.address || school.postcode || school.city) && (
+                                  <div className="flex items-start gap-2 mb-3">
+                                    <MapPin className="w-4 h-4 text-white/50 flex-shrink-0 mt-0.5" />
+                                    <div className="text-sm text-white/70">
+                                      {school.address && <div>{school.address}</div>}
+                                      <div>
+                                        {school.postcode && school.city 
+                                          ? `${school.postcode} ${school.city}`
+                                          : school.postcode 
+                                          ? school.postcode
+                                          : school.city || ''}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {/* Actions */}
+                                <div className="flex items-center gap-2 mt-4 flex-wrap">
+                                  {school.gps && (
+                                    <motion.a
+                                      href={`https://www.google.com/maps?q=${school.gps.lat},${school.gps.lon}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      whileHover={{ scale: 1.02 }}
+                                      whileTap={{ scale: 0.98 }}
+                                      className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border border-blue-500/30 hover:from-blue-500/30 hover:to-indigo-500/30 transition-all text-xs font-medium text-white flex items-center gap-2 shadow-lg shadow-blue-500/10"
+                                    >
+                                      <Navigation className="w-4 h-4" />
+                                      <span>Maps</span>
+                                    </motion.a>
+                                  )}
+                                  {school.website && (
+                                    <motion.a
+                                      href={school.website.startsWith('http') ? school.website : `https://${school.website}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      whileHover={{ scale: 1.02 }}
+                                      whileTap={{ scale: 0.98 }}
+                                      className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border border-blue-500/30 hover:from-blue-500/30 hover:to-indigo-500/30 transition-all text-xs font-medium text-white flex items-center gap-2 shadow-lg shadow-blue-500/10"
+                                    >
+                                      <ExternalLink className="w-4 h-4" />
+                                      <span>Site web</span>
+                                    </motion.a>
+                                  )}
+                                  {school.phone && (
+                                    <motion.a
+                                      href={`tel:${school.phone}`}
+                                      whileHover={{ scale: 1.02 }}
+                                      whileTap={{ scale: 0.98 }}
+                                      className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border border-blue-500/30 hover:from-blue-500/30 hover:to-indigo-500/30 transition-all text-xs font-medium text-white flex items-center gap-2 shadow-lg shadow-blue-500/10"
+                                    >
+                                      <Phone className="w-4 h-4" />
+                                      <span>Appeler</span>
+                                    </motion.a>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </motion.div>
+                        );
+                      });
+                    })()}
+                  </div>
+                </PremiumCard>
+              </motion.div>
+            )}
+
+            {/* Section Commodités */}
+            {activeTab === 'amenities' && (
+              <motion.div
+                key="amenities"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="space-y-6"
+              >
+                <PremiumCard className="p-6 md:p-8">
+                  <div className="flex items-start gap-4 mb-6">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center flex-shrink-0">
+                      <ShoppingCart className="w-6 h-6 text-purple-400" />
+                    </div>
+                    <div className="flex-1">
+                      <h2 className="text-xl font-semibold mb-1">Commodités</h2>
+                      <p className="text-sm text-white/60">Services et commerces à proximité</p>
+                    </div>
+                  </div>
+                  
+                  {/* Statistiques générales */}
+                  {sections.find(s => s.id === 'amenities')?.items && sections.find(s => s.id === 'amenities')!.items.length > 0 && (
+                    <div className="mb-6 grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {sections.find(s => s.id === 'amenities')!.items.slice(0, 4).map((item, index) => (
+                        <div key={index} className="backdrop-blur-xl bg-white/[0.02] border border-white/[0.08] rounded-lg p-3">
+                          <div className="text-xs text-white/50 mb-1">{item.label}</div>
+                          <div className="text-sm font-semibold text-white">{item.value}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* Cartes des commodités style Google Maps */}
+                  <div className="space-y-4">
+                    {(() => {
+                      const amenitiesSection = sections.find(s => s.id === 'amenities');
+                      const amenitiesData = amenitiesSection?.notes as any[] || [];
+                      
+                      if (amenitiesData.length === 0) {
+                        return (
+                          <div className="text-center py-8 text-white/50">
+                            <ShoppingCart className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                            <p>Aucune commodité trouvée à proximité</p>
+                          </div>
+                        );
+                      }
+                      
+                      return amenitiesData.map((amenity, index) => {
+                        const getCategoryIcon = (type: string, category?: string) => {
+                          if (type === 'supermarket') return ShoppingCart;
+                          if (type === 'transit') return Navigation;
+                          if (type === 'park') return Activity;
+                          return ShoppingCart;
+                        };
+                        
+                        const getCategoryLabel = (type: string, category?: string, transitType?: string) => {
+                          if (type === 'supermarket') return category || 'Supermarché';
+                          if (type === 'transit') {
+                            if (transitType === 'station') return 'Gare';
+                            if (transitType === 'bus_station') return 'Arrêt de bus';
+                            if (transitType === 'subway_entrance') return 'Métro';
+                            return category || 'Transport';
+                          }
+                          if (type === 'park') return category || 'Parc';
+                          return category || 'Commerce';
+                        };
+                        
+                        const getCategoryColor = (type: string) => {
+                          if (type === 'supermarket') return { bg: 'from-green-500/20 to-emerald-500/20', border: 'border-green-500/30', text: 'text-green-300', icon: 'text-green-400' };
+                          if (type === 'transit') return { bg: 'from-blue-500/20 to-cyan-500/20', border: 'border-blue-500/30', text: 'text-blue-300', icon: 'text-blue-400' };
+                          if (type === 'park') return { bg: 'from-emerald-500/20 to-teal-500/20', border: 'border-emerald-500/30', text: 'text-emerald-300', icon: 'text-emerald-400' };
+                          return { bg: 'from-purple-500/20 to-pink-500/20', border: 'border-purple-500/30', text: 'text-purple-300', icon: 'text-purple-400' };
+                        };
+                        
+                        const formatDistance = (distance_m?: number) => {
+                          if (!distance_m) return '';
+                          if (distance_m < 1000) return `${Math.round(distance_m)} m`;
+                          return `${(distance_m / 1000).toFixed(1)} km`;
+                        };
+                        
+                        const getMapImageUrl = (gps?: { lat: number; lon: number }) => {
+                          if (!gps) return null;
+                          const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY;
+                          if (apiKey) {
+                            return `https://maps.googleapis.com/maps/api/staticmap?center=${gps.lat},${gps.lon}&zoom=16&size=400x200&maptype=roadmap&markers=color:purple%7C${gps.lat},${gps.lon}&key=${apiKey}`;
+                          }
+                          return null;
+                        };
+                        
+                        const CategoryIcon = getCategoryIcon(amenity.type, amenity.category);
+                        const colors = getCategoryColor(amenity.type);
+                        
+                        return (
+                          <motion.div
+                            key={index}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.1 }}
+                            className="backdrop-blur-xl bg-white/[0.02] border border-white/[0.08] rounded-xl overflow-hidden hover:border-white/[0.15] transition-all"
+                          >
+                            <div className="flex flex-col md:flex-row">
+                              {/* Image/Photo style Google Maps */}
+                              <div className="relative w-full md:w-48 h-32 md:h-auto bg-gradient-to-br from-purple-500/10 to-pink-500/10 flex-shrink-0">
+                                {getMapImageUrl(amenity.gps) ? (
+                                  <img
+                                    src={getMapImageUrl(amenity.gps)!}
+                                    alt={amenity.name}
+                                    className="w-full h-full object-cover"
+                                    loading="lazy"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center">
+                                    <CategoryIcon className={`w-12 h-12 ${colors.icon} opacity-30`} />
+                                  </div>
+                                )}
+                                {amenity.distance_m && (
+                                  <div className="absolute top-2 right-2 px-2 py-1 rounded-md bg-black/70 backdrop-blur-sm text-xs font-medium text-white">
+                                    {formatDistance(amenity.distance_m)}
+                                  </div>
+                                )}
+                              </div>
+                              
+                              {/* Contenu de la carte */}
+                              <div className="flex-1 p-4 md:p-5">
+                                <div className="flex items-start justify-between gap-3 mb-2">
+                                  <div className="flex-1 min-w-0">
+                                    <h3 className="text-lg font-semibold text-white mb-1 truncate">
+                                      {amenity.name}
+                                    </h3>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className={cn(
+                                        "text-xs px-2 py-1 rounded-full border",
+                                        `bg-gradient-to-r ${colors.bg} ${colors.border} ${colors.text}`
+                                      )}>
+                                        {getCategoryLabel(amenity.type, amenity.category, amenity.transit_type)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Note Google avec étoiles */}
+                                  {amenity.rating && (
+                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                      <div className="flex items-center gap-0.5">
+                                        {[...Array(5)].map((_, i) => {
+                                          const starValue = i + 1;
+                                          const rating = amenity.rating || 0;
+                                          const isFull = starValue <= Math.floor(rating);
+                                          const isHalf = !isFull && starValue - 0.5 <= rating;
+                                          
+                                          return (
+                                            <div key={i} className="relative w-4 h-4">
+                                              {/* Étoile de fond (vide) */}
+                                              <Star className="absolute inset-0 w-4 h-4 text-gray-500/40 fill-gray-500/20" />
+                                              {/* Étoile pleine ou demi */}
+                                              {isFull ? (
+                                                <Star className="absolute inset-0 w-4 h-4 text-yellow-400 fill-yellow-400" />
+                                              ) : isHalf ? (
+                                                <div className="absolute inset-0 overflow-hidden">
+                                                  <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" style={{ clipPath: 'inset(0 50% 0 0)' }} />
+                                                </div>
+                                              ) : null}
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                      <div className="flex items-center gap-1">
+                                        <span className="text-sm font-semibold text-white">
+                                          {amenity.rating.toFixed(1)}
+                                        </span>
+                                        {amenity.rating_count && (
+                                          <span className="text-xs text-white/50">
+                                            ({amenity.rating_count.toLocaleString('fr-FR')})
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                {/* Adresse */}
+                                {amenity.address && (
+                                  <div className="flex items-start gap-2 mb-3">
+                                    <MapPin className="w-4 h-4 text-white/50 flex-shrink-0 mt-0.5" />
+                                    <div className="text-sm text-white/70">
+                                      {amenity.address}
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {/* Actions */}
+                                <div className="flex items-center gap-2 mt-4 flex-wrap">
+                                  {amenity.gps && (
+                                    <motion.a
+                                      href={`https://www.google.com/maps?q=${amenity.gps.lat},${amenity.gps.lon}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      whileHover={{ scale: 1.02 }}
+                                      whileTap={{ scale: 0.98 }}
+                                      className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border border-blue-500/30 hover:from-blue-500/30 hover:to-indigo-500/30 transition-all text-xs font-medium text-white flex items-center gap-2 shadow-lg shadow-blue-500/10"
+                                    >
+                                      <Navigation className="w-4 h-4" />
+                                      <span>Maps</span>
+                                    </motion.a>
+                                  )}
+                                  {amenity.website && (
+                                    <motion.a
+                                      href={amenity.website.startsWith('http') ? amenity.website : `https://${amenity.website}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      whileHover={{ scale: 1.02 }}
+                                      whileTap={{ scale: 0.98 }}
+                                      className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border border-blue-500/30 hover:from-blue-500/30 hover:to-indigo-500/30 transition-all text-xs font-medium text-white flex items-center gap-2 shadow-lg shadow-blue-500/10"
+                                    >
+                                      <ExternalLink className="w-4 h-4" />
+                                      <span>Site web</span>
+                                    </motion.a>
+                                  )}
+                                  {amenity.phone && (
+                                    <motion.a
+                                      href={`tel:${amenity.phone}`}
+                                      whileHover={{ scale: 1.02 }}
+                                      whileTap={{ scale: 0.98 }}
+                                      className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border border-blue-500/30 hover:from-blue-500/30 hover:to-indigo-500/30 transition-all text-xs font-medium text-white flex items-center gap-2 shadow-lg shadow-blue-500/10"
+                                    >
+                                      <Phone className="w-4 h-4" />
+                                      <span>Appeler</span>
+                                    </motion.a>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </motion.div>
+                        );
+                      });
+                    })()}
+                  </div>
+                </PremiumCard>
               </motion.div>
             )}
 

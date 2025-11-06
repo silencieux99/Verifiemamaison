@@ -7,8 +7,37 @@ import Faq from "./(components)/home/Faq";
 import HomeFooter from "./(components)/home/HomeFooter";
 
 export const metadata: Metadata = {
-  title: "Rapport d'analyse de maison – Inspection immobilière en ligne | VerifieMaMaison.fr",
-  description: "Obtenez en quelques minutes un rapport complet sur l'état d'un bien immobilier : structure, toiture, isolation, etc., avant de l'acheter. Fiable et instantané.",
+  title: "Analyse Immobilière Complète en Ligne - Rapport Instantané | VerifieMaMaison.fr",
+  description: "Analysez n'importe quel bien immobilier en quelques minutes. Rapport complet avec risques naturels (inondation, sismicité), DPE, marché immobilier (prix au m², transactions DVF), écoles, commodités, qualité de l'air, et recommandations IA. Service français fiable.",
+  keywords: [
+    "analyse immobilière en ligne",
+    "rapport maison complet",
+    "diagnostic bien immobilier",
+    "risques naturels maison",
+    "DPE diagnostic énergétique",
+    "marché immobilier analyse",
+    "prix immobilier quartier",
+    "transactions DVF",
+    "écoles proximité",
+    "commodités quartier",
+    "qualité air immobilier",
+    "rapport IA immobilier",
+    "vérifier maison avant achat",
+    "analyse quartier complet"
+  ],
+  openGraph: {
+    title: "Analyse Immobilière Complète en Ligne - VerifieMaMaison.fr",
+    description: "Analysez n'importe quel bien immobilier en quelques minutes. Rapport complet avec risques, DPE, marché, écoles et recommandations IA.",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Analyse Immobilière Complète en Ligne - VerifieMaMaison.fr",
+    description: "Rapport complet d'analyse immobilière en quelques minutes. Risques, DPE, marché, écoles, commodités.",
+  },
+  alternates: {
+    canonical: "/",
+  },
 };
 
 export default function Home() {

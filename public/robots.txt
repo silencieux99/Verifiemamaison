@@ -1,0 +1,45 @@
+# robots.txt pour VerifieMaMaison.fr
+# Optimisé pour l'indexation Google
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /account
+Disallow: /login
+Disallow: /create-account
+Disallow: /checkout/
+Disallow: /report/*/pdf
+Disallow: /_next/
+Disallow: /static/
+
+# Sitemap
+Sitemap: https://www.verifiemamaison.fr/sitemap.xml
+
+# Crawl-delay pour éviter la surcharge
+Crawl-delay: 1
+
+# Googlebot spécifique
+User-agent: Googlebot
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /account
+Disallow: /login
+Disallow: /create-account
+Disallow: /checkout/
+Disallow: /_next/
+Disallow: /static/
+
+# Bingbot
+User-agent: Bingbot
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /account
+Disallow: /login
+Disallow: /create-account
+Disallow: /checkout/
+Disallow: /_next/
+Disallow: /static/
+

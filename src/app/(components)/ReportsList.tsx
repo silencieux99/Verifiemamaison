@@ -144,9 +144,9 @@ export function ReportsList({ className = '' }: ReportsListProps) {
   if (loading) {
     return (
       <div className={`${className}`}>
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-4 border-purple-600 border-t-transparent mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement de vos rapports...</p>
+        <div className="text-center py-16">
+          <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-sm text-gray-500">Chargement...</p>
         </div>
       </div>
     );
@@ -155,16 +155,11 @@ export function ReportsList({ className = '' }: ReportsListProps) {
   if (error) {
     return (
       <div className={`${className}`}>
-        <div className="text-center py-8">
-          <div className="w-12 h-12 text-yellow-500 mx-auto mb-4 flex items-center justify-center">
-            <svg className="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-          </div>
-          <p className="text-gray-600 mb-4">{error}</p>
+        <div className="text-center py-16">
+          <p className="text-sm text-gray-600 mb-4">{error}</p>
           <button
             onClick={() => fetchReports(true)}
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
           >
             Réessayer
           </button>
@@ -175,36 +170,23 @@ export function ReportsList({ className = '' }: ReportsListProps) {
 
   return (
     <div className={`${className}`}>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-        <div className="flex items-center justify-between sm:justify-start gap-2">
-          <span className="text-sm text-gray-500">{reports.length} rapport{reports.length > 1 ? 's' : ''}</span>
-          <button 
-            onClick={() => fetchReports(true)} 
-            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-            title="Actualiser la liste"
-          >
-            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-          </button>
-        </div>
-      </div>
-
       {reports.length === 0 ? (
-        <div className="text-center py-8">
-          <HomeIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600 mb-2">Aucun rapport trouvé</p>
-          <p className="text-gray-500 text-sm">Générez votre premier rapport pour le voir apparaître ici</p>
+        <div className="text-center py-16">
+          <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+            <HomeIcon className="h-8 w-8 text-gray-400" />
+          </div>
+          <p className="text-gray-900 font-medium mb-1">Aucun rapport</p>
+          <p className="text-sm text-gray-500">Générez votre premier rapport pour commencer</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="divide-y divide-gray-100">
           {reports.map((report) => (
             <div 
               key={report.id}
-              className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors group"
             >
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <div className="flex-shrink-0">
+              <div className="flex items-center gap-4 flex-1 min-w-0">
+                <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center flex-shrink-0">
                   <HomeIcon className="h-5 w-5 text-purple-600" />
                 </div>
                 
@@ -212,17 +194,12 @@ export function ReportsList({ className = '' }: ReportsListProps) {
                   <h3 className="text-sm font-medium text-gray-900 truncate">
                     {getReportDisplayName(report)}
                   </h3>
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs text-gray-500 mt-1">
-                    <span className="flex items-center gap-1">
-                      <CalendarIcon className="h-3 w-3" />
-                      {report.formattedDate}
-                    </span>
+                  <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
+                    <span>{report.formattedDate}</span>
                     {report.score > 0 && (
                       <>
-                        <span className="hidden sm:inline">•</span>
-                        <span className="flex items-center gap-1">
-                          Score: <span className="font-semibold">{report.score}/100</span>
-                        </span>
+                        <span>•</span>
+                        <span>Score: <span className="font-medium text-gray-700">{report.score}/100</span></span>
                       </>
                     )}
                   </div>
@@ -232,24 +209,24 @@ export function ReportsList({ className = '' }: ReportsListProps) {
               <div className="flex items-center gap-2 flex-shrink-0">
                 <button
                   onClick={() => router.push(`/report/${report.reportId || report.id}`)}
-                  className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2 text-sm"
-                  title="Voir le rapport interactif"
+                  className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium flex items-center gap-2"
                 >
                   <EyeIcon className="h-4 w-4" />
-                  <span className="hidden sm:inline">Voir</span>
+                  Ouvrir
                 </button>
                 
                 {report.pdfUrl && (
                   <button
                     onClick={() => handleDownload(report)}
                     disabled={downloadStatus[report.id] === 'downloading'}
-                    className={`px-3 py-2 rounded-lg transition-colors flex items-center gap-2 text-sm ${
+                    className={`px-3 py-2 rounded-lg transition-colors text-sm font-medium flex items-center gap-2 ${
                       downloadStatus[report.id] === 'success' 
-                        ? 'bg-green-600 text-white hover:bg-green-700' 
+                        ? 'bg-green-50 text-green-700 hover:bg-green-100' 
                         : downloadStatus[report.id] === 'error'
-                        ? 'bg-red-600 text-white hover:bg-red-700'
-                        : 'bg-gray-600 text-white hover:bg-gray-700'
+                        ? 'bg-red-50 text-red-700 hover:bg-red-100'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    title="Télécharger le PDF"
                   >
                     {downloadStatus[report.id] === 'downloading' ? (
                       <>
@@ -257,41 +234,27 @@ export function ReportsList({ className = '' }: ReportsListProps) {
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        <span className="hidden sm:inline">Téléchargement...</span>
                       </>
                     ) : downloadStatus[report.id] === 'success' ? (
                       <>
                         <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
-                        <span className="hidden sm:inline">Téléchargé !</span>
                       </>
                     ) : downloadStatus[report.id] === 'error' ? (
                       <>
                         <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
-                        <span className="hidden sm:inline">Erreur</span>
                       </>
                     ) : (
-                      <>
-                        <DocumentArrowDownIcon className="h-4 w-4" />
-                        <span className="hidden sm:inline">PDF</span>
-                      </>
+                      <DocumentArrowDownIcon className="h-4 w-4" />
                     )}
                   </button>
                 )}
               </div>
             </div>
           ))}
-        </div>
-      )}
-
-      {reports.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-gray-200">
-          <p className="text-xs text-gray-500 text-center">
-            💡 Astuce : Cliquez sur "Voir" pour consulter le rapport interactif ou sur "PDF" pour télécharger
-          </p>
         </div>
       )}
     </div>

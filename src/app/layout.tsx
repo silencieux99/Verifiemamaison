@@ -1,9 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import "@/styles/futuristic.css";
 import { AuthProvider } from "./(context)/AuthContext";
 import AnalyticsTracker from "./(components)/AnalyticsTracker";
 import PageTracker from "./(components)/PageTracker";
+import StructuredData from "./(components)/StructuredData";
 
 export const viewport: Viewport = {
   themeColor: "#9333ea",
@@ -15,25 +15,31 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: {
-    default: "VerifieMaMaison.fr - Rapport d'Analyse Immobilière Fiable",
+    default: "VerifieMaMaison.fr - Analyse Immobilière Complète en Ligne | Rapport Instantané",
     template: "%s | VerifieMaMaison.fr"
   },
-  description: "Sécurisez votre achat immobilier. Obtenez un rapport d'analyse complet (structure, toiture, isolation, installations) en quelques minutes pour n'importe quel bien.",
+  description: "Analysez n'importe quel bien immobilier en quelques minutes. Rapport complet avec risques naturels, DPE, marché immobilier, écoles, commodités, et recommandations IA. Service français fiable et instantané.",
   keywords: [
-    "rapport analyse maison",
+    "analyse immobilière",
+    "rapport maison",
     "vérification bien immobilier",
-    "inspection immobilière",
-    "diagnostic maison avant achat",
-    "rapport structure maison",
-    "vérifier bien immobilier",
-    "analyse immobilière en ligne",
-    "rapport maison fiable",
-    "diagnostic complet maison"
+    "diagnostic immobilier en ligne",
+    "analyse bien avant achat",
+    "rapport complet maison",
+    "risques naturels immobilier",
+    "DPE diagnostic performance énergétique",
+    "marché immobilier analyse",
+    "écoles proximité",
+    "commodités quartier",
+    "rapport immobilière IA",
+    "vérifier maison avant achat",
+    "analyse quartier immobilier",
+    "rapport détaillé bien immobilier"
   ],
   authors: [{ name: "VerifieMaMaison.fr" }],
   creator: "VerifieMaMaison.fr",
   publisher: "VerifieMaMaison.fr",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://www.verifiemamaison.fr"),
   alternates: {
     canonical: "/",
   },
@@ -50,16 +56,16 @@ export const metadata: Metadata = {
   },
   manifest: '/manifest.json',
   openGraph: {
-    title: "VerifieMaMaison.fr - Rapport d'analyse immobilière instantané",
-    description: "Service français d'analyse de biens immobiliers. Rapport complet en quelques minutes avec score global et recommandations détaillées.",
-    url: process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
+    title: "VerifieMaMaison.fr - Analyse Immobilière Complète en Ligne",
+    description: "Analysez n'importe quel bien immobilier en quelques minutes. Rapport complet avec risques naturels, DPE, marché immobilier, écoles, commodités, et recommandations IA.",
+    url: process.env.NEXT_PUBLIC_SITE_URL || "https://www.verifiemamaison.fr",
     siteName: "VerifieMaMaison.fr",
     images: [
       {
-        url: "/api/og",
+        url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://www.verifiemamaison.fr"}/og-image.jpg`,
         width: 1200,
         height: 630,
-        alt: "VerifieMaMaison.fr - Rapport d'analyse immobilière",
+        alt: "VerifieMaMaison.fr - Analyse Immobilière Complète",
       },
     ],
     locale: "fr_FR",
@@ -67,14 +73,18 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "VerifieMaMaison.fr - Rapport d'analyse immobilière instantané",
-    description: "Service français d'analyse de biens immobiliers. Rapport complet en quelques minutes.",
-    images: ["/api/og"],
+    title: "VerifieMaMaison.fr - Analyse Immobilière Complète en Ligne",
+    description: "Analysez n'importe quel bien immobilier en quelques minutes. Rapport complet avec risques, DPE, marché, écoles et recommandations IA.",
+    images: [`${process.env.NEXT_PUBLIC_SITE_URL || "https://www.verifiemamaison.fr"}/og-image.jpg`],
     creator: "@VerifieMaMaison",
   },
   verification: {
     google: process.env.GOOGLE_SITE_VERIFICATION,
+    yandex: process.env.YANDEX_VERIFICATION,
+    yahoo: process.env.YAHOO_VERIFICATION,
   },
+  category: "Immobilier",
+  classification: "Service d'analyse immobilière",
   icons: {
     icon: [
       { url: '/favicon.png', sizes: 'any' },
@@ -98,6 +108,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#9333ea" />
       </head>
       <body className="font-sans antialiased">
+        <StructuredData />
         <AuthProvider>
           <AnalyticsTracker />
           <PageTracker />
