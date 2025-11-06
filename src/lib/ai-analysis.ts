@@ -67,12 +67,6 @@ function generatePrompt(profile: Partial<HouseProfile>): string {
       trend: profile.market?.dvf?.summary?.trend_label,
       transactions_count: profile.market?.dvf?.transactions?.length || 0,
     },
-    pappers: {
-      owners_count: profile.pappers?.owners?.length || 0,
-      transactions_count: profile.pappers?.transactions?.length || 0,
-      copropriete: profile.pappers?.coproprietes?.length || 0,
-      dpe_count: profile.pappers?.dpe?.length || 0,
-    },
     amenities: {
       supermarkets: profile.amenities?.supermarkets?.length || 0,
       transit: profile.amenities?.transit?.length || 0,

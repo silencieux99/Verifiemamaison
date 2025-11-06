@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import "@/styles/futuristic.css";
 import { AuthProvider } from "./(context)/AuthContext";
 import AnalyticsTracker from "./(components)/AnalyticsTracker";
 import PageTracker from "./(components)/PageTracker";

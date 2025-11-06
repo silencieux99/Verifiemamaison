@@ -4,7 +4,7 @@ import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
-import ModernReportView from '@/components/ModernReportView';
+import PremiumReportView from '@/components/PremiumReportView';
 import type { ReportSection } from '@/types/report.types';
 import { convertHouseProfileToSections } from '@/lib/convert-house-profile-to-sections';
 import { HouseProfile } from '@/lib/house-profile-types';
@@ -127,29 +127,20 @@ export default function RapportInteractifPage({ params }: { params: Promise<{ id
     );
   }
 
-  // Convertir les données en sections pour ModernReportView
+  // Convertir les données en sections pour PremiumReportView
   const sections = convertHouseProfileToSections(reportData.profileData);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <ReportHeader />
-      <ModernReportView 
-        sections={sections}
-        houseInfo={reportData.address}
-        ai={reportData.report ? {
-          score: reportData.report.score,
-          summary: reportData.report.summary,
-          recommendations: reportData.profileData.recommendations?.items.map(item => `${item.title}: ${item.reason}`) || []
-        } : undefined}
-        reportId={reportId}
-        pdfUrl={reportData.pdfUrl}
-        score={reportData.report?.score}
-        address={reportData.address.normalized || reportData.address.full}
-        gpsCoordinates={reportData.address.gps ? {
-          lat: reportData.address.gps.lat,
-          lon: reportData.address.gps.lon
-        } : undefined}
-      />
-    </div>
+    <PremiumReportView 
+      sections={sections}
+      vehicleInfo={reportData.address}
+      ai={reportData.report ? {
+        score: reportData.report.score,
+        summary: reportData.report.summary,
+        recommendations: reportData.profileData.recommendations?.items.map(item => `${item.title}: ${item.reason}`) || []
+      } : undefined}
+      reportId={reportId}
+      pdfUrl={reportData.pdfUrl}
+    />
   );
 }

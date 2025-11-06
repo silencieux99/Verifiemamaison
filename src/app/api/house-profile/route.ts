@@ -15,7 +15,6 @@ import {
   fetchAtmo,
   fetchOSMAmenities,
   fetchSafetySSMSI,
-  fetchPappers,
   computeRecommendations,
   getCachedProfile,
   setCachedProfile,
@@ -142,7 +141,6 @@ export async function GET(request: NextRequest) {
       airQuality,
       amenities,
       safety,
-      pappers,
     ] = await Promise.allSettled([
       fetchGeoRisques(lat, lon).catch((e) => {
         warnings.push('GéoRisques indisponible');
@@ -183,10 +181,6 @@ export async function GET(request: NextRequest) {
           notes: ['Données indisponibles'],
         };
       }),
-      fetchPappers(address, lat, lon, citycode).catch((e) => {
-        warnings.push('Pappers Immo indisponible');
-        return {};
-      }),
     ]);
 
     // Extraction des résultats
@@ -205,7 +199,6 @@ export async function GET(request: NextRequest) {
       indicators: [],
       notes: ['Données indisponibles'],
     };
-    const pappersResult = pappers.status === 'fulfilled' ? pappers.value : {};
 
     // Ajout des sources pour chaque section réussie
     if (risks.status === 'fulfilled') {
@@ -264,13 +257,6 @@ export async function GET(request: NextRequest) {
         fetched_at: new Date().toISOString(),
       });
     }
-    if (pappers.status === 'fulfilled' && pappers.value && Object.keys(pappers.value).length > 0) {
-      sources.push({
-        section: 'pappers',
-        url: 'https://pappers.fr/immo',
-        fetched_at: new Date().toISOString(),
-      });
-    }
 
     // Construction du profil complet
     const profile: Partial<HouseProfile> = {
@@ -285,7 +271,6 @@ export async function GET(request: NextRequest) {
       air_quality: airQualityResult,
       amenities: amenitiesResult,
       safety: safetyResult,
-      pappers: Object.keys(pappersResult).length > 0 ? pappersResult : undefined,
     };
 
     // Génération des recommandations

@@ -96,3 +96,6 @@ Pour vérifier que tout fonctionne :
 - Vérifiez que l'API Places est bien activée pour cette clé
 - Vérifiez les restrictions de la clé API (IP, référents, etc.)
 
+
+
+

@@ -3,7 +3,7 @@
  * Fonctions pour interroger les différentes sources de données
  */
 
-import { HouseProfile, HouseProfilePappers } from './house-profile-types';
+import { HouseProfile } from './house-profile-types';
 
 // Cache simple en mémoire (LRU-like)
 const cache = new Map<string, { data: HouseProfile; timestamp: number }>();
@@ -133,52 +133,112 @@ export async function fetchGeoRisques(
     normalized: {},
   };
   
-  // Endpoints GéoRisques (simplifiés - à adapter selon disponibilité réelle)
+  // Endpoints GéoRisques
   const baseUrl = 'https://www.georisques.gouv.fr/api/v1';
   
   try {
-    // Inondation (simplifié)
+    // 1. Inondation (PPRI)
     try {
       const floodUrl = `${baseUrl}/georisques/inondation?lat=${lat}&lon=${lon}`;
       const floodResponse = await fetchWithRetry(floodUrl, {}, 1);
       if (floodResponse.ok) {
         const floodData = await floodResponse.json();
         risks.flood = floodData;
-        // Normalisation simplifiée
-        risks.normalized.flood_level = floodData?.niveau || "inconnu";
+        // Normalisation
+        if (floodData?.alea) {
+          const alea = floodData.alea.toLowerCase();
+          risks.normalized.flood_level = alea.includes('élevé') ? 'élevé' : alea.includes('moyen') ? 'moyen' : 'faible';
+        }
       }
     } catch (e) {
       // Ignore si endpoint indisponible
     }
     
-    // Sismicité (niveau 1-5)
+    // 2. Sismicité (niveau 0-5)
     try {
       const seismicUrl = `https://www.georisques.gouv.fr/api/v1/georisques/sismicite?lat=${lat}&lon=${lon}`;
       const seismicResponse = await fetchWithRetry(seismicUrl, {}, 1);
       if (seismicResponse.ok) {
         const seismicData = await seismicResponse.json();
         risks.seismicity = seismicData;
-        risks.normalized.seismic_level = seismicData?.niveau || undefined;
+        risks.normalized.seismic_level = seismicData?.niveau || seismicData?.zone || 0;
       }
     } catch (e) {
       // Ignore
     }
     
-    // Radon (zone 1, 2 ou 3)
+    // 3. Radon (zone 1, 2 ou 3)
     try {
       const radonUrl = `https://www.georisques.gouv.fr/api/v1/georisques/radon?lat=${lat}&lon=${lon}`;
       const radonResponse = await fetchWithRetry(radonUrl, {}, 1);
       if (radonResponse.ok) {
         const radonData = await radonResponse.json();
         risks.radon = radonData;
-        risks.normalized.radon_zone = radonData?.zone || undefined;
+        risks.normalized.radon_zone = radonData?.zone || radonData?.potentiel || undefined;
       }
     } catch (e) {
       // Ignore
     }
     
-    // Note: Les autres risques (argiles, cavités, etc.) suivent le même pattern
-    // Ici on fait une version simplifiée pour la démo
+    // 4. Retrait-gonflement des argiles
+    try {
+      const clayUrl = `${baseUrl}/georisques/retrait-gonflement?lat=${lat}&lon=${lon}`;
+      const clayResponse = await fetchWithRetry(clayUrl, {}, 1);
+      if (clayResponse.ok) {
+        const clayData = await clayResponse.json();
+        risks.clay_shrink_swell = clayData;
+      }
+    } catch (e) {
+      // Ignore
+    }
+    
+    // 5. Mouvements de terrain
+    try {
+      const groundUrl = `${baseUrl}/georisques/mouvements-terrain?lat=${lat}&lon=${lon}`;
+      const groundResponse = await fetchWithRetry(groundUrl, {}, 1);
+      if (groundResponse.ok) {
+        const groundData = await groundResponse.json();
+        risks.ground_movements = groundData;
+      }
+    } catch (e) {
+      // Ignore
+    }
+    
+    // 6. Cavités souterraines
+    try {
+      const cavitiesUrl = `${baseUrl}/georisques/cavites?lat=${lat}&lon=${lon}`;
+      const cavitiesResponse = await fetchWithRetry(cavitiesUrl, {}, 1);
+      if (cavitiesResponse.ok) {
+        const cavitiesData = await cavitiesResponse.json();
+        risks.cavities = cavitiesData;
+      }
+    } catch (e) {
+      // Ignore
+    }
+    
+    // 7. Feu de forêt
+    try {
+      const wildfireUrl = `${baseUrl}/georisques/feu-foret?lat=${lat}&lon=${lon}`;
+      const wildfireResponse = await fetchWithRetry(wildfireUrl, {}, 1);
+      if (wildfireResponse.ok) {
+        const wildfireData = await wildfireResponse.json();
+        risks.wildfire = wildfireData;
+      }
+    } catch (e) {
+      // Ignore
+    }
+    
+    // 8. Terres polluées (BASOL/BASIAS)
+    try {
+      const pollutedUrl = `${baseUrl}/georisques/polluted-lands?lat=${lat}&lon=${lon}`;
+      const pollutedResponse = await fetchWithRetry(pollutedUrl, {}, 1);
+      if (pollutedResponse.ok) {
+        const pollutedData = await pollutedResponse.json();
+        risks.polluted_lands = pollutedData;
+      }
+    } catch (e) {
+      // Ignore
+    }
     
   } catch (error) {
     // Continue même si certaines sources échouent
@@ -227,7 +287,7 @@ export async function fetchGPU(
 }
 
 /**
- * Récupération du DPE via API ADEME (simplifié)
+ * Récupération du DPE via API ADEME et autres sources
  */
 export async function fetchDPE(
   address: string,
@@ -236,11 +296,9 @@ export async function fetchDPE(
   const energy: HouseProfile['energy'] = {};
   
   try {
-    // API ADEME DPE (exemple - à adapter selon l'API réelle)
-    // Note: L'API publique DPE peut nécessiter des recherches par adresse ou coordonnées
-    const dpeUrl = `https://data.ademe.fr/data-fair/api/v1/datasets/dpe-v2-logements-existants/lines?q=${encodeURIComponent(address)}&limit=1`;
-    
+    // 1. Essayer API ADEME DPE (source officielle)
     try {
+      const dpeUrl = `https://data.ademe.fr/data-fair/api/v1/datasets/dpe-v2-logements-existants/lines?q=${encodeURIComponent(address)}&limit=1`;
       const response = await fetchWithRetry(dpeUrl, {}, 1);
       if (response.ok) {
         const data = await response.json();
@@ -249,22 +307,48 @@ export async function fetchDPE(
           const dpe = data.results[0];
           energy.dpe = {
             id: dpe.id_dpe,
-            class_energy: dpe.classe_consommation_energie,
-            class_ges: dpe.classe_emission_ges,
-            date: dpe.date_etablissement_dpe,
-            surface_m2: dpe.surface_habitable_logement,
-            housing_type: dpe.type_batiment,
+            class_energy: dpe.classe_consommation_energie || dpe.classe_consommation,
+            class_ges: dpe.classe_emission_ges || dpe.classe_ges,
+            date: dpe.date_etablissement_dpe || dpe.date_etablissement,
+            surface_m2: dpe.surface_habitable_logement || dpe.surface_habitable,
+            housing_type: dpe.type_batiment || dpe.type_logement,
             raw: dpe,
           };
+          return energy;
         }
       }
     } catch (e) {
-      // Ignore si indisponible
+      // Continue vers la source suivante
     }
+    
+    // 2. Essayer API GeoRisques (peut avoir des données DPE)
+    try {
+      const georisquesUrl = `https://www.georisques.gouv.fr/api/v1/dpe?address=${encodeURIComponent(address)}`;
+      const response = await fetchWithRetry(georisquesUrl, {}, 1);
+      if (response.ok) {
+        const data = await response.json();
+        if (data?.dpe) {
+          energy.dpe = {
+            id: data.dpe.id,
+            class_energy: data.dpe.classe_energie || data.dpe.class_energy,
+            class_ges: data.dpe.classe_ges || data.dpe.class_ges,
+            date: data.dpe.date,
+            surface_m2: data.dpe.surface,
+            housing_type: data.dpe.type,
+            raw: data.dpe,
+          };
+          return energy;
+        }
+      }
+    } catch (e) {
+      // Continue
+    }
+    
   } catch (error) {
     // Continue
   }
   
+  // Si aucune donnée trouvée, retourner un objet vide
   return energy;
 }
 
@@ -282,84 +366,126 @@ export async function fetchDVF(
   
   try {
     // Tentative 1: API DVF de Christian Quest
-    const dvfUrl = `https://api.cquest.org/dvf?code_commune=${citycode}&lat=${lat}&lon=${lon}&distance=1000`;
-    
-    try {
-      const response = await fetchWithRetry(dvfUrl, {}, 1);
-      if (response.ok) {
+    // Stratégie: rayon adaptatif et filtrage robuste des ventes
+    const distances = [800, 1200, 2000];
+
+    // Helpers locaux
+    const median = (arr: number[]) => {
+      if (!arr.length) return null as any;
+      const a = [...arr].sort((x, y) => x - y);
+      const mid = Math.floor(a.length / 2);
+      return a.length % 2 ? a[mid] : Math.round((a[mid - 1] + a[mid]) / 2);
+    };
+    const quantile = (arr: number[], q: number) => {
+      if (!arr.length) return null as any;
+      const a = [...arr].sort((x, y) => x - y);
+      const pos = (a.length - 1) * q;
+      const base = Math.floor(pos);
+      const rest = pos - base;
+      if (a[base + 1] !== undefined) {
+        return a[base] + rest * (a[base + 1] - a[base]);
+      }
+      return a[base];
+    };
+
+    let bestTransactions: any[] = [];
+    for (const dist of distances) {
+      const dvfUrl = `https://api.cquest.org/dvf?code_commune=${citycode}&lat=${lat}&lon=${lon}&distance=${dist}`;
+      try {
+        const response = await fetchWithRetry(dvfUrl, {}, 1);
+        if (!response.ok) continue;
         const data = await response.json();
-        market.dvf.raw = data;
-        
-        if (Array.isArray(data) && data.length > 0) {
-          const transactions = data
-            .filter((t: any) => 
-              t.date_mutation && 
-              t.valeur_fonciere && 
-              t.surface_reelle_bati &&
-              t.valeur_fonciere > 0 &&
-              t.surface_reelle_bati > 0
-            )
-            .map((t: any) => ({
-              date: t.date_mutation,
-              type: t.nature_mutation === 'Vente' ? (t.type_local === 'Maison' ? 'maison' : 'appartement') : 'autre',
-              surface_m2: t.surface_reelle_bati,
-              price_eur: t.valeur_fonciere,
-              price_m2_eur: Math.round(t.valeur_fonciere / t.surface_reelle_bati),
-              address_hint: (t.adresse_numero || '') + ' ' + (t.adresse_nom_voie || ''),
-              raw: t,
-            }))
-            .slice(0, 20);
-          
-          market.dvf.transactions = transactions;
-          
-          // Calcul du résumé
-          if (transactions.length > 0) {
-            const now = new Date();
-            const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
-            const threeYearsAgo = new Date(now.getFullYear() - 3, now.getMonth(), now.getDate());
-            
-            const recent1y = transactions.filter((t: any) => new Date(t.date) >= oneYearAgo);
-            const recent3y = transactions.filter((t: any) => new Date(t.date) >= threeYearsAgo);
-            
-            const prices1y = recent1y.map((t: any) => t.price_m2_eur).filter((p: any) => p && p > 100 && p < 50000);
-            const prices3y = recent3y.map((t: any) => t.price_m2_eur).filter((p: any) => p && p > 100 && p < 50000);
-            
-            if (prices1y.length > 0) {
-              prices1y.sort((a, b) => a - b);
-              market.dvf.summary = {
-                price_m2_median_1y: prices1y[Math.floor(prices1y.length / 2)],
-                volume_3y: recent3y.length,
-              };
-              
-              if (prices3y.length > 0) {
-                prices3y.sort((a, b) => a - b);
-                market.dvf.summary.price_m2_median_3y = prices3y[Math.floor(prices3y.length / 2)];
-                
-                // Tendance simple
-                const oldPrices = prices3y.slice(0, Math.floor(prices3y.length / 2));
-                const newPrices = prices3y.slice(Math.floor(prices3y.length / 2));
-                if (oldPrices.length > 0 && newPrices.length > 0) {
-                  const oldMedian = oldPrices[Math.floor(oldPrices.length / 2)];
-                  const newMedian = newPrices[Math.floor(newPrices.length / 2)];
-                  if (newMedian > oldMedian * 1.05) {
-                    market.dvf.summary.trend_label = "hausse";
-                  } else if (newMedian < oldMedian * 0.95) {
-                    market.dvf.summary.trend_label = "baisse";
-                  } else {
-                    market.dvf.summary.trend_label = "stable";
-                  }
-                }
-              }
-              
-              return market; // Succès, on retourne les données DVF
-            }
+        market.dvf.raw = data; // garder le dernier brut
+        if (!Array.isArray(data) || data.length === 0) continue;
+
+        // Mapper et filtrer: uniquement les Ventes avec valeur/surface valides
+        const mapped = data
+          .filter((t: any) =>
+            t.nature_mutation === 'Vente' &&
+            t.date_mutation &&
+            t.valeur_fonciere > 0 &&
+            t.surface_reelle_bati > 0
+          )
+          .map((t: any) => ({
+            date: t.date_mutation,
+            type: t.type_local === 'Maison' ? 'maison' : (t.type_local === 'Appartement' ? 'appartement' : 'autre'),
+            surface_m2: t.surface_reelle_bati,
+            price_eur: t.valeur_fonciere,
+            price_m2_eur: Math.round(t.valeur_fonciere / t.surface_reelle_bati),
+            address_hint: (t.adresse_numero || '') + ' ' + (t.adresse_nom_voie || ''),
+            raw: t,
+          }));
+
+        // Fenêtres temporelles
+        const now = new Date();
+        const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+        const threeYearsAgo = new Date(now.getFullYear() - 3, now.getMonth(), now.getDate());
+
+        const recent3y = mapped.filter((t: any) => new Date(t.date) >= threeYearsAgo);
+        const recent1y = recent3y.filter((t: any) => new Date(t.date) >= oneYearAgo);
+
+        // Si on a assez d'échantillons 1 an, on s'arrête; sinon on continue avec un rayon plus grand
+        if (recent1y.length >= 12 || (recent3y.length >= 24 && bestTransactions.length === 0)) {
+          bestTransactions = mapped; // conserver l'ensemble pour stats
+          break;
+        } else if (recent3y.length > bestTransactions.length) {
+          bestTransactions = mapped; // garder le meilleur trouvé jusque-là
+        }
+      } catch (e) {
+        // essayer le rayon suivant
+      }
+    }
+
+    if (bestTransactions.length > 0) {
+      // Utiliser toutes les transactions mappées (pas de tranche à 20)
+      market.dvf.transactions = bestTransactions;
+
+      const now = new Date();
+      const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+      const threeYearsAgo = new Date(now.getFullYear() - 3, now.getMonth(), now.getDate());
+
+      const recent1y = bestTransactions.filter((t: any) => new Date(t.date) >= oneYearAgo);
+      const recent3y = bestTransactions.filter((t: any) => new Date(t.date) >= threeYearsAgo);
+
+      // Extraire prix/m² et supprimer valeurs aberrantes (p10-p90)
+      const filterOutliers = (vals: number[]) => {
+        const v = vals.filter(p => p && p > 200 && p < 50000);
+        if (v.length < 5) return v; // pas assez pour quantiles
+        const p10 = quantile(v, 0.10) as number;
+        const p90 = quantile(v, 0.90) as number;
+        return v.filter(x => x >= p10 && x <= p90);
+      };
+
+      const prices1y = filterOutliers(recent1y.map((t: any) => t.price_m2_eur));
+      const prices3y = filterOutliers(recent3y.map((t: any) => t.price_m2_eur));
+
+      if (prices1y.length > 0) {
+        const med1y = median(prices1y) as number;
+        market.dvf.summary = {
+          price_m2_median_1y: med1y,
+          volume_3y: recent3y.length,
+        };
+
+        if (prices3y.length > 0) {
+          const med3y = median(prices3y) as number;
+          market.dvf.summary.price_m2_median_3y = med3y;
+
+          // Tendance simple sur 3 ans (moitié ancienne vs moitié récente)
+          const sorted3y = [...prices3y].sort((a, b) => a - b);
+          const half = Math.floor(sorted3y.length / 2);
+          const oldMedian = median(sorted3y.slice(0, half)) as number;
+          const newMedian = median(sorted3y.slice(half)) as number;
+          if (oldMedian && newMedian) {
+            if (newMedian > oldMedian * 1.05) market.dvf.summary.trend_label = 'hausse';
+            else if (newMedian < oldMedian * 0.95) market.dvf.summary.trend_label = 'baisse';
+            else market.dvf.summary.trend_label = 'stable';
           }
         }
+
+        return market; // Succès DVF
       }
-    } catch (e) {
-      console.log('API DVF non disponible, utilisation de l\'estimation');
     }
-    
+
     // Fallback: Estimation basée sur la localisation
     // Si pas de données DVF, on estime selon la région/ville
     const estimatedPrice = estimatePriceM2ByLocation(citycode, lat, lon);
@@ -816,38 +942,7 @@ export function computeRecommendations(profile: Partial<HouseProfile>): HousePro
     reasons.push('marché en hausse');
   }
   
-  // Analyse Pappers - Propriétaires
-  if (profile.pappers?.owners && profile.pappers.owners.length > 0) {
-    const personneMorale = profile.pappers.owners.some((o) => o.type === 'personne_morale');
-    if (personneMorale) {
-      items.push({
-        title: 'Vérifier le propriétaire (SCI/Promoteur)',
-        reason: 'Propriétaire personne morale identifié via Pappers',
-        priority: 2,
-        related_sections: ['pappers'],
-      });
-    }
-  }
   
-  // Analyse Pappers - Copropriété
-  if (profile.pappers?.coproprietes && profile.pappers.coproprietes.length > 0) {
-    items.push({
-      title: 'Consulter les règles de copropriété',
-      reason: 'Copropriété identifiée via Pappers',
-      priority: 2,
-      related_sections: ['pappers'],
-    });
-  }
-  
-  // Analyse Pappers - Fonds de commerce
-  if (profile.pappers?.fonds_de_commerce && profile.pappers.fonds_de_commerce.length > 0) {
-    items.push({
-      title: 'Vérifier les contraintes commerciales',
-      reason: 'Local commercial / Fonds de commerce identifié',
-      priority: 2,
-      related_sections: ['pappers'],
-    });
-  }
   
   const summary = reasons.length > 0
     ? `Quartier avec ${reasons.join(', ')}. ${items.length > 0 ? 'Vérifications recommandées: ' + items.map(i => i.title).join(', ') : ''}`
@@ -909,241 +1004,3 @@ export function setCachedProfile(
     }
   }
 }
-
-/**
- * Récupération des données Pappers Immobilier
- * API gratuite pour les données immobilières
- */
-export async function fetchPappers(
-  address: string,
-  lat: number,
-  lon: number,
-  citycode: string
-): Promise<HouseProfilePappers> {
-  const pappers: HouseProfilePappers = {};
-  
-  // Clé API Pappers Immo
-  const apiKey = process.env.PAPPERS_IMMO_API_KEY || '26ea0f0d8ab7efb4541df9e4fb5ed7a784400bb9df8433b4';
-  
-  try {
-    // API Pappers Immobilier - Documentation officielle
-    // URL: https://api-immobilier.pappers.fr/v1/parcelles
-    // Paramètre adresse pour rechercher par adresse
-    // Paramètre bases pour sélectionner les données (proprietaires, ventes, batiments, dpe, occupants, permis, fonds_de_commerce, coproprietes)
-    const baseUrl = 'https://api-immobilier.pappers.fr/v1';
-    const params = new URLSearchParams({
-      adresse: address,
-      bases: 'proprietaires,ventes,batiments,dpe,occupants,permis,fonds_de_commerce,coproprietes',
-      par_page: '1', // Limiter à 1 résultat pour l'adresse exacte
-      champs_supplementaires: 'adresse', // Inclure les adresses complètes
-    });
-    
-    const url = `${baseUrl}/parcelles?${params.toString()}`;
-    
-    const response = await fetchWithRetry(url, {
-      method: 'GET',
-      headers: {
-        'api-key': apiKey,
-        'Accept': 'application/json',
-      },
-    }, 1);
-    
-    if (!response.ok) {
-      // Si la requête échoue, on retourne un objet vide
-      console.warn(`Pappers Immo API error: ${response.status} ${response.statusText}`);
-      return {};
-    }
-    
-    const data = await response.json();
-    pappers.raw = data;
-    
-    // L'API retourne un objet avec un champ 'resultats' qui est un tableau
-    // ou directement un tableau, ou un objet ParcelleFiche
-    let parcelle = null;
-    
-    if (Array.isArray(data)) {
-      parcelle = data.length > 0 ? data[0] : null;
-    } else if (data.resultats && Array.isArray(data.resultats)) {
-      parcelle = data.resultats.length > 0 ? data.resultats[0] : null;
-    } else if (data.numero) {
-      // C'est directement un objet ParcelleFiche
-      parcelle = data;
-    }
-    
-    if (!parcelle) {
-      // Aucune parcelle trouvée pour cette adresse
-      return {};
-    }
-    
-    // Extraction des données selon la structure de l'API Pappers Immobilier
-    // Structure basée sur la documentation OpenAPI
-    
-    // Informations cadastrales de base (avec toutes les données)
-    if (parcelle.numero) {
-      pappers.cadastral = {
-        parcel: parcelle.numero,
-        section: parcelle.section,
-        prefixe: parcelle.prefixe,
-        numero_plan: parcelle.numero_plan,
-        surface_m2: parcelle.contenance,
-        references: parcelle.numero ? [parcelle.numero] : [],
-        autres_adresses: parcelle.autres_adresses?.map((a: any) => ({
-          adresse: a.adresse,
-          sources: a.sources || [],
-        })),
-      };
-    }
-    
-    // TOUS les propriétaires (pas seulement le premier)
-    if (parcelle.proprietaires && Array.isArray(parcelle.proprietaires) && parcelle.proprietaires.length > 0) {
-      pappers.owners = parcelle.proprietaires.map((owner: any) => {
-        // Extraire le nom depuis différentes sources possibles
-        let name = owner.denomination || owner.nom_entreprise;
-        if (!name && (owner.nom || owner.prenom)) {
-          name = `${owner.prenom || ''} ${owner.nom || ''}`.trim();
-        }
-        
-        return {
-          name: name,
-          type: owner.siren ? 'personne_morale' : 'personne_physique',
-          company_name: owner.denomination || owner.nom_entreprise,
-          siren: owner.siren,
-          siret: owner.siret,
-          legal_form: owner.categorie_juridique,
-          address: owner.adresse || owner.siege?.adresse_ligne_1 || 
-                   (owner.siege ? `${owner.siege.adresse_ligne_1 || ''} ${owner.siege.code_postal || ''} ${owner.siege.ville || ''}`.trim() : undefined),
-          code_naf: owner.code_naf || owner.activite_principale,
-          effectif: owner.tranche_effectif,
-          raw: owner,
-        };
-      });
-      
-      // Garder aussi le premier pour compatibilité
-      pappers.owner = pappers.owners[0];
-    }
-    
-    // TOUTES les ventes / Transactions (avec tous les détails)
-    if (parcelle.ventes && Array.isArray(parcelle.ventes) && parcelle.ventes.length > 0) {
-      pappers.transactions = parcelle.ventes.map((v: any) => ({
-        id: v.id,
-        date: v.date,
-        type: v.type_local || v.nature,
-        price_eur: v.valeur_fonciere,
-        surface_m2: v.surface_reelle_bati,
-        price_m2_eur: v.valeur_fonciere && v.surface_reelle_bati 
-          ? Math.round(v.valeur_fonciere / v.surface_reelle_bati) 
-          : undefined,
-        nature: v.nature,
-        nombre_pieces: v.nombre_pieces,
-        nombre_lots: v.nombre_lots,
-        surface_terrain: v.surface_terrain,
-        address: v.adresse,
-        raw: v,
-      }));
-    }
-    
-    // TOUTES les copropriétés
-    if (parcelle.coproprietes && Array.isArray(parcelle.coproprietes) && parcelle.coproprietes.length > 0) {
-      pappers.coproprietes = parcelle.coproprietes.map((copro: any) => ({
-        name: copro.nom,
-        numero_immatriculation: copro.numero_immatriculation,
-        mandat_en_cours: copro.mandat_en_cours,
-        nombre_total_lots: copro.nombre_total_lots,
-        nombre_lots_habitation: copro.nombre_lots_a_usage_habitation,
-        type_syndic: copro.type_syndic,
-        manager: copro.syndic_professionnel?.nom_entreprise,
-        periode_construction: copro.periode_construction,
-        adresse: copro.adresse,
-        raw: copro,
-      }));
-      
-      // Garder aussi la première pour compatibilité
-      pappers.copropriete = {
-        exists: true,
-        name: pappers.coproprietes[0].name,
-        manager: pappers.coproprietes[0].manager,
-      };
-    }
-    
-    // TOUS les permis de construire
-    if (parcelle.permis && Array.isArray(parcelle.permis) && parcelle.permis.length > 0) {
-      pappers.building_permits = parcelle.permis.map((p: any) => ({
-        date: p.date_autorisation,
-        type: p.statut,
-        statut: p.statut,
-        description: p.zone_operatoire || p.description,
-        zone_operatoire: p.zone_operatoire,
-        adresse: p.adresse,
-        raw: p,
-      }));
-    }
-    
-    // TOUS les bâtiments
-    if (parcelle.batiments && Array.isArray(parcelle.batiments) && parcelle.batiments.length > 0) {
-      pappers.buildings = parcelle.batiments.map((b: any) => ({
-        numero: b.numero,
-        nature: b.nature,
-        usage: b.usage,
-        annee_construction: b.annee_construction,
-        nombre_logements: b.nombre_logements,
-        surface: b.surface,
-        adresse: b.adresse,
-        raw: b,
-      }));
-    }
-    
-    // TOUS les DPE
-    if (parcelle.dpe && Array.isArray(parcelle.dpe) && parcelle.dpe.length > 0) {
-      pappers.dpe = parcelle.dpe.map((d: any) => ({
-        classe_bilan: d.classe_bilan,
-        type_installation_chauffage: d.type_installation_chauffage,
-        type_energie_chauffage: d.type_energie_chauffage,
-        date_etablissement: d.date_etablissement,
-        adresse: d.adresse,
-        raw: d,
-      }));
-    }
-    
-    // TOUS les occupants
-    if (parcelle.occupants && Array.isArray(parcelle.occupants) && parcelle.occupants.length > 0) {
-      pappers.occupants = parcelle.occupants.map((o: any) => ({
-        denomination: o.denomination,
-        siren: o.siren,
-        siret: o.siret,
-        categorie_juridique: o.categorie_juridique,
-        code_naf: o.code_naf,
-        effectif: o.tranche_effectif,
-        address: o.adresse,
-        raw: o,
-      }));
-    }
-    
-    // TOUS les fonds de commerce
-    if (parcelle.fonds_de_commerce && Array.isArray(parcelle.fonds_de_commerce) && parcelle.fonds_de_commerce.length > 0) {
-      pappers.fonds_de_commerce = parcelle.fonds_de_commerce.map((fdc: any) => ({
-        denomination: fdc.denomination,
-        siren: fdc.siren,
-        code_naf: fdc.code_naf,
-        date_vente: fdc.date_vente,
-        prix_vente: fdc.prix_vente,
-        adresse: fdc.adresse,
-        raw: fdc,
-      }));
-      
-      // Garder aussi le premier pour compatibilité business
-      const firstFdc = pappers.fonds_de_commerce[0];
-      pappers.business = {
-        has_business: true,
-        company_name: firstFdc.denomination,
-        siren: firstFdc.siren,
-        activity: firstFdc.code_naf,
-      };
-    }
-  } catch (error) {
-    // En cas d'erreur, on retourne un objet vide pour ne pas bloquer l'agrégateur
-    console.warn('Erreur Pappers Immo:', error);
-  }
-  
-  return pappers;
-}
-

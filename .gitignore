@@ -40,6 +40,4 @@ ui-debug.log
 
 # environment variables
 .env
-.env.local
-.env*.local
 

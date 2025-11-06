@@ -47,6 +47,12 @@ export function convertHouseProfileToSections(profile: HouseProfile): ReportSect
         value: profile.location.admin.postcode 
       });
     }
+    if (profile.location.admin.citycode) {
+      locationItems.push({ 
+        label: 'Code INSEE', 
+        value: profile.location.admin.citycode 
+      });
+    }
     if (profile.location.admin.department) {
       locationItems.push({ 
         label: 'Département', 
@@ -59,10 +65,21 @@ export function convertHouseProfileToSections(profile: HouseProfile): ReportSect
         value: profile.location.admin.region 
       });
     }
+    if (profile.location.admin.iris) {
+      locationItems.push({ 
+        label: 'Code IRIS', 
+        value: profile.location.admin.iris,
+        hint: 'Îlot Regroupé pour l\'Information Statistique (INSEE)'
+      });
+    }
     if (profile.location.gps.lat && profile.location.gps.lon) {
       locationItems.push({ 
-        label: 'Coordonnées GPS', 
-        value: `${profile.location.gps.lat.toFixed(6)}, ${profile.location.gps.lon.toFixed(6)}` 
+        label: 'Latitude', 
+        value: `${profile.location.gps.lat.toFixed(6)}°` 
+      });
+      locationItems.push({ 
+        label: 'Longitude', 
+        value: `${profile.location.gps.lon.toFixed(6)}°` 
       });
     }
     
@@ -71,6 +88,246 @@ export function convertHouseProfileToSections(profile: HouseProfile): ReportSect
         id: 'location',
         title: 'Localisation',
         items: locationItems
+      });
+    }
+  }
+
+  // 1.5. Caractéristiques du bâtiment
+  if (profile.building?.declared) {
+    const buildingItems = [];
+    const b = profile.building.declared;
+    
+    if (b.property_type) {
+      buildingItems.push({
+        label: 'Type de bien',
+        value: b.property_type.charAt(0).toUpperCase() + b.property_type.slice(1)
+      });
+    }
+    if (b.surface_habitable_m2) {
+      buildingItems.push({
+        label: 'Surface habitable',
+        value: `${b.surface_habitable_m2} m²`
+      });
+    }
+    if (b.rooms) {
+      buildingItems.push({
+        label: 'Nombre de pièces',
+        value: `${b.rooms} pièce${b.rooms > 1 ? 's' : ''}`
+      });
+    }
+    if (b.floors) {
+      buildingItems.push({
+        label: 'Nombre d\'étages',
+        value: `${b.floors} étage${b.floors > 1 ? 's' : ''}`
+      });
+    }
+    if (b.year_built) {
+      const age = new Date().getFullYear() - b.year_built;
+      buildingItems.push({
+        label: 'Année de construction',
+        value: `${b.year_built} (${age} ans)`,
+        flag: age > 50 ? 'warn' as const : 'ok' as const
+      });
+    }
+    if (b.roof_type) {
+      buildingItems.push({
+        label: 'Type de toiture',
+        value: b.roof_type
+      });
+    }
+    if (b.insulation) {
+      buildingItems.push({
+        label: 'Isolation',
+        value: b.insulation
+      });
+    }
+    if (b.electrical) {
+      buildingItems.push({
+        label: 'Installation électrique',
+        value: b.electrical
+      });
+    }
+    if (b.plumbing) {
+      buildingItems.push({
+        label: 'Plomberie',
+        value: b.plumbing
+      });
+    }
+    
+    if (buildingItems.length > 0) {
+      sections.push({
+        id: 'building',
+        title: 'Caractéristiques du bâtiment',
+        items: buildingItems
+      });
+    }
+  }
+
+  // 2. Risques naturels et technologiques
+  if (profile.risks) {
+    const riskItems = [];
+    
+    // Inondation
+    if (profile.risks.normalized?.flood_level) {
+      const level = profile.risks.normalized.flood_level;
+      riskItems.push({
+        label: 'Risque d\'inondation',
+        value: level.charAt(0).toUpperCase() + level.slice(1),
+        flag: level === 'élevé' ? 'risk' as const : level === 'moyen' ? 'warn' as const : 'ok' as const,
+        hint: 'Vérifiez les données PPRI (Plan de Prévention des Risques d\'Inondation)'
+      });
+    }
+    
+    // Séisme
+    if (profile.risks.normalized?.seismic_level !== undefined) {
+      const level = profile.risks.normalized.seismic_level;
+      const labels = ['Très faible (zone 1)', 'Faible (zone 2)', 'Modéré (zone 3)', 'Moyen (zone 4)', 'Fort (zone 5)'];
+      riskItems.push({
+        label: 'Risque séismique',
+        value: labels[level] || `Zone ${level}`,
+        flag: level >= 3 ? 'risk' as const : level === 2 ? 'warn' as const : 'ok' as const,
+        hint: level >= 3 ? 'Construction parasismique recommandée' : undefined
+      });
+    }
+    
+    // Radon
+    if (profile.risks.normalized?.radon_zone !== undefined) {
+      const zone = profile.risks.normalized.radon_zone;
+      const labels = ['Faible potentiel (zone 1)', 'Potentiel faible à moyen (zone 2)', 'Potentiel significatif (zone 3)'];
+      riskItems.push({
+        label: 'Risque radon',
+        value: labels[zone - 1] || `Zone ${zone}`,
+        flag: zone === 3 ? 'warn' as const : 'ok' as const,
+        hint: zone === 3 ? 'Mesure du radon recommandée dans les pièces habitées' : 'Un test radon peut être réalisé pour confirmer'
+      });
+    }
+    
+    // Retrait-gonflement des argiles
+    if (profile.risks.clay_shrink_swell) {
+      const raw = profile.risks.clay_shrink_swell;
+      let level = 'Données disponibles';
+      let flag: 'ok' | 'warn' | 'risk' = 'warn' as const;
+      
+      if (raw.level || raw.alea) {
+        const alea = raw.level || raw.alea;
+        if (alea === 'Fort' || alea === 'fort') {
+          level = 'Aléa fort';
+          flag = 'risk' as const;
+        } else if (alea === 'Moyen' || alea === 'moyen') {
+          level = 'Aléa moyen';
+          flag = 'warn' as const;
+        } else if (alea === 'Faible' || alea === 'faible') {
+          level = 'Aléa faible';
+          flag = 'ok' as const;
+        }
+      }
+      
+      riskItems.push({
+        label: 'Retrait-gonflement des argiles',
+        value: level,
+        flag: flag,
+        hint: flag !== 'ok' ? 'Peut affecter les fondations en cas de sécheresse. Étude de sol G2 recommandée.' : undefined
+      });
+    }
+    
+    // Mouvements de terrain
+    if (profile.risks.ground_movements) {
+      const raw = profile.risks.ground_movements;
+      let count = 0;
+      if (Array.isArray(raw)) count = raw.length;
+      else if (raw.count) count = raw.count;
+      
+      riskItems.push({
+        label: 'Mouvements de terrain',
+        value: count > 0 ? `${count} événement${count > 1 ? 's' : ''} recensé${count > 1 ? 's' : ''}` : 'Données disponibles',
+        flag: count > 0 ? 'warn' as const : 'ok' as const,
+        hint: count > 0 ? 'Consultez le BRGM pour plus de détails' : undefined
+      });
+    }
+    
+    // Cavités souterraines
+    if (profile.risks.cavities) {
+      const raw = profile.risks.cavities;
+      let count = 0;
+      if (Array.isArray(raw)) count = raw.length;
+      else if (raw.count) count = raw.count;
+      
+      riskItems.push({
+        label: 'Cavités souterraines',
+        value: count > 0 ? `${count} cavité${count > 1 ? 's' : ''} recensée${count > 1 ? 's' : ''}` : 'Données disponibles',
+        flag: count > 0 ? 'warn' as const : 'ok' as const,
+        hint: count > 0 ? 'Vérifiez auprès de la mairie et consultez le BRGM' : 'Vérifiez auprès de la mairie'
+      });
+    }
+    
+    // Feu de forêt
+    if (profile.risks.wildfire) {
+      const raw = profile.risks.wildfire;
+      let level = 'Zone concernée';
+      let flag: 'ok' | 'warn' | 'risk' = 'warn' as const;
+      
+      if (raw.level || raw.alea) {
+        const alea = raw.level || raw.alea;
+        if (alea === 'Fort' || alea === 'fort') {
+          level = 'Aléa fort';
+          flag = 'risk' as const;
+        } else if (alea === 'Moyen' || alea === 'moyen') {
+          level = 'Aléa moyen';
+          flag = 'warn' as const;
+        } else if (alea === 'Faible' || alea === 'faible') {
+          level = 'Aléa faible';
+          flag = 'ok' as const;
+        }
+      }
+      
+      riskItems.push({
+        label: 'Risque de feu de forêt',
+        value: level,
+        flag: flag,
+        hint: flag !== 'ok' ? 'Débroussaillement obligatoire dans un rayon de 50m' : undefined
+      });
+    }
+    
+    // Terres polluées
+    if (profile.risks.polluted_lands) {
+      const raw = profile.risks.polluted_lands;
+      let count = 0;
+      if (Array.isArray(raw)) count = raw.length;
+      else if (raw.count) count = raw.count;
+      else if (raw.basol_count || raw.basias_count) count = (raw.basol_count || 0) + (raw.basias_count || 0);
+      
+      riskItems.push({
+        label: 'Sites et sols pollués',
+        value: count > 0 ? `${count} site${count > 1 ? 's' : ''} recensé${count > 1 ? 's' : ''}` : 'Données disponibles',
+        flag: count > 0 ? 'risk' as const : 'warn' as const,
+        hint: 'Consultez les bases BASOL (sites pollués) et BASIAS (anciens sites industriels)'
+      });
+    }
+    
+    // Notes supplémentaires
+    if (profile.risks.normalized?.notes && profile.risks.normalized.notes.length > 0) {
+      profile.risks.normalized.notes.forEach((note, idx) => {
+        riskItems.push({
+          label: `Note ${idx + 1}`,
+          value: note
+        });
+      });
+    }
+    
+    // Si aucun risque spécifique, ajouter un message positif
+    if (riskItems.length === 0) {
+      riskItems.push({
+        label: 'Analyse des risques',
+        value: 'Aucun risque majeur détecté',
+        flag: 'ok' as const
+      });
+    }
+    
+    if (riskItems.length > 0) {
+      sections.push({
+        id: 'risks',
+        title: 'Risques naturels et technologiques',
+        items: riskItems
       });
     }
   }
@@ -286,77 +543,7 @@ export function convertHouseProfileToSections(profile: HouseProfile): ReportSect
     }
   }
 
-  // 2. Risques naturels et technologiques
-  if (profile.risks) {
-    const risksItems = [];
-    
-    if (profile.risks.normalized.flood_level) {
-      const level = profile.risks.normalized.flood_level;
-      risksItems.push({
-        label: 'Risque inondation',
-        value: level.charAt(0).toUpperCase() + level.slice(1),
-        flag: level === 'élevé' ? 'risk' as const : level === 'moyen' ? 'warn' as const : 'ok' as const
-      });
-    }
-    
-    if (profile.risks.normalized.seismic_level !== undefined) {
-      const level = profile.risks.normalized.seismic_level;
-      risksItems.push({
-        label: 'Sismicité',
-        value: `Niveau ${level}/5`,
-        flag: level >= 4 ? 'risk' as const : level >= 3 ? 'warn' as const : 'ok' as const
-      });
-    }
-    
-    if (profile.risks.normalized.radon_zone) {
-      const zone = profile.risks.normalized.radon_zone;
-      risksItems.push({
-        label: 'Zone radon',
-        value: `Zone ${zone}/3`,
-        flag: zone >= 2 ? 'warn' as const : 'ok' as const
-      });
-    }
-    
-    if (profile.risks.flood) {
-      risksItems.push({
-        label: 'Détails inondation',
-        value: 'Données disponibles',
-        hint: 'Consultez les données brutes pour plus de détails'
-      });
-    }
-    
-    if (profile.risks.seismicity) {
-      risksItems.push({
-        label: 'Détails sismicité',
-        value: 'Données disponibles'
-      });
-    }
-    
-    if (profile.risks.normalized.notes && profile.risks.normalized.notes.length > 0) {
-      const notes = profile.risks.normalized.notes;
-      if (risksItems.length > 0) {
-        sections.push({
-          id: 'risks',
-          title: 'Risques naturels et technologiques',
-          items: risksItems,
-          notes: notes
-        });
-      } else {
-        sections.push({
-          id: 'risks',
-          title: 'Risques naturels et technologiques',
-          items: [{ label: 'Notes', value: 'Voir ci-dessous' }],
-          notes: notes
-        });
-      }
-    } else if (risksItems.length > 0) {
-      sections.push({
-        id: 'risks',
-        title: 'Risques naturels et technologiques',
-        items: risksItems
-      });
-    }
-  }
+  
 
   // 3. Performance énergétique (DPE)
   if (profile.energy?.dpe) {
@@ -471,6 +658,35 @@ export function convertHouseProfileToSections(profile: HouseProfile): ReportSect
         notes: notes.length > 0 ? notes : undefined
       });
     }
+
+    // Transactions détaillées DVF (liste des comparables)
+    if (profile.market.dvf.transactions && profile.market.dvf.transactions.length > 0) {
+      // Trier par date décroissante et limiter à 12
+      const tx = [...profile.market.dvf.transactions]
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, 12);
+
+      const txItems = tx.map((t, idx) => {
+        const dateStr = t.date ? new Date(t.date).toLocaleDateString('fr-FR') : 'Date inconnue';
+        const priceStr = t.price_eur ? `${t.price_eur.toLocaleString('fr-FR')} €` : 'Prix N/A';
+        const priceM2Str = t.price_m2_eur ? `${t.price_m2_eur.toLocaleString('fr-FR')} €/m²` : '—';
+        const surfaceStr = t.surface_m2 ? `${t.surface_m2} m²` : '—';
+        const typeStr = t.type || 'vente';
+        return {
+          label: `Vente ${idx + 1} - ${dateStr}`,
+          value: `${typeStr} • ${surfaceStr} • ${priceStr} • ${priceM2Str}`,
+          hint: t.address_hint || undefined,
+        };
+      });
+
+      if (txItems.length > 0) {
+        sections.push({
+          id: 'market_transactions',
+          title: 'Transactions récentes (DVF)',
+          items: txItems,
+        });
+      }
+    }
   }
 
   // 5. Urbanisme et PLU
@@ -483,19 +699,36 @@ export function convertHouseProfileToSections(profile: HouseProfile): ReportSect
         value: `${profile.urbanism.zoning.length} zone${profile.urbanism.zoning.length > 1 ? 's' : ''} identifiée${profile.urbanism.zoning.length > 1 ? 's' : ''}`
       });
       
-      profile.urbanism.zoning.slice(0, 3).forEach((zone, index) => {
+      profile.urbanism.zoning.forEach((zone, index) => {
         urbanismItems.push({
-          label: `Zone ${index + 1}`,
-          value: `${zone.code} - ${zone.label}`,
-          hint: zone.doc_url ? `Document: ${zone.doc_url}` : undefined
+          label: `${zone.code}`,
+          value: zone.label,
+          hint: zone.doc_url ? `Document PLU disponible` : undefined
         });
       });
     }
     
     if (profile.urbanism.land_servitudes && profile.urbanism.land_servitudes.length > 0) {
       urbanismItems.push({
-        label: 'Servitudes',
-        value: `${profile.urbanism.land_servitudes.length} servitude${profile.urbanism.land_servitudes.length > 1 ? 's' : ''}`
+        label: 'Servitudes d\'utilité publique',
+        value: `${profile.urbanism.land_servitudes.length} servitude${profile.urbanism.land_servitudes.length > 1 ? 's' : ''}`,
+        flag: 'warn' as const
+      });
+      
+      profile.urbanism.land_servitudes.forEach((servitude, index) => {
+        urbanismItems.push({
+          label: `${servitude.code}`,
+          value: servitude.label,
+          flag: 'warn' as const,
+          hint: servitude.doc_url ? `Document disponible` : undefined
+        });
+      });
+    }
+    
+    if (profile.urbanism.docs && profile.urbanism.docs.length > 0) {
+      urbanismItems.push({
+        label: 'Documents d\'urbanisme',
+        value: `${profile.urbanism.docs.length} document${profile.urbanism.docs.length > 1 ? 's' : ''} disponible${profile.urbanism.docs.length > 1 ? 's' : ''}`
       });
     }
     
@@ -504,6 +737,58 @@ export function convertHouseProfileToSections(profile: HouseProfile): ReportSect
         id: 'urbanism',
         title: 'Urbanisme et PLU',
         items: urbanismItems
+      });
+    }
+  }
+
+  // 5.5. Connectivité Internet
+  if (profile.connectivity) {
+    const connectivityItems = [];
+    
+    if (profile.connectivity.fiber_available !== undefined) {
+      connectivityItems.push({
+        label: 'Fibre optique',
+        value: profile.connectivity.fiber_available ? 'Disponible' : 'Non disponible',
+        flag: profile.connectivity.fiber_available ? 'ok' as const : 'warn' as const
+      });
+    }
+    
+    if (profile.connectivity.down_max_mbps) {
+      connectivityItems.push({
+        label: 'Débit descendant max',
+        value: `${profile.connectivity.down_max_mbps} Mb/s`,
+        flag: profile.connectivity.down_max_mbps >= 100 ? 'ok' as const : 
+              profile.connectivity.down_max_mbps >= 30 ? 'warn' as const : 'risk' as const
+      });
+    }
+    
+    if (profile.connectivity.up_max_mbps) {
+      connectivityItems.push({
+        label: 'Débit montant max',
+        value: `${profile.connectivity.up_max_mbps} Mb/s`
+      });
+    }
+    
+    if (profile.connectivity.technologies && profile.connectivity.technologies.length > 0) {
+      connectivityItems.push({
+        label: 'Technologies disponibles',
+        value: profile.connectivity.technologies.join(', ')
+      });
+    }
+    
+    if (profile.connectivity.operators && profile.connectivity.operators.length > 0) {
+      connectivityItems.push({
+        label: 'Opérateurs',
+        value: `${profile.connectivity.operators.length} opérateur${profile.connectivity.operators.length > 1 ? 's' : ''}`,
+        hint: profile.connectivity.operators.slice(0, 5).join(', ')
+      });
+    }
+    
+    if (connectivityItems.length > 0) {
+      sections.push({
+        id: 'connectivity',
+        title: 'Connectivité Internet',
+        items: connectivityItems
       });
     }
   }
@@ -784,342 +1069,7 @@ export function convertHouseProfileToSections(profile: HouseProfile): ReportSect
     }
   }
 
-  // 11. Pappers Immobilier - Données complètes organisées en sections
   
-  if (profile.pappers) {
-    // 11.1. Informations cadastrales Pappers
-    if (profile.pappers.cadastral) {
-      const cadItems = [];
-      const cad = profile.pappers.cadastral;
-      
-      if (cad.parcel) {
-        cadItems.push({ label: 'Numéro de parcelle', value: cad.parcel });
-      }
-      if (cad.section) {
-        cadItems.push({ label: 'Section cadastrale', value: cad.section });
-      }
-      if (cad.prefixe) {
-        cadItems.push({ label: 'Préfixe', value: cad.prefixe });
-      }
-      if (cad.numero_plan) {
-        cadItems.push({ label: 'Numéro de plan', value: cad.numero_plan });
-      }
-      if (cad.surface_m2) {
-        cadItems.push({ label: 'Surface cadastrale', value: `${cad.surface_m2.toLocaleString('fr-FR')} m²` });
-      }
-      
-      if (cad.autres_adresses && cad.autres_adresses.length > 0) {
-        cadItems.push({
-          label: 'Autres adresses',
-          value: `${cad.autres_adresses.length} adresse${cad.autres_adresses.length > 1 ? 's' : ''} alternative${cad.autres_adresses.length > 1 ? 's' : ''}`
-        });
-        cad.autres_adresses.forEach((a, idx) => {
-          cadItems.push({
-            label: `Adresse alternative ${idx + 1}`,
-            value: a.adresse,
-            hint: `Sources: ${a.sources?.join(', ') || 'N/A'}`
-          });
-        });
-      }
-      
-      if (cadItems.length > 0) {
-        sections.push({
-          id: 'pappers_cadastral',
-          title: 'Cadastre Pappers',
-          items: cadItems
-        });
-      }
-    }
-    
-    // 11.2. Propriétaires (TOUS les propriétaires)
-    if (profile.pappers.owners && profile.pappers.owners.length > 0) {
-      profile.pappers.owners.forEach((owner, idx) => {
-        const ownerItems = [];
-        
-        if (owner.name) {
-          ownerItems.push({
-            label: 'Nom / Raison sociale',
-            value: owner.name,
-            flag: owner.type === 'personne_morale' ? 'warn' : undefined
-          });
-        }
-        if (owner.type) {
-          ownerItems.push({
-            label: 'Type',
-            value: owner.type === 'personne_morale' ? 'Personne morale' : 'Personne physique'
-          });
-        }
-        if (owner.siren) {
-          ownerItems.push({ label: 'SIREN', value: owner.siren });
-        }
-        if (owner.siret) {
-          ownerItems.push({ label: 'SIRET', value: owner.siret });
-        }
-        if (owner.legal_form) {
-          ownerItems.push({ label: 'Forme juridique', value: owner.legal_form });
-        }
-        if (owner.code_naf) {
-          ownerItems.push({ label: 'Code NAF', value: owner.code_naf });
-        }
-        if (owner.effectif) {
-          ownerItems.push({ label: 'Tranche d\'effectif', value: owner.effectif });
-        }
-        if (owner.address) {
-          ownerItems.push({ label: 'Adresse', value: owner.address });
-        }
-        
-        if (ownerItems.length > 0) {
-          sections.push({
-            id: `pappers_owner_${idx}`,
-            title: `Propriétaire ${profile.pappers.owners.length > 1 ? `${idx + 1}` : ''} (Pappers)`,
-            items: ownerItems
-          });
-        }
-      });
-    }
-    
-    // 11.3. Transactions/Ventes complètes
-    if (profile.pappers.transactions && profile.pappers.transactions.length > 0) {
-      const transactionsItems = [];
-      
-      transactionsItems.push({
-        label: 'Nombre total de transactions',
-        value: `${profile.pappers.transactions.length} transaction${profile.pappers.transactions.length > 1 ? 's' : ''}`
-      });
-      
-      profile.pappers.transactions.forEach((t, idx) => {
-        const dateStr = t.date ? new Date(t.date).toLocaleDateString('fr-FR') : 'Date inconnue';
-        const priceStr = t.price_eur ? `${t.price_eur.toLocaleString('fr-FR')}€` : 'N/A';
-        const priceM2Str = t.price_m2_eur ? ` (${t.price_m2_eur.toLocaleString('fr-FR')}€/m²)` : '';
-        const surfaceStr = t.surface_m2 ? ` • ${t.surface_m2}m²` : '';
-        const piecesStr = t.nombre_pieces ? ` • ${t.nombre_pieces} pièce${t.nombre_pieces > 1 ? 's' : ''}` : '';
-        const terrainStr = t.surface_terrain ? ` • Terrain: ${t.surface_terrain}m²` : '';
-        
-        transactionsItems.push({
-          label: `Transaction ${idx + 1} - ${dateStr}`,
-          value: `${priceStr}${priceM2Str}${surfaceStr}${piecesStr}${terrainStr}`,
-          hint: t.address || `${t.type || t.nature || ''} • ${t.nombre_lots ? `${t.nombre_lots} lot${t.nombre_lots > 1 ? 's' : ''}` : ''}`
-        });
-      });
-      
-      sections.push({
-        id: 'pappers_transactions',
-        title: 'Historique des transactions (Pappers)',
-        items: transactionsItems
-      });
-    }
-    
-    // 11.4. Bâtiments
-    if (profile.pappers.buildings && profile.pappers.buildings.length > 0) {
-      profile.pappers.buildings.forEach((building, idx) => {
-        const buildingItems = [];
-        
-        if (building.numero) {
-          buildingItems.push({ label: 'Numéro', value: building.numero });
-        }
-        if (building.nature) {
-          buildingItems.push({ label: 'Nature', value: building.nature });
-        }
-        if (building.usage) {
-          buildingItems.push({ label: 'Usage', value: building.usage });
-        }
-        if (building.annee_construction) {
-          buildingItems.push({ label: 'Année de construction', value: String(building.annee_construction) });
-        }
-        if (building.nombre_logements) {
-          buildingItems.push({ label: 'Nombre de logements', value: String(building.nombre_logements) });
-        }
-        if (building.surface) {
-          buildingItems.push({ label: 'Surface', value: `${building.surface.toLocaleString('fr-FR')} m²` });
-        }
-        if (building.adresse) {
-          buildingItems.push({ label: 'Adresse', value: building.adresse });
-        }
-        
-        if (buildingItems.length > 0) {
-          sections.push({
-            id: `pappers_building_${idx}`,
-            title: `Bâtiment ${profile.pappers.buildings.length > 1 ? `${idx + 1}` : ''} (Pappers)`,
-            items: buildingItems
-          });
-        }
-      });
-    }
-    
-    // 11.5. DPE Pappers (complément ADEME)
-    if (profile.pappers.dpe && profile.pappers.dpe.length > 0) {
-      profile.pappers.dpe.forEach((dpe, idx) => {
-        const dpeItems = [];
-        
-        if (dpe.classe_bilan) {
-          dpeItems.push({
-            label: 'Classe énergétique',
-            value: dpe.classe_bilan,
-            flag: ['E', 'F', 'G'].includes(dpe.classe_bilan) ? 'risk' : ['C', 'D'].includes(dpe.classe_bilan) ? 'warn' : 'ok'
-          });
-        }
-        if (dpe.type_installation_chauffage) {
-          dpeItems.push({ label: 'Type d\'installation', value: dpe.type_installation_chauffage });
-        }
-        if (dpe.type_energie_chauffage) {
-          dpeItems.push({ label: 'Type d\'énergie', value: dpe.type_energie_chauffage });
-        }
-        if (dpe.date_etablissement) {
-          try {
-            dpeItems.push({
-              label: 'Date d\'établissement',
-              value: new Date(dpe.date_etablissement).toLocaleDateString('fr-FR')
-            });
-          } catch (e) {
-            dpeItems.push({ label: 'Date d\'établissement', value: dpe.date_etablissement });
-          }
-        }
-        if (dpe.adresse) {
-          dpeItems.push({ label: 'Adresse', value: dpe.adresse });
-        }
-        
-        // Ne créer la section que s'il y a au moins un item
-        if (dpeItems.length > 0) {
-          sections.push({
-            id: `pappers_dpe_${idx}`,
-            title: `DPE ${profile.pappers.dpe.length > 1 ? `${idx + 1}` : ''} (Pappers)`,
-            items: dpeItems
-          });
-        }
-      });
-    }
-    
-    // 11.6. Copropriétés détaillées
-    if (profile.pappers.coproprietes && profile.pappers.coproprietes.length > 0) {
-      profile.pappers.coproprietes.forEach((copro, idx) => {
-        const coproItems = [];
-        
-        if (copro.name) {
-          coproItems.push({ label: 'Nom', value: copro.name });
-        }
-        if (copro.numero_immatriculation) {
-          coproItems.push({ label: 'Numéro d\'immatriculation', value: copro.numero_immatriculation });
-        }
-        if (copro.mandat_en_cours) {
-          coproItems.push({ label: 'Mandat en cours', value: copro.mandat_en_cours });
-        }
-        if (copro.nombre_total_lots) {
-          coproItems.push({ label: 'Nombre total de lots', value: String(copro.nombre_total_lots) });
-        }
-        if (copro.nombre_lots_habitation) {
-          coproItems.push({ label: 'Lots d\'habitation', value: String(copro.nombre_lots_habitation) });
-        }
-        if (copro.type_syndic) {
-          coproItems.push({ label: 'Type de syndic', value: copro.type_syndic === 'professionnel' ? 'Professionnel' : 'Bénévole' });
-        }
-        if (copro.manager) {
-          coproItems.push({ label: 'Gestionnaire', value: copro.manager });
-        }
-        if (copro.periode_construction) {
-          coproItems.push({ label: 'Période de construction', value: copro.periode_construction.replace(/_/g, ' ') });
-        }
-        if (copro.adresse) {
-          coproItems.push({ label: 'Adresse', value: copro.adresse });
-        }
-        
-        if (coproItems.length > 0) {
-          sections.push({
-            id: `pappers_copropriete_${idx}`,
-            title: `Copropriété ${profile.pappers.coproprietes.length > 1 ? `${idx + 1}` : ''} (Pappers)`,
-            items: coproItems
-          });
-        }
-      });
-    }
-    
-    // 11.7. Occupants
-    if (profile.pappers.occupants && profile.pappers.occupants.length > 0) {
-      const occupantsItems = [];
-      
-      occupantsItems.push({
-        label: 'Nombre d\'occupants',
-        value: `${profile.pappers.occupants.length} occupant${profile.pappers.occupants.length > 1 ? 's' : ''}`
-      });
-      
-      profile.pappers.occupants.forEach((occ, idx) => {
-        const occName = occ.denomination || 'Non spécifié';
-        const occDetails = [
-          occ.siren ? `SIREN: ${occ.siren}` : null,
-          occ.categorie_juridique ? `Forme: ${occ.categorie_juridique}` : null,
-          occ.code_naf ? `NAF: ${occ.code_naf}` : null,
-          occ.effectif ? `Effectif: ${occ.effectif}` : null,
-        ].filter(Boolean).join(' • ');
-        
-        occupantsItems.push({
-          label: `Occupant ${idx + 1}`,
-          value: occName,
-          hint: occDetails || occ.address || undefined
-        });
-      });
-      
-      sections.push({
-        id: 'pappers_occupants',
-        title: 'Occupants (Pappers)',
-        items: occupantsItems
-      });
-    }
-    
-    // 11.8. Permis de construire
-    if (profile.pappers.building_permits && profile.pappers.building_permits.length > 0) {
-      const permitsItems = [];
-      
-      permitsItems.push({
-        label: 'Nombre de permis',
-        value: `${profile.pappers.building_permits.length} permis trouvé${profile.pappers.building_permits.length > 1 ? 's' : ''}`
-      });
-      
-      profile.pappers.building_permits.forEach((p, idx) => {
-        const dateStr = p.date ? new Date(p.date).toLocaleDateString('fr-FR') : 'Date inconnue';
-        const statutStr = p.statut || p.type || 'N/A';
-        const zoneStr = p.zone_operatoire ? ` • Zone: ${p.zone_operatoire}` : '';
-        
-        permitsItems.push({
-          label: `Permis ${idx + 1}`,
-          value: `${dateStr} - ${statutStr}${zoneStr}`,
-          hint: p.adresse || undefined
-        });
-      });
-      
-      sections.push({
-        id: 'pappers_permis',
-        title: 'Permis de construire (Pappers)',
-        items: permitsItems
-      });
-    }
-    
-    // 11.9. Fonds de commerce
-    if (profile.pappers.fonds_de_commerce && profile.pappers.fonds_de_commerce.length > 0) {
-      const fdcItems = [];
-      
-      fdcItems.push({
-        label: 'Nombre de fonds de commerce',
-        value: `${profile.pappers.fonds_de_commerce.length} fond${profile.pappers.fonds_de_commerce.length > 1 ? 's' : ''} trouvé${profile.pappers.fonds_de_commerce.length > 1 ? 's' : ''}`,
-        flag: 'warn'
-      });
-      
-      profile.pappers.fonds_de_commerce.forEach((fdc, idx) => {
-        const dateStr = fdc.date_vente ? new Date(fdc.date_vente).toLocaleDateString('fr-FR') : 'Date inconnue';
-        const priceStr = fdc.prix_vente ? `${fdc.prix_vente.toLocaleString('fr-FR')}€` : 'Prix N/A';
-        
-        fdcItems.push({
-          label: `Fonds ${idx + 1}`,
-          value: fdc.denomination || 'Non spécifié',
-          hint: `${dateStr} • ${priceStr}${fdc.code_naf ? ` • NAF: ${fdc.code_naf}` : ''}${fdc.siren ? ` • SIREN: ${fdc.siren}` : ''}${fdc.adresse ? ` • ${fdc.adresse}` : ''}`
-        });
-      });
-      
-      sections.push({
-        id: 'pappers_fonds_commerce',
-        title: 'Fonds de commerce (Pappers)',
-        items: fdcItems
-      });
-    }
-  }
 
   // 12. Recommandations IA
   if (profile.recommendations) {
