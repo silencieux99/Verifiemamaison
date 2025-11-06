@@ -45,7 +45,7 @@ export default function Dashboard() {
   const [selectedUserLastOrder, setSelectedUserLastOrder] = useState<any>(null);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
-  const [period, setPeriod] = useState<'24h' | '7d' | '30d'>('24h');
+  const [period, setPeriod] = useState<'today' | '24h' | '7d' | '30d'>('today');
   const [refreshing, setRefreshing] = useState(false);
   const [chartData, setChartData] = useState<{
     salesData: Array<{ timestamp: number; value: number; label?: string }>;
@@ -84,18 +84,19 @@ export default function Dashboard() {
     fetchStats();
   }, [firebaseUser]);
 
-  // Écouter les visiteurs en temps réel (30 dernières minutes)
+  // Écouter les visiteurs en temps réel (2 dernières minutes)
   useEffect(() => {
     if (!firebaseUser || !user?.admin) return;
 
     const now = new Date();
-    const startDate = new Date(now.getTime() - 30 * 60 * 1000);
+    // Réduire à 2 minutes pour un tracking plus précis
+    const startDate = new Date(now.getTime() - 2 * 60 * 1000);
     const startTimestamp = Timestamp.fromDate(startDate);
 
     const sessionsQuery = query(
       collection(db, 'active_sessions'),
-      where('lastSeen', '>=', startTimestamp),
       where('isActive', '==', true),
+      where('lastSeen', '>=', startTimestamp),
       orderBy('lastSeen', 'desc'),
       limit(50)
     );
@@ -103,10 +104,25 @@ export default function Dashboard() {
     const unsubscribe = onSnapshot(
       sessionsQuery,
       (snapshot) => {
-        const visitors = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+        // Filtrer aussi côté client pour être sûr (sessions vraiment actives)
+        const now = Date.now();
+        const twoMinutesAgo = now - 2 * 60 * 1000;
+        
+        const visitors = snapshot.docs
+          .map((doc) => {
+            const data = doc.data();
+            const lastSeen = data.lastSeen?.toMillis?.() || 0;
+            return {
+              id: doc.id,
+              ...data,
+              lastSeenMillis: lastSeen,
+            };
+          })
+          .filter((v: any) => {
+            // Filtrer les sessions vraiment actives (moins de 2 minutes)
+            return v.isActive && v.lastSeenMillis >= twoMinutesAgo;
+          })
+          .sort((a: any, b: any) => b.lastSeenMillis - a.lastSeenMillis);
 
         setActiveVisitors(visitors);
         
@@ -126,6 +142,42 @@ export default function Dashboard() {
     return () => unsubscribe();
   }, [firebaseUser, user]);
 
+  // Fonction pour obtenir minuit heure française (Europe/Paris)
+  const getFrenchMidnight = () => {
+    const now = new Date();
+    
+    // Obtenir la date actuelle en heure française (format: YYYY-MM-DD)
+    const frenchDateStr = now.toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
+    const [year, month, day] = frenchDateStr.split('-').map(Number);
+    
+    // Créer une date à minuit en heure française
+    // On utilise Intl.DateTimeFormat pour obtenir les composants de date en heure française
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Europe/Paris',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+    
+    // Obtenir la date formatée
+    const parts = formatter.formatToParts(now);
+    const frenchYear = parseInt(parts.find(p => p.type === 'year')?.value || String(year));
+    const frenchMonth = parseInt(parts.find(p => p.type === 'month')?.value || String(month));
+    const frenchDay = parseInt(parts.find(p => p.type === 'day')?.value || String(day));
+    
+    // Créer une date à minuit UTC pour cette date française
+    // Puis calculer l'offset pour convertir en heure locale
+    const frenchMidnightUTC = new Date(Date.UTC(frenchYear, frenchMonth - 1, frenchDay, 0, 0, 0, 0));
+    
+    // Calculer l'offset entre l'heure française et l'heure locale
+    const frenchNow = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
+    const localNow = new Date(now.toLocaleString('en-US'));
+    const offset = frenchNow.getTime() - localNow.getTime();
+    
+    // Ajuster la date de minuit avec l'offset calculé
+    return new Date(frenchMidnightUTC.getTime() - offset);
+  };
+
   // Charger les statistiques du jour
   useEffect(() => {
     if (!firebaseUser || !user?.admin) return;
@@ -134,47 +186,76 @@ export default function Dashboard() {
       try {
         const token = await firebaseUser.getIdToken();
         
-        // Visiteurs aujourd'hui
-        const todayStart = new Date();
-        todayStart.setHours(0, 0, 0, 0);
-        const todayStartTimestamp = Timestamp.fromDate(todayStart);
+        // Déterminer la date de début selon la période
+        let startDate: Date;
+        if (period === 'today') {
+          // Minuit heure française
+          startDate = getFrenchMidnight();
+        } else if (period === '24h') {
+          startDate = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        } else if (period === '7d') {
+          startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        } else if (period === '30d') {
+          startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        } else {
+          startDate = getFrenchMidnight();
+        }
         
-        const todayVisitorsQuery = query(
-          collection(db, 'visits'),
-          where('timestamp', '>=', todayStartTimestamp),
-          limit(1)
+        const startTimestamp = Timestamp.fromDate(startDate);
+        
+        // Utiliser la collection 'active_sessions' avec firstSeen pour compter toutes les sessions
+        // qui ont commencé depuis minuit (plus efficace que de parcourir tous les événements 'visits')
+        const activeSessionsQuery = query(
+          collection(db, 'active_sessions'),
+          where('firstSeen', '>=', startTimestamp)
         );
 
-        const todayVisitorsUnsub = onSnapshot(todayVisitorsQuery, (snapshot) => {
-          const uniqueSessions = new Set<string>();
-          snapshot.docs.forEach((doc) => {
-            const data = doc.data();
-            if (data.sessionId) {
-              uniqueSessions.add(data.sessionId);
-            }
-          });
-          setTodayVisitors(uniqueSessions.size);
-        });
+        const visitorsUnsub = onSnapshot(
+          activeSessionsQuery,
+          (snapshot) => {
+            // Compter toutes les sessions uniques qui ont commencé depuis minuit
+            setTodayVisitors(snapshot.size);
+          },
+          (error) => {
+            console.error('Erreur écoute sessions actives:', error);
+            // Fallback : utiliser la collection 'visits' si active_sessions échoue
+            const visitsQuery = query(
+              collection(db, 'visits'),
+              where('timestamp', '>=', startTimestamp)
+            );
+            
+            const fallbackUnsub = onSnapshot(visitsQuery, (fallbackSnapshot) => {
+              const uniqueSessions = new Set<string>();
+              fallbackSnapshot.docs.forEach((doc) => {
+                const data = doc.data();
+                if (data.sessionId) {
+                  uniqueSessions.add(data.sessionId);
+                }
+              });
+              setTodayVisitors(uniqueSessions.size);
+            });
+            
+            return () => fallbackUnsub();
+          }
+        );
 
-        // Commandes aujourd'hui
+        // Commandes selon la période
         const ordersResponse = await fetch('/api/admin/orders', {
           headers: { Authorization: `Bearer ${token}` },
         });
         
         if (ordersResponse.ok) {
           const { orders } = await ordersResponse.json();
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
           
-          const todayOrders = orders.filter((order: any) => {
+          const filteredOrders = orders.filter((order: any) => {
             const orderDate = new Date(order.createdAt);
-            return orderDate >= today;
+            return orderDate >= startDate;
           });
 
-          const paidOrders = todayOrders.filter((o: any) => 
+          const paidOrders = filteredOrders.filter((o: any) => 
             o.status === 'paid' || o.status === 'COMPLETE'
           );
-          const unpaidOrders = todayOrders.filter((o: any) => 
+          const unpaidOrders = filteredOrders.filter((o: any) => 
             o.status === 'pending' || o.status === 'PROCESSING' || o.status === 'GENERATING_REPORT'
           );
           
@@ -190,8 +271,8 @@ export default function Dashboard() {
 
           setRecentOrders(orders.slice(0, 20));
 
-          // Générer les données de graphique (simplifié)
-          const salesData = orders
+          // Générer les données de graphique selon la période
+          const salesData = filteredOrders
             .filter((o: any) => o.status === 'paid' || o.status === 'COMPLETE')
             .slice(0, 30)
             .map((o: any, index: number) => ({
@@ -207,7 +288,7 @@ export default function Dashboard() {
         }
 
         return () => {
-          todayVisitorsUnsub();
+          visitorsUnsub();
         };
       } catch (error) {
         console.error('Erreur chargement stats:', error);
@@ -302,6 +383,7 @@ export default function Dashboard() {
             onChange={(e) => setPeriod(e.target.value as any)}
             className="h-9 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-sm focus:border-purple-500 focus:ring-purple-500"
           >
+            <option value="today">Aujourd'hui</option>
             <option value="24h">24h</option>
             <option value="7d">7 jours</option>
             <option value="30d">30 jours</option>

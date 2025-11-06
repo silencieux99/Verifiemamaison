@@ -12,7 +12,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Firebase Admin non initialisé' }, { status: 500 });
     }
 
-    const body = await req.json();
+    // Gérer les FormData (pour sendBeacon) et JSON
+    let body: any;
+    const contentType = req.headers.get('content-type');
+    if (contentType?.includes('multipart/form-data')) {
+      const formData = await req.formData();
+      body = {
+        sessionId: formData.get('sessionId'),
+        isLeaving: formData.get('isLeaving') === 'true',
+      };
+    } else {
+      body = await req.json();
+    }
     const {
       path,
       sessionId,
@@ -24,10 +35,48 @@ export async function POST(req: NextRequest) {
       viewportHeight,
       referrer,
       timestamp,
+      isHeartbeat,
+      isLeaving,
     } = body;
 
-    // Validation des données
-    if (!path || !sessionId || !timestamp) {
+    // Validation des données (relaxée pour les heartbeats et déconnexions)
+    if (!sessionId) {
+      return NextResponse.json({ error: 'Session ID manquant' }, { status: 400 });
+    }
+
+    // Si c'est une déconnexion, marquer la session comme inactive
+    if (isLeaving) {
+      const sessionRef = adminDb.collection('active_sessions').doc(sessionId);
+      await sessionRef.update({
+        isActive: false,
+        lastSeen: Timestamp.now(),
+      });
+      return NextResponse.json({ success: true, action: 'session_inactive' });
+    }
+
+    // Pour les heartbeats, on a besoin seulement de sessionId et timestamp
+    if (isHeartbeat) {
+      const heartbeatTimestamp = timestamp ? new Date(timestamp) : new Date();
+      const sessionRef = adminDb.collection('active_sessions').doc(sessionId);
+      const sessionDoc = await sessionRef.get();
+      
+      // Si la session existe, mettre à jour seulement lastSeen
+      if (sessionDoc.exists) {
+        await sessionRef.update({
+          lastSeen: Timestamp.fromDate(heartbeatTimestamp),
+          isActive: true,
+        });
+        return NextResponse.json({ success: true, action: 'heartbeat' });
+      }
+      // Si la session n'existe pas, créer une nouvelle session (cas rare)
+      // Mais on a besoin de path pour créer une session complète
+      if (!path) {
+        return NextResponse.json({ error: 'Path manquant pour nouvelle session' }, { status: 400 });
+      }
+    }
+
+    // Validation complète pour les nouvelles visites
+    if (!path || !timestamp) {
       return NextResponse.json({ error: 'Données manquantes' }, { status: 400 });
     }
 
@@ -98,25 +147,44 @@ export async function POST(req: NextRequest) {
 
     // Mettre à jour la session active dans 'active_sessions'
     const sessionRef = adminDb.collection('active_sessions').doc(sessionId);
-    await sessionRef.set({
-      ...visitData,
-      firstSeen: Timestamp.fromDate(visitTimestamp),
-      pageCount: FieldValue.increment(1),
-      lastPath: path,
-    }, { merge: true });
+    const sessionDoc = await sessionRef.get();
+    
+    if (sessionDoc.exists) {
+      // Session existante : mettre à jour
+      await sessionRef.update({
+        ...visitData,
+        pageCount: FieldValue.increment(isHeartbeat ? 0 : 1),
+        lastPath: path,
+        lastSeen: Timestamp.fromDate(visitTimestamp),
+        isActive: true,
+      });
+    } else {
+      // Nouvelle session : créer
+      await sessionRef.set({
+        ...visitData,
+        firstSeen: Timestamp.fromDate(visitTimestamp),
+        pageCount: 1,
+        lastPath: path,
+        isActive: true,
+      });
+    }
 
-    // Nettoyer les sessions inactives (plus de 30 minutes)
-    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+    // Nettoyer les sessions inactives (plus de 2 minutes sans activité)
+    // Réduit à 2 minutes pour un tracking plus précis
+    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
     const inactiveSessions = await adminDb
       .collection('active_sessions')
-      .where('lastSeen', '<', Timestamp.fromDate(thirtyMinutesAgo))
+      .where('lastSeen', '<', Timestamp.fromDate(twoMinutesAgo))
+      .where('isActive', '==', true)
       .get();
 
-    const batch = adminDb.batch();
-    inactiveSessions.docs.forEach((doc) => {
-      batch.update(doc.ref, { isActive: false });
-    });
-    await batch.commit();
+    if (inactiveSessions.docs.length > 0) {
+      const batch = adminDb.batch();
+      inactiveSessions.docs.forEach((doc) => {
+        batch.update(doc.ref, { isActive: false });
+      });
+      await batch.commit();
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
