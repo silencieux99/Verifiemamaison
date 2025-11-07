@@ -102,44 +102,44 @@ export default function KpiCard({
   return (
     <div 
       className={`
-        relative overflow-hidden rounded-xl border bg-white dark:bg-gray-800 p-6 
+        relative overflow-hidden rounded-lg sm:rounded-xl border bg-white dark:bg-gray-800 p-3 sm:p-4 lg:p-6 
         shadow-sm transition-all duration-200 hover:shadow-md 
-        ${colorClasses.border} ${onClick ? 'cursor-pointer hover:scale-105' : ''} ${className}
+        ${colorClasses.border} ${onClick ? 'cursor-pointer hover:scale-[1.02] sm:hover:scale-105' : ''} ${className}
       `}
       onClick={onClick}
     >
-      <div className={`absolute -right-6 -top-6 h-24 w-24 rounded-full opacity-10 ${colorClasses.bg}`} />
+      <div className={`absolute -right-4 -top-4 sm:-right-6 sm:-top-6 h-16 w-16 sm:h-24 sm:w-24 rounded-full opacity-10 ${colorClasses.bg}`} />
       
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between gap-2 sm:gap-3">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="text-sm font-medium text-gray-600 dark:text-gray-400 truncate">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+            <p className="text-[10px] sm:text-xs lg:text-sm font-medium text-gray-600 dark:text-gray-400 truncate">
               {title}
             </p>
             {isRealtime && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                <span className="relative flex h-2 w-2">
+              <span className="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                <span className="relative flex h-1.5 w-1.5 sm:h-2 sm:w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 sm:h-2 sm:w-2 bg-green-500"></span>
                 </span>
-                LIVE
+                <span className="hidden sm:inline">LIVE</span>
               </span>
             )}
           </div>
           
-          <div className="mt-2 flex items-baseline gap-2">
-            <p className={`text-2xl font-bold tracking-tight ${colorClasses.value}`}>
+          <div className="mt-1 sm:mt-2 flex items-baseline gap-1.5 sm:gap-2">
+            <p className={`text-lg sm:text-xl lg:text-2xl font-bold tracking-tight ${colorClasses.value}`}>
               {formattedValue}
             </p>
             
             {trend && !loading && (
-              <div className={`flex items-center text-sm font-medium ${
+              <div className={`flex items-center text-xs sm:text-sm font-medium ${
                 trend.isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
               }`}>
                 {trend.isPositive ? (
-                  <ArrowUpIcon className="w-4 h-4 mr-1" />
+                  <ArrowUpIcon className="w-3 h-3 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
                 ) : (
-                  <ArrowDownIcon className="w-4 h-4 mr-1" />
+                  <ArrowDownIcon className="w-3 h-3 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
                 )}
                 {Math.abs(trend.value)}%
               </div>
@@ -147,13 +147,13 @@ export default function KpiCard({
           </div>
           
           {subtitle && (
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 line-clamp-1">
               {subtitle}
             </p>
           )}
           
           {trend && !loading && (
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
               {trend.period}
             </p>
           )}
@@ -161,7 +161,7 @@ export default function KpiCard({
         
         {icon && (
           <div className={`flex-shrink-0 ${colorClasses.icon}`}>
-            <div className="w-6 h-6">
+            <div className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6">
               {icon}
             </div>
           </div>
@@ -170,7 +170,7 @@ export default function KpiCard({
       
       {loading && (
         <div className="absolute inset-0 bg-white/50 dark:bg-gray-800/50 flex items-center justify-center">
-          <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin opacity-60" />
+          <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-current border-t-transparent rounded-full animate-spin opacity-60" />
         </div>
       )}
     </div>

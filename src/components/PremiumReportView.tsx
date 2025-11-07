@@ -5,7 +5,8 @@ import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
 import { 
   Home, MapPin, Shield, Zap, TrendingUp, School, ShoppingCart,
   Brain, Download, Share2, CheckCircle, AlertCircle, AlertTriangle, Info, Calendar,
-  Camera, Copy, Sparkles, Star, Navigation, ExternalLink, Phone, Activity
+  Camera, Copy, Sparkles, Star, Navigation, ExternalLink, Phone, Activity,
+  Mail, Building2, Ruler, Bed, Home as HomeIcon, Map, DollarSign, Clock
 } from 'lucide-react';
 import { 
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, 
@@ -196,6 +197,7 @@ export default function PremiumReportView({
     { id: 'market', label: 'Marché', icon: TrendingUp },
     { id: 'education', label: 'Éducation', icon: School },
     { id: 'amenities', label: 'Commodités', icon: ShoppingCart },
+    { id: 'crime', label: 'Criminalité', icon: Shield },
     { id: 'ai', label: 'Analyse IA', icon: Brain },
   ];
   
@@ -378,13 +380,24 @@ export default function PremiumReportView({
                         </div>
                         <div className="text-3xl font-bold text-green-400">
                           {(() => {
+                            // Priorité 1: Prix/m² Gemini (données web en temps réel - les plus récentes)
+                            const geminiPrice = ai.market_analysis?.estimated_value_m2;
+                            if (geminiPrice && typeof geminiPrice === 'number' && geminiPrice > 500 && geminiPrice < 50000) {
+                              return `${Math.round(geminiPrice).toLocaleString('fr-FR')} €/m²`;
+                            }
+                            
+                            // Priorité 2: Prix/m² moyen Melo (données actuelles)
+                            const meloSection = sections.find(s => s.id === 'melo_summary');
+                            if (meloSection?.items) {
+                              const meloPriceM2 = meloSection.items.find(i => i.label.includes('Prix/m² moyen'));
+                              if (meloPriceM2?.value) {
+                                return meloPriceM2.value;
+                              }
+                            }
+                            
+                            // Priorité 3: Prix/m² DVF (données historiques)
                             const marketPrice = sections.find(s => s.id === 'market')?.items.find(i => i.label.includes('Prix'))?.value;
                             if (marketPrice) return marketPrice;
-                            
-                            const estimatedPrice = ai.market_analysis?.estimated_value_m2;
-                            if (estimatedPrice && typeof estimatedPrice === 'number') {
-                              return `${Math.round(estimatedPrice).toLocaleString('fr-FR')} €/m²`;
-                            }
                             
                             return 'N/A';
                           })()}
@@ -398,6 +411,11 @@ export default function PremiumReportView({
                               "text-gray-400"
                             )} />
                             <span>Tendance: {ai.market_analysis.market_trend}</span>
+                            {ai.market_analysis?.estimated_value_m2 && (
+                              <span className="ml-2 px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[10px]">
+                                🔍 Gemini
+                              </span>
+                            )}
                           </div>
                         )}
                       </PremiumCard>
@@ -806,6 +824,273 @@ export default function PremiumReportView({
                   </div>
                 </PremiumCard>
 
+                {/* Section Gemini - Marché en temps réel */}
+                {(() => {
+                  // Vérifier si on a des données Gemini (prix/m² dans market_analysis avec commentaire détaillé)
+                  const hasGeminiData = ai.market_analysis?.estimated_value_m2 && 
+                                       ai.market_analysis?.market_comment && 
+                                       ai.market_analysis.market_comment.length > 50;
+                  
+                  if (!hasGeminiData) return null;
+                  
+                  const geminiPrice = ai.market_analysis.estimated_value_m2;
+                  const geminiTrend = ai.market_analysis.market_trend || 'stable';
+                  const geminiComment = ai.market_analysis.market_comment || '';
+                  const geminiComparison = ai.market_analysis.price_comparison || '';
+                  const geminiData = (ai.market_analysis as any)?.gemini_data;
+                  
+                  // Utiliser la fourchette Gemini si disponible, sinon estimer
+                  const priceRange = geminiData?.price_m2_range || {
+                    min: Math.round(geminiPrice * 0.92),
+                    max: Math.round(geminiPrice * 1.08)
+                  };
+                  
+                  const recentSales = geminiData?.recent_sales || [];
+                  const geminiSources = geminiData?.sources || [];
+                  const neighborhoodInfo = geminiData?.neighborhood_info || '';
+                  
+                  return (
+                    <div className="space-y-6 mb-6">
+                      {/* Carte principale Gemini */}
+                      <PremiumCard className="p-6 md:p-8">
+                        <div className="flex items-start gap-4 mb-6">
+                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center flex-shrink-0">
+                            <Sparkles className="w-6 h-6 text-purple-400" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h2 className="text-xl font-semibold">Marché en temps réel</h2>
+                              <span className="px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs font-medium">
+                                🔍 Gemini AI
+                              </span>
+                            </div>
+                            <p className="text-sm text-white/60">Données récentes trouvées via recherche web</p>
+                          </div>
+                        </div>
+                        
+                        {/* Grille de statistiques principales */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.1 }}
+                            className="backdrop-blur-xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/30 rounded-xl p-3 md:p-4"
+                          >
+                            <div className="flex items-center gap-2 mb-2">
+                              <DollarSign className="w-3.5 h-3.5 md:w-4 md:h-4 text-purple-400" />
+                              <div className="text-[10px] md:text-xs text-white/50 uppercase tracking-wider">Prix/m²</div>
+                            </div>
+                            <div className="text-xl md:text-2xl font-bold text-purple-400">
+                              {geminiPrice.toLocaleString('fr-FR')} €
+                            </div>
+                            <div className="text-[10px] md:text-xs text-white/50 mt-1">moyen</div>
+                          </motion.div>
+                          
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.15 }}
+                            className={cn(
+                              "backdrop-blur-xl border rounded-xl p-3 md:p-4",
+                              geminiTrend === 'hausse' 
+                                ? "bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/30"
+                                : geminiTrend === 'baisse'
+                                ? "bg-gradient-to-br from-red-500/10 to-rose-500/10 border-red-500/30"
+                                : "bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border-blue-500/30"
+                            )}
+                          >
+                            <div className="flex items-center gap-2 mb-2">
+                              <TrendingUp className={cn(
+                                "w-3.5 h-3.5 md:w-4 md:h-4",
+                                geminiTrend === 'hausse' ? "text-green-400" :
+                                geminiTrend === 'baisse' ? "text-red-400" :
+                                "text-blue-400"
+                              )} />
+                              <div className="text-[10px] md:text-xs text-white/50 uppercase tracking-wider">Tendance</div>
+                            </div>
+                            <div className={cn(
+                              "text-xl md:text-2xl font-bold",
+                              geminiTrend === 'hausse' ? "text-green-400" :
+                              geminiTrend === 'baisse' ? "text-red-400" :
+                              "text-blue-400"
+                            )}>
+                              {geminiTrend === 'hausse' ? '↗️ Hausse' : geminiTrend === 'baisse' ? '↘️ Baisse' : '→ Stable'}
+                            </div>
+                          </motion.div>
+                          
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.2 }}
+                            className="backdrop-blur-xl bg-gradient-to-br from-orange-500/10 to-amber-500/10 border border-orange-500/30 rounded-xl p-3 md:p-4"
+                          >
+                            <div className="flex items-center gap-2 mb-2">
+                              <Ruler className="w-3.5 h-3.5 md:w-4 md:h-4 text-orange-400" />
+                              <div className="text-[10px] md:text-xs text-white/50 uppercase tracking-wider">Fourchette</div>
+                            </div>
+                            <div className="text-base md:text-lg font-bold text-orange-400 leading-tight">
+                              {priceRange.min.toLocaleString('fr-FR')} - {priceRange.max.toLocaleString('fr-FR')} €
+                            </div>
+                            <div className="text-[10px] md:text-xs text-white/50 mt-1">par m²</div>
+                          </motion.div>
+                          
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.25 }}
+                            className="backdrop-blur-xl bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/30 rounded-xl p-3 md:p-4"
+                          >
+                            <div className="flex items-center gap-2 mb-2">
+                              <Clock className="w-3.5 h-3.5 md:w-4 md:h-4 text-cyan-400" />
+                              <div className="text-[10px] md:text-xs text-white/50 uppercase tracking-wider">Source</div>
+                            </div>
+                            <div className="text-base md:text-lg font-bold text-cyan-400">Web</div>
+                            <div className="text-[10px] md:text-xs text-white/50 mt-1">Temps réel</div>
+                          </motion.div>
+                        </div>
+                        
+                        {/* Informations quartier */}
+                        {neighborhoodInfo && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.28 }}
+                            className="p-4 md:p-5 rounded-xl bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-blue-500/10 border border-blue-500/20 mb-4"
+                          >
+                            <div className="flex items-start gap-3">
+                              <Map className="w-4 h-4 md:w-5 md:h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                              <div className="flex-1">
+                                <h3 className="text-xs md:text-sm font-semibold text-white mb-2">Informations quartier</h3>
+                                <p className="text-xs md:text-sm text-white/80 leading-relaxed">{neighborhoodInfo}</p>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                        
+                        {/* Ventes récentes */}
+                        {recentSales && recentSales.length > 0 && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.3 }}
+                            className="space-y-3 mb-4"
+                          >
+                            <h3 className="text-base md:text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                              <TrendingUp className="w-4 h-4 md:w-5 md:h-5 text-green-400" />
+                              Ventes récentes similaires ({recentSales.length})
+                            </h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+                              {recentSales.map((sale: any, idx: number) => (
+                                <motion.div
+                                  key={idx}
+                                  initial={{ opacity: 0, y: 20 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ delay: 0.3 + idx * 0.05 }}
+                                  className="backdrop-blur-xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/30 rounded-xl p-4 hover:border-green-500/50 transition-all"
+                                >
+                                  <div className="flex items-start justify-between gap-3 mb-3">
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2 mb-2">
+                                        <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                                          <span className="text-xs font-bold text-green-400">#{idx + 1}</span>
+                                        </div>
+                                        <div className="text-base md:text-lg font-bold text-green-400">
+                                          {sale.price_m2 ? `${sale.price_m2.toLocaleString('fr-FR')} €/m²` : 'N/A'}
+                                        </div>
+                                      </div>
+                                      {sale.surface && (
+                                        <div className="text-xs md:text-sm text-white/70 mb-1">
+                                          <Ruler className="w-3 h-3 inline mr-1" />
+                                          {sale.surface} m²
+                                        </div>
+                                      )}
+                                      {sale.date && (
+                                        <div className="text-xs text-white/50 flex items-center gap-1 mt-1">
+                                          <Calendar className="w-3 h-3" />
+                                          {sale.date}
+                                        </div>
+                                      )}
+                                      {sale.address && (
+                                        <div className="text-xs text-white/60 mt-2 flex items-start gap-1">
+                                          <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                                          <span className="line-clamp-2">{sale.address}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </motion.div>
+                              ))}
+                            </div>
+                          </motion.div>
+                        )}
+                        
+                        {/* Commentaire marché détaillé */}
+                        {geminiComment && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.35 }}
+                            className="p-4 md:p-5 rounded-xl bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-purple-500/10 border border-purple-500/20 mb-4"
+                          >
+                            <div className="flex items-start gap-3">
+                              <Info className="w-4 h-4 md:w-5 md:h-5 text-purple-400 flex-shrink-0 mt-0.5" />
+                              <div className="flex-1">
+                                <h3 className="text-xs md:text-sm font-semibold text-white mb-2">Analyse du marché</h3>
+                                <p className="text-xs md:text-sm text-white/80 leading-relaxed">{geminiComment}</p>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                        
+                        {/* Comparaison de prix */}
+                        {geminiComparison && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.4 }}
+                            className="p-3 md:p-4 rounded-xl bg-white/[0.02] border border-white/[0.08] mb-4"
+                          >
+                            <div className="text-xs md:text-sm text-white/70">
+                              <strong className="text-white">Comparaison :</strong> {geminiComparison}
+                            </div>
+                          </motion.div>
+                        )}
+                        
+                        {/* Sources */}
+                        {geminiSources && geminiSources.length > 0 && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.45 }}
+                            className="p-3 md:p-4 rounded-xl bg-white/[0.02] border border-white/[0.08] mb-4"
+                          >
+                            <h3 className="text-xs md:text-sm font-semibold text-white mb-2">Sources fiables</h3>
+                            <div className="flex flex-wrap gap-2">
+                              {geminiSources.map((source: string, idx: number) => (
+                                <span
+                                  key={idx}
+                                  className="px-2.5 py-1 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/30 text-[10px] md:text-xs font-medium"
+                                >
+                                  {source}
+                                </span>
+                              ))}
+                            </div>
+                          </motion.div>
+                        )}
+                        
+                        {/* Badge info */}
+                        <div className="flex items-start gap-2 p-3 rounded-lg bg-purple-500/10 border border-purple-500/20 mt-4">
+                          <Sparkles className="w-4 h-4 text-purple-400 flex-shrink-0 mt-0.5" />
+                          <div className="text-xs text-white/70">
+                            <strong>Données Gemini :</strong> Informations trouvées en temps réel via recherche web Google. 
+                            Données récentes et à jour pour une analyse précise du marché local.
+                          </div>
+                        </div>
+                      </PremiumCard>
+                    </div>
+                  );
+                })()}
+
                 {/* Comparables DVF - Section améliorée avec statistiques */}
                 {(() => {
                   const txSection = sections.find(s => s.id === 'market_transactions');
@@ -1003,6 +1288,513 @@ export default function PremiumReportView({
                     </div>
                   );
                 })()}
+
+                {/* Section Annonces Melo - Marché Actuel */}
+                {(() => {
+                  const meloSection = sections.find(s => s.id === 'melo_summary');
+                  
+                  // Debug: vérifier la structure
+                  if (meloSection) {
+                    console.log('[Melo UI] Section trouvée:', {
+                      id: meloSection.id,
+                      title: meloSection.title,
+                      itemsCount: meloSection.items?.length,
+                      notesType: typeof meloSection.notes,
+                      notesIsArray: Array.isArray(meloSection.notes),
+                      notesLength: meloSection.notes?.length,
+                      firstNoteType: typeof meloSection.notes?.[0],
+                      firstNoteIsArray: Array.isArray(meloSection.notes?.[0]),
+                    });
+                  } else {
+                    console.log('[Melo UI] Section melo_summary non trouvée. Sections disponibles:', sections.map(s => s.id));
+                  }
+                  
+                  if (!meloSection) return null;
+                  if (!meloSection.notes) {
+                    console.warn('[Melo UI] Section trouvée mais pas de notes');
+                    return null;
+                  }
+                  if (!Array.isArray(meloSection.notes)) {
+                    console.warn('[Melo UI] Notes n\'est pas un tableau:', typeof meloSection.notes);
+                    return null;
+                  }
+                  if (!Array.isArray(meloSection.notes[0])) {
+                    console.warn('[Melo UI] notes[0] n\'est pas un tableau:', typeof meloSection.notes[0], meloSection.notes[0]);
+                    return null;
+                  }
+                  
+                  const listings = meloSection.notes[0] as any[];
+                  console.log('[Melo UI] Listings trouvés:', listings.length);
+                  if (!listings || listings.length === 0) {
+                    console.warn('[Melo UI] Aucun listing trouvé');
+                    return null;
+                  }
+                  
+                  // Calculer les statistiques
+                  const pricesM2 = listings
+                    .map(l => l.price_m2)
+                    .filter(p => p !== undefined && p > 0 && !isNaN(p));
+                  
+                  const surfaces = listings
+                    .map(l => l.surface)
+                    .filter(s => s !== undefined && s > 0 && !isNaN(s));
+                  
+                  const distances = listings
+                    .map(l => l.distance_m)
+                    .filter(d => d !== undefined && d > 0 && !isNaN(d));
+                  
+                  const stats = {
+                    count: listings.length,
+                    avgPriceM2: pricesM2.length > 0 ? Math.round(pricesM2.reduce((a, b) => a + b, 0) / pricesM2.length) : 0,
+                    minPriceM2: pricesM2.length > 0 ? Math.min(...pricesM2) : 0,
+                    maxPriceM2: pricesM2.length > 0 ? Math.max(...pricesM2) : 0,
+                    avgSurface: surfaces.length > 0 ? Math.round(surfaces.reduce((a, b) => a + b, 0) / surfaces.length) : 0,
+                    avgDistance: distances.length > 0 ? Math.round(distances.reduce((a, b) => a + b, 0) / distances.length) : 0,
+                  };
+                  
+                  // Données pour graphiques
+                  const priceChartData = listings
+                    .filter(l => l.price_m2 && l.price_m2 > 0)
+                    .map((l, idx) => ({
+                      name: `#${idx + 1}`,
+                      price: l.price_m2,
+                      surface: l.surface || 0,
+                    }))
+                    .sort((a, b) => a.price - b.price);
+                  
+                  const typeDistribution = listings.reduce((acc, l) => {
+                    const type = l.type || 'autre';
+                    acc[type] = (acc[type] || 0) + 1;
+                    return acc;
+                  }, {} as Record<string, number>);
+                  
+                  return (
+                    <div className="space-y-6">
+                      {/* En-tête avec statistiques principales */}
+                      <PremiumCard className="p-6 md:p-8">
+                        <div className="flex items-start gap-4 mb-6">
+                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center flex-shrink-0">
+                            <Sparkles className="w-6 h-6 text-purple-400" />
+                          </div>
+                          <div className="flex-1">
+                            <h2 className="text-xl font-semibold mb-1">Marché Actuel - Annonces Similaires</h2>
+                            <p className="text-sm text-white/60">Annonces actives trouvées à proximité via Melo</p>
+                          </div>
+                        </div>
+                        
+                        {/* Grille de statistiques principales */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.1 }}
+                            className="backdrop-blur-xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/30 rounded-xl p-4"
+                          >
+                            <div className="flex items-center gap-2 mb-2">
+                              <Activity className="w-4 h-4 text-purple-400" />
+                              <div className="text-xs text-white/50 uppercase tracking-wider">Annonces</div>
+                            </div>
+                            <div className="text-2xl font-bold text-purple-400">{stats.count}</div>
+                            <div className="text-xs text-white/50 mt-1">actives</div>
+                          </motion.div>
+                          
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.15 }}
+                            className="backdrop-blur-xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/30 rounded-xl p-4"
+                          >
+                            <div className="flex items-center gap-2 mb-2">
+                              <DollarSign className="w-4 h-4 text-green-400" />
+                              <div className="text-xs text-white/50 uppercase tracking-wider">Prix/m² moyen</div>
+                            </div>
+                            <div className="text-2xl font-bold text-green-400">
+                              {stats.avgPriceM2 > 0 ? `${stats.avgPriceM2.toLocaleString('fr-FR')} €` : 'N/A'}
+                            </div>
+                            <div className="text-xs text-white/50 mt-1">par m²</div>
+                          </motion.div>
+                          
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.2 }}
+                            className="backdrop-blur-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/30 rounded-xl p-4"
+                          >
+                            <div className="flex items-center gap-2 mb-2">
+                              <Ruler className="w-4 h-4 text-blue-400" />
+                              <div className="text-xs text-white/50 uppercase tracking-wider">Surface moy.</div>
+                            </div>
+                            <div className="text-2xl font-bold text-blue-400">
+                              {stats.avgSurface > 0 ? `${stats.avgSurface} m²` : 'N/A'}
+                            </div>
+                            <div className="text-xs text-white/50 mt-1">habitable</div>
+                          </motion.div>
+                          
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.25 }}
+                            className="backdrop-blur-xl bg-gradient-to-br from-orange-500/10 to-amber-500/10 border border-orange-500/30 rounded-xl p-4"
+                          >
+                            <div className="flex items-center gap-2 mb-2">
+                              <Map className="w-4 h-4 text-orange-400" />
+                              <div className="text-xs text-white/50 uppercase tracking-wider">Distance moy.</div>
+                            </div>
+                            <div className="text-2xl font-bold text-orange-400">
+                              {stats.avgDistance > 0 ? `${(stats.avgDistance / 1000).toFixed(1)} km` : 'N/A'}
+                            </div>
+                            <div className="text-xs text-white/50 mt-1">de l'adresse</div>
+                          </motion.div>
+                        </div>
+                        
+                        {/* Fourchette de prix */}
+                        {stats.minPriceM2 > 0 && stats.maxPriceM2 > 0 && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.3 }}
+                            className="p-4 rounded-xl bg-gradient-to-r from-green-500/10 via-blue-500/10 to-purple-500/10 border border-white/10"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="text-sm text-white/70">Fourchette de prix/m²</div>
+                              <div className="text-lg font-bold text-white">
+                                {stats.minPriceM2.toLocaleString('fr-FR')} - {stats.maxPriceM2.toLocaleString('fr-FR')} €/m²
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </PremiumCard>
+                      
+                      {/* Graphiques */}
+                      {priceChartData.length > 0 && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {/* Graphique des prix */}
+                          <PremiumCard className="p-6 md:p-8">
+                            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                              <TrendingUp className="w-5 h-5 text-green-400" />
+                              Distribution des prix/m²
+                            </h3>
+                            <div className="h-64">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={priceChartData}>
+                                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                                  <XAxis 
+                                    dataKey="name" 
+                                    stroke="rgba(255,255,255,0.5)"
+                                    fontSize={12}
+                                  />
+                                  <YAxis 
+                                    stroke="rgba(255,255,255,0.5)"
+                                    fontSize={12}
+                                    tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+                                  />
+                                  <Tooltip
+                                    contentStyle={{
+                                      backgroundColor: 'rgba(26, 27, 30, 0.95)',
+                                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                                      borderRadius: '8px',
+                                      color: '#fff'
+                                    }}
+                                    formatter={(value: any) => [`${value.toLocaleString('fr-FR')} €/m²`, 'Prix/m²']}
+                                  />
+                                  <Bar 
+                                    dataKey="price" 
+                                    fill="url(#colorGradient)"
+                                    radius={[8, 8, 0, 0]}
+                                  >
+                                    <defs>
+                                      <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="#10B981" stopOpacity={0.8} />
+                                        <stop offset="100%" stopColor="#3B82F6" stopOpacity={0.4} />
+                                      </linearGradient>
+                                    </defs>
+                                  </Bar>
+                                </BarChart>
+                              </ResponsiveContainer>
+                            </div>
+                          </PremiumCard>
+                          
+                          {/* Distribution par type */}
+                          <PremiumCard className="p-6 md:p-8">
+                            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                              <Building2 className="w-5 h-5 text-blue-400" />
+                              Répartition par type
+                            </h3>
+                            <div className="space-y-3">
+                              {Object.entries(typeDistribution).map(([type, count], idx) => {
+                                const countNum = typeof count === 'number' ? count : 0;
+                                const statsCount = typeof stats.count === 'number' ? stats.count : 1;
+                                const percentage = Math.round((countNum / statsCount) * 100);
+                                const typeLabels: Record<string, string> = {
+                                  'appartement': 'Appartement',
+                                  'maison': 'Maison',
+                                  'autre': 'Autre'
+                                };
+                                const typeColors: Record<string, string> = {
+                                  'appartement': 'from-blue-500/20 to-cyan-500/20 border-blue-500/30 text-blue-300',
+                                  'maison': 'from-orange-500/20 to-amber-500/20 border-orange-500/30 text-orange-300',
+                                  'autre': 'from-gray-500/20 to-slate-500/20 border-gray-500/30 text-gray-300'
+                                };
+                                
+                                return (
+                                  <motion.div
+                                    key={type}
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: idx * 0.1 }}
+                                    className={cn(
+                                      "p-4 rounded-xl border backdrop-blur-xl",
+                                      typeColors[type] || typeColors['autre']
+                                    )}
+                                  >
+                                    <div className="flex items-center justify-between mb-2">
+                                      <div className="flex items-center gap-2">
+                                        {type === 'appartement' && <Building2 className="w-4 h-4" />}
+                                        {type === 'maison' && <HomeIcon className="w-4 h-4" />}
+                                        <span className="font-semibold">{typeLabels[type] || type}</span>
+                                      </div>
+                                      <span className="text-sm font-bold">{countNum} ({percentage}%)</span>
+                                    </div>
+                                    <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
+                                      <motion.div
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${percentage}%` }}
+                                        transition={{ delay: idx * 0.1 + 0.3, duration: 0.8 }}
+                                        className="h-full bg-gradient-to-r from-white/40 to-white/20"
+                                      />
+                                    </div>
+                                  </motion.div>
+                                );
+                              })}
+                            </div>
+                          </PremiumCard>
+                        </div>
+                      )}
+                      
+                      {/* Liste des annonces avec cartes magnifiques */}
+                      <PremiumCard className="p-6 md:p-8">
+                        <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
+                          <Sparkles className="w-5 h-5 text-purple-400" />
+                          Annonces détaillées ({listings.length})
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {listings.map((listing, idx) => {
+                            const hasImage = listing.picturesRemote && listing.picturesRemote.length > 0;
+                            const firstImage = hasImage ? listing.picturesRemote[0] : null;
+                            
+                            return (
+                              <motion.div
+                                key={listing.id || idx}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: idx * 0.05 }}
+                                className="group relative overflow-hidden rounded-2xl border border-white/10 backdrop-blur-xl bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04] transition-all duration-300"
+                              >
+                                {/* Image */}
+                                {firstImage && (
+                                  <div className="relative h-48 overflow-hidden">
+                                    <img
+                                      src={firstImage}
+                                      alt={listing.title || 'Annonce'}
+                                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                      onError={(e) => {
+                                        (e.target as HTMLImageElement).style.display = 'none';
+                                      }}
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+                                    <div className="absolute bottom-0 left-0 right-0 p-4">
+                                      <div className="text-white font-semibold text-sm line-clamp-2">
+                                        {listing.title || 'Bien immobilier'}
+                                      </div>
+                                    </div>
+                                    {listing.distance_m && (
+                                      <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-sm border border-white/20">
+                                        <div className="flex items-center gap-1 text-xs text-white">
+                                          <Navigation className="w-3 h-3" />
+                                          {listing.distance_m < 1000 
+                                            ? `${listing.distance_m}m`
+                                            : `${(listing.distance_m / 1000).toFixed(1)}km`
+                                          }
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                                
+                                {/* Contenu */}
+                                <div className="p-5">
+                                  {!firstImage && (
+                                    <div className="mb-3">
+                                      <div className="text-white font-semibold text-sm line-clamp-2 mb-1">
+                                        {listing.title || 'Bien immobilier'}
+                                      </div>
+                                      {listing.distance_m && (
+                                        <div className="flex items-center gap-1 text-xs text-white/60">
+                                          <Navigation className="w-3 h-3" />
+                                          {listing.distance_m < 1000 
+                                            ? `${listing.distance_m}m`
+                                            : `${(listing.distance_m / 1000).toFixed(1)}km`
+                                          }
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                  
+                                  {/* Prix principal */}
+                                  <div className="mb-4">
+                                    <div className="text-2xl font-bold text-green-400 mb-1">
+                                      {listing.price ? `${listing.price.toLocaleString('fr-FR')} €` : 'Prix sur demande'}
+                                    </div>
+                                    {listing.price_m2 && (
+                                      <div className="text-sm text-white/70">
+                                        {listing.price_m2.toLocaleString('fr-FR')} €/m²
+                                      </div>
+                                    )}
+                                  </div>
+                                  
+                                  {/* Caractéristiques */}
+                                  <div className="grid grid-cols-3 gap-3 mb-4">
+                                    {listing.surface && (
+                                      <div className="flex flex-col items-center p-2 rounded-lg bg-white/5">
+                                        <Ruler className="w-4 h-4 text-blue-400 mb-1" />
+                                        <div className="text-xs text-white/50">Surface</div>
+                                        <div className="text-sm font-semibold text-white">{listing.surface} m²</div>
+                                      </div>
+                                    )}
+                                    {listing.rooms !== undefined && listing.rooms !== null && (
+                                      <div className="flex flex-col items-center p-2 rounded-lg bg-white/5">
+                                        <HomeIcon className="w-4 h-4 text-purple-400 mb-1" />
+                                        <div className="text-xs text-white/50">Pièces</div>
+                                        <div className="text-sm font-semibold text-white">{listing.rooms}</div>
+                                      </div>
+                                    )}
+                                    {listing.bedrooms !== undefined && listing.bedrooms !== null && (
+                                      <div className="flex flex-col items-center p-2 rounded-lg bg-white/5">
+                                        <Bed className="w-4 h-4 text-pink-400 mb-1" />
+                                        <div className="text-xs text-white/50">Chambres</div>
+                                        <div className="text-sm font-semibold text-white">{listing.bedrooms}</div>
+                                      </div>
+                                    )}
+                                  </div>
+                                  
+                                  {/* Adresse */}
+                                  {(listing.address || listing.city) && (
+                                    <div className="mb-4 flex items-start gap-2 text-xs text-white/60">
+                                      <MapPin className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                                      <div className="line-clamp-2">
+                                        {listing.address && `${listing.address}, `}
+                                        {listing.city}
+                                        {listing.postcode && ` ${listing.postcode}`}
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Type de bien */}
+                                  {listing.type && (
+                                    <div className="mb-4">
+                                      <span className={cn(
+                                        "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border",
+                                        listing.type === 'appartement'
+                                          ? "bg-blue-500/20 text-blue-300 border-blue-500/30"
+                                          : listing.type === 'maison'
+                                          ? "bg-orange-500/20 text-orange-300 border-orange-500/30"
+                                          : "bg-gray-500/20 text-gray-300 border-gray-500/30"
+                                      )}>
+                                        {listing.type === 'appartement' && <Building2 className="w-3 h-3" />}
+                                        {listing.type === 'maison' && <HomeIcon className="w-3 h-3" />}
+                                        {listing.type === 'appartement' ? 'Appartement' : listing.type === 'maison' ? 'Maison' : listing.type}
+                                      </span>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Date de publication */}
+                                  {listing.published_date && (
+                                    <div className="mb-4 flex items-center gap-2 text-xs text-white/50">
+                                      <Clock className="w-3.5 h-3.5" />
+                                      Publié le {new Date(listing.published_date).toLocaleDateString('fr-FR')}
+                                    </div>
+                                  )}
+                                  
+                                  {/* Contact et actions */}
+                                  <div className="flex flex-col gap-2 pt-4 border-t border-white/10">
+                                    {listing.contact && (
+                                      <div className="space-y-1.5 text-xs">
+                                        {listing.contact.name && (
+                                          <div className="flex items-center gap-2 text-white/70">
+                                            <span className="w-1 h-1 rounded-full bg-white/40" />
+                                            {listing.contact.name}
+                                          </div>
+                                        )}
+                                        {listing.contact.phone && (
+                                          <a
+                                            href={`tel:${listing.contact.phone}`}
+                                            className="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors"
+                                          >
+                                            <Phone className="w-3.5 h-3.5" />
+                                            {listing.contact.phone}
+                                          </a>
+                                        )}
+                                        {listing.contact.email && (
+                                          <a
+                                            href={`mailto:${listing.contact.email}`}
+                                            className="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors"
+                                          >
+                                            <Mail className="w-3.5 h-3.5" />
+                                            {listing.contact.email}
+                                          </a>
+                                        )}
+                                      </div>
+                                    )}
+                                    
+                                    {listing.url && (
+                                      <a
+                                        href={listing.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 text-white hover:from-purple-500/30 hover:to-pink-500/30 transition-all text-sm font-medium"
+                                      >
+                                        <ExternalLink className="w-4 h-4" />
+                                        Voir l'annonce
+                                      </a>
+                                    )}
+                                  </div>
+                                  
+                                  {/* Classe énergétique si disponible */}
+                                  {listing.energy_class && (
+                                    <div className="mt-3 pt-3 border-t border-white/10">
+                                      <div className="flex items-center justify-between text-xs">
+                                        <span className="text-white/60">Classe énergétique</span>
+                                        <span className={cn(
+                                          "px-2 py-1 rounded font-semibold",
+                                          ['A', 'B'].includes(listing.energy_class)
+                                            ? "bg-green-500/20 text-green-300"
+                                            : ['C', 'D'].includes(listing.energy_class)
+                                            ? "bg-yellow-500/20 text-yellow-300"
+                                            : "bg-red-500/20 text-red-300"
+                                        )}>
+                                          {listing.energy_class}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </motion.div>
+                            );
+                          })}
+                        </div>
+                      </PremiumCard>
+                      
+                      {/* Info badge */}
+                      <div className="flex items-start gap-2 p-4 rounded-xl bg-purple-500/10 border border-purple-500/20">
+                        <Info className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
+                        <div className="text-sm text-white/70">
+                          <strong>Données Melo :</strong> Annonces actives en temps réel issues de la plateforme Melo. 
+                          Ces données sont mises à jour régulièrement et proviennent de sources fiables du marché immobilier.
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
               </motion.div>
             )}
 
@@ -1072,12 +1864,13 @@ export default function PremiumReportView({
                         };
                         
                         const getMapImageUrl = (gps?: { lat: number; lon: number }) => {
-                          if (!gps) return null;
-                          const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY;
-                          if (apiKey) {
-                            return `https://maps.googleapis.com/maps/api/staticmap?center=${gps.lat},${gps.lon}&zoom=16&size=400x200&maptype=roadmap&markers=color:blue%7C${gps.lat},${gps.lon}&key=${apiKey}`;
-                          }
-                          return null;
+                          if (!gps || !gps.lat || !gps.lon) return null;
+                          // Ne pas utiliser Google Maps si pas de clé API - utiliser un placeholder coloré à la place
+                          // const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY;
+                          // if (apiKey) {
+                          //   return `https://maps.googleapis.com/maps/api/staticmap?center=${gps.lat},${gps.lon}&zoom=16&size=400x200&maptype=roadmap&markers=color:blue%7C${gps.lat},${gps.lon}&key=${apiKey}`;
+                          // }
+                          return null; // Retourner null pour utiliser le fallback coloré
                         };
                         
                         return (
@@ -1090,22 +1883,33 @@ export default function PremiumReportView({
                           >
                             <div className="flex flex-col md:flex-row">
                               {/* Image/Photo style Google Maps */}
-                              <div className="relative w-full md:w-48 h-32 md:h-auto bg-gradient-to-br from-blue-500/10 to-indigo-500/10 flex-shrink-0">
+                              <div className="relative w-full md:w-48 h-32 md:h-auto bg-gradient-to-br from-blue-500/30 via-blue-600/20 to-indigo-500/30 flex-shrink-0 overflow-hidden">
+                                {/* Fallback toujours visible en arrière-plan */}
+                                <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500/30 via-blue-600/20 to-indigo-500/30 z-0">
+                                  <School className="w-12 h-12 text-blue-400/60" />
+                                </div>
+                                
+                                {/* Image Google Maps par-dessus si disponible */}
                                 {getMapImageUrl(school.gps) ? (
                                   <img
                                     src={getMapImageUrl(school.gps)!}
                                     alt={school.name}
-                                    className="w-full h-full object-cover"
+                                    className="relative z-10 w-full h-full object-cover"
                                     loading="lazy"
+                                    onError={(e) => {
+                                      // Si l'image ne charge pas, la masquer (le fallback reste visible)
+                                      (e.target as HTMLImageElement).style.display = 'none';
+                                    }}
                                   />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center">
-                                    <School className="w-12 h-12 text-blue-400/30" />
-                                  </div>
-                                )}
+                                ) : null}
+                                
+                                {/* Pastille de distance */}
                                 {school.distance_m && (
-                                  <div className="absolute top-2 right-2 px-2 py-1 rounded-md bg-black/70 backdrop-blur-sm text-xs font-medium text-white">
-                                    {formatDistance(school.distance_m)}
+                                  <div className="absolute top-2 right-2 z-20 px-2.5 py-1.5 rounded-lg bg-black/90 backdrop-blur-md border border-white/30 text-xs font-bold text-white shadow-xl">
+                                    <div className="flex items-center gap-1.5">
+                                      <Navigation className="w-3.5 h-3.5" />
+                                      <span>{formatDistance(school.distance_m)}</span>
+                                    </div>
                                   </div>
                                 )}
                               </div>
@@ -1117,13 +1921,13 @@ export default function PremiumReportView({
                                     <h3 className="text-lg font-semibold text-white mb-1 truncate">
                                       {school.name}
                                     </h3>
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                      <span className="text-xs px-2 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                                    <div className="flex items-center gap-2 flex-wrap mt-2">
+                                      <span className="text-xs px-3 py-1.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 font-medium backdrop-blur-sm">
                                         {getSchoolTypeLabel(school.kind)}
                                       </span>
                                       {school.public_private && (
                                         <span className={cn(
-                                          "text-xs px-2 py-1 rounded-full border",
+                                          "text-xs px-3 py-1.5 rounded-full border font-medium backdrop-blur-sm",
                                           school.public_private === 'public'
                                             ? "bg-green-500/20 text-green-300 border-green-500/30"
                                             : "bg-purple-500/20 text-purple-300 border-purple-500/30"
@@ -1323,12 +2127,13 @@ export default function PremiumReportView({
                         };
                         
                         const getMapImageUrl = (gps?: { lat: number; lon: number }) => {
-                          if (!gps) return null;
-                          const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY;
-                          if (apiKey) {
-                            return `https://maps.googleapis.com/maps/api/staticmap?center=${gps.lat},${gps.lon}&zoom=16&size=400x200&maptype=roadmap&markers=color:purple%7C${gps.lat},${gps.lon}&key=${apiKey}`;
-                          }
-                          return null;
+                          if (!gps || !gps.lat || !gps.lon) return null;
+                          // Ne pas utiliser Google Maps si pas de clé API - utiliser un placeholder coloré à la place
+                          // const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY;
+                          // if (apiKey) {
+                          //   return `https://maps.googleapis.com/maps/api/staticmap?center=${gps.lat},${gps.lon}&zoom=16&size=400x200&maptype=roadmap&markers=color:purple%7C${gps.lat},${gps.lon}&key=${apiKey}`;
+                          // }
+                          return null; // Retourner null pour utiliser le fallback coloré
                         };
                         
                         const CategoryIcon = getCategoryIcon(amenity.type, amenity.category);
@@ -1344,22 +2149,33 @@ export default function PremiumReportView({
                           >
                             <div className="flex flex-col md:flex-row">
                               {/* Image/Photo style Google Maps */}
-                              <div className="relative w-full md:w-48 h-32 md:h-auto bg-gradient-to-br from-purple-500/10 to-pink-500/10 flex-shrink-0">
+                              <div className={`relative w-full md:w-48 h-32 md:h-auto bg-gradient-to-br ${colors.bg} flex-shrink-0 overflow-hidden`}>
+                                {/* Fallback toujours visible en arrière-plan avec couleur selon le type */}
+                                <div className={`absolute inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br ${colors.bg} z-0`}>
+                                  <CategoryIcon className={`w-12 h-12 ${colors.icon} opacity-60`} />
+                                </div>
+                                
+                                {/* Image Google Maps par-dessus si disponible */}
                                 {getMapImageUrl(amenity.gps) ? (
                                   <img
                                     src={getMapImageUrl(amenity.gps)!}
                                     alt={amenity.name}
-                                    className="w-full h-full object-cover"
+                                    className="relative z-10 w-full h-full object-cover"
                                     loading="lazy"
+                                    onError={(e) => {
+                                      // Si l'image ne charge pas, la masquer (le fallback reste visible)
+                                      (e.target as HTMLImageElement).style.display = 'none';
+                                    }}
                                   />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center">
-                                    <CategoryIcon className={`w-12 h-12 ${colors.icon} opacity-30`} />
-                                  </div>
-                                )}
+                                ) : null}
+                                
+                                {/* Pastille de distance */}
                                 {amenity.distance_m && (
-                                  <div className="absolute top-2 right-2 px-2 py-1 rounded-md bg-black/70 backdrop-blur-sm text-xs font-medium text-white">
-                                    {formatDistance(amenity.distance_m)}
+                                  <div className="absolute top-2 right-2 z-20 px-2.5 py-1.5 rounded-lg bg-black/90 backdrop-blur-md border border-white/30 text-xs font-bold text-white shadow-xl">
+                                    <div className="flex items-center gap-1.5">
+                                      <Navigation className="w-3.5 h-3.5" />
+                                      <span>{formatDistance(amenity.distance_m)}</span>
+                                    </div>
                                   </div>
                                 )}
                               </div>
@@ -1371,9 +2187,9 @@ export default function PremiumReportView({
                                     <h3 className="text-lg font-semibold text-white mb-1 truncate">
                                       {amenity.name}
                                     </h3>
-                                    <div className="flex items-center gap-2 flex-wrap">
+                                    <div className="flex items-center gap-2 flex-wrap mt-2">
                                       <span className={cn(
-                                        "text-xs px-2 py-1 rounded-full border",
+                                        "text-xs px-3 py-1.5 rounded-full border font-medium backdrop-blur-sm",
                                         `bg-gradient-to-r ${colors.bg} ${colors.border} ${colors.text}`
                                       )}>
                                         {getCategoryLabel(amenity.type, amenity.category, amenity.transit_type)}
@@ -1481,6 +2297,329 @@ export default function PremiumReportView({
                 </PremiumCard>
               </motion.div>
             )}
+
+            {/* Section Criminalité - Gemini */}
+            {activeTab === 'crime' && (() => {
+              // Récupérer les données de criminalité depuis sections ou ai
+              // Les données sont stockées dans profileData.safety.gemini_crime_data
+              const crimeSection = sections.find(s => s.id === 'safety' || s.id === 'crime');
+              const crimeData = (sections as any).find((s: any) => s.gemini_crime_data)?.gemini_crime_data ||
+                               (ai as any)?.crime_data ||
+                               null;
+              
+              // Si pas de données dans sections, essayer de les extraire depuis vehicleInfo (qui contient profileData)
+              let geminiCrimeData = null;
+              if (vehicleInfo?.profileData?.safety?.gemini_crime_data) {
+                geminiCrimeData = vehicleInfo.profileData.safety.gemini_crime_data;
+              }
+              
+              if (!geminiCrimeData) {
+                return (
+                  <motion.div
+                    key="crime"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className="space-y-6"
+                  >
+                    <PremiumCard className="p-6 md:p-8">
+                      <div className="text-center py-12">
+                        <Shield className="w-16 h-16 mx-auto mb-4 text-white/30" />
+                        <h2 className="text-xl font-semibold mb-2">Données de criminalité</h2>
+                        <p className="text-white/60">Aucune donnée disponible pour le moment</p>
+                      </div>
+                    </PremiumCard>
+                  </motion.div>
+                );
+              }
+              
+              const { crime_rate, safety_score, crime_trend, main_crime_types, recent_crimes, safety_comment, comparison, sources } = geminiCrimeData;
+              
+              return (
+                <motion.div
+                  key="crime"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="space-y-6"
+                >
+                  {/* Carte principale Criminalité */}
+                  <PremiumCard className="p-6 md:p-8">
+                    <div className="flex items-start gap-4 mb-6">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-500/20 to-orange-500/20 flex items-center justify-center flex-shrink-0">
+                        <Shield className="w-6 h-6 text-red-400" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h2 className="text-xl font-semibold">Criminalité & Sécurité</h2>
+                          <span className="px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs font-medium">
+                            🔍 Gemini AI
+                          </span>
+                        </div>
+                        <p className="text-sm text-white/60">Données récentes sur la sécurité du quartier</p>
+                      </div>
+                    </div>
+                    
+                    {/* Grille de statistiques principales */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.1 }}
+                        className={cn(
+                          "backdrop-blur-xl border rounded-xl p-3 md:p-4",
+                          safety_score && safety_score >= 70
+                            ? "bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/30"
+                            : safety_score && safety_score >= 50
+                            ? "bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border-yellow-500/30"
+                            : "bg-gradient-to-br from-red-500/10 to-rose-500/10 border-red-500/30"
+                        )}
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <Shield className={cn(
+                            "w-3.5 h-3.5 md:w-4 md:h-4",
+                            safety_score && safety_score >= 70 ? "text-green-400" :
+                            safety_score && safety_score >= 50 ? "text-yellow-400" :
+                            "text-red-400"
+                          )} />
+                          <div className="text-[10px] md:text-xs text-white/50 uppercase tracking-wider">Score sécurité</div>
+                        </div>
+                        <div className={cn(
+                          "text-xl md:text-2xl font-bold",
+                          safety_score && safety_score >= 70 ? "text-green-400" :
+                          safety_score && safety_score >= 50 ? "text-yellow-400" :
+                          "text-red-400"
+                        )}>
+                          {safety_score !== undefined ? `${safety_score}/100` : 'N/A'}
+                        </div>
+                      </motion.div>
+                      
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.15 }}
+                        className={cn(
+                          "backdrop-blur-xl border rounded-xl p-3 md:p-4",
+                          crime_rate === 'faible'
+                            ? "bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/30"
+                            : crime_rate === 'moyen'
+                            ? "bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border-yellow-500/30"
+                            : "bg-gradient-to-br from-red-500/10 to-rose-500/10 border-red-500/30"
+                        )}
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <AlertTriangle className={cn(
+                            "w-3.5 h-3.5 md:w-4 md:h-4",
+                            crime_rate === 'faible' ? "text-green-400" :
+                            crime_rate === 'moyen' ? "text-yellow-400" :
+                            "text-red-400"
+                          )} />
+                          <div className="text-[10px] md:text-xs text-white/50 uppercase tracking-wider">Taux criminalité</div>
+                        </div>
+                        <div className={cn(
+                          "text-lg md:text-xl font-bold",
+                          crime_rate === 'faible' ? "text-green-400" :
+                          crime_rate === 'moyen' ? "text-yellow-400" :
+                          "text-red-400"
+                        )}>
+                          {crime_rate ? crime_rate.charAt(0).toUpperCase() + crime_rate.slice(1) : 'N/A'}
+                        </div>
+                      </motion.div>
+                      
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.2 }}
+                        className={cn(
+                          "backdrop-blur-xl border rounded-xl p-3 md:p-4",
+                          crime_trend === 'baisse'
+                            ? "bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/30"
+                            : crime_trend === 'hausse'
+                            ? "bg-gradient-to-br from-red-500/10 to-rose-500/10 border-red-500/30"
+                            : "bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border-blue-500/30"
+                        )}
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <TrendingUp className={cn(
+                            "w-3.5 h-3.5 md:w-4 md:h-4",
+                            crime_trend === 'baisse' ? "text-green-400" :
+                            crime_trend === 'hausse' ? "text-red-400" :
+                            "text-blue-400"
+                          )} />
+                          <div className="text-[10px] md:text-xs text-white/50 uppercase tracking-wider">Tendance</div>
+                        </div>
+                        <div className={cn(
+                          "text-lg md:text-xl font-bold",
+                          crime_trend === 'baisse' ? "text-green-400" :
+                          crime_trend === 'hausse' ? "text-red-400" :
+                          "text-blue-400"
+                        )}>
+                          {crime_trend === 'baisse' ? '↘️ Baisse' : crime_trend === 'hausse' ? '↗️ Hausse' : '→ Stable'}
+                        </div>
+                      </motion.div>
+                      
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.25 }}
+                        className="backdrop-blur-xl bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/30 rounded-xl p-3 md:p-4"
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <Clock className="w-3.5 h-3.5 md:w-4 md:h-4 text-cyan-400" />
+                          <div className="text-[10px] md:text-xs text-white/50 uppercase tracking-wider">Source</div>
+                        </div>
+                        <div className="text-base md:text-lg font-bold text-cyan-400">Web</div>
+                        <div className="text-[10px] md:text-xs text-white/50 mt-1">Temps réel</div>
+                      </motion.div>
+                    </div>
+                    
+                    {/* Types de crimes principaux */}
+                    {main_crime_types && main_crime_types.length > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="p-4 md:p-5 rounded-xl bg-white/[0.02] border border-white/[0.08] mb-4"
+                      >
+                        <h3 className="text-xs md:text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                          <AlertTriangle className="w-4 h-4 text-red-400" />
+                          Types de crimes les plus fréquents
+                        </h3>
+                        <div className="flex flex-wrap gap-2">
+                          {main_crime_types.map((type: string, idx: number) => (
+                            <motion.span
+                              key={idx}
+                              initial={{ opacity: 0, scale: 0.9 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              transition={{ delay: 0.3 + idx * 0.05 }}
+                              className="px-3 py-1.5 rounded-full bg-red-500/20 text-red-300 border border-red-500/30 text-xs font-medium backdrop-blur-sm"
+                            >
+                              {type}
+                            </motion.span>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                    
+                    {/* Crimes récents */}
+                    {recent_crimes && recent_crimes.length > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.35 }}
+                        className="space-y-4 mb-4"
+                      >
+                        <h3 className="text-base md:text-lg font-semibold mb-3 flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4 md:w-5 md:h-5 text-red-400" />
+                          Crimes récents (2024-2025)
+                          <span className="ml-auto text-xs md:text-sm text-white/50 font-normal">
+                            {recent_crimes.length} trouvé{recent_crimes.length > 1 ? 's' : ''}
+                          </span>
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+                          {recent_crimes.slice(0, 6).map((crime: any, idx: number) => (
+                            <motion.div
+                              key={idx}
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: 0.35 + idx * 0.05 }}
+                              className="backdrop-blur-xl bg-gradient-to-br from-red-500/5 to-orange-500/5 border border-red-500/20 rounded-xl p-4 hover:border-red-500/40 transition-all group"
+                            >
+                              <div className="flex items-start gap-3 mb-3">
+                                <div className="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                                  <AlertTriangle className="w-4 h-4 text-red-400" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm md:text-base font-semibold text-white mb-1">{crime.type}</div>
+                                  {crime.date && (
+                                    <div className="text-xs text-white/50 mb-2 flex items-center gap-1">
+                                      <Calendar className="w-3 h-3" />
+                                      {crime.date}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              {crime.description && (
+                                <p className="text-xs md:text-sm text-white/70 leading-relaxed mb-3">{crime.description}</p>
+                              )}
+                              {crime.location && (
+                                <div className="text-xs text-white/50 flex items-center gap-1.5 pt-2 border-t border-white/10">
+                                  <MapPin className="w-3 h-3 flex-shrink-0" />
+                                  <span className="line-clamp-2">{crime.location}</span>
+                                </div>
+                              )}
+                            </motion.div>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                    
+                    {/* Commentaire sécurité détaillé */}
+                    {safety_comment && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.4 }}
+                        className="p-4 md:p-5 rounded-xl bg-gradient-to-r from-red-500/10 via-orange-500/10 to-red-500/10 border border-red-500/20 mb-4"
+                      >
+                        <div className="flex items-start gap-3">
+                          <Info className="w-4 h-4 md:w-5 md:h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                          <div className="flex-1">
+                            <h3 className="text-xs md:text-sm font-semibold text-white mb-2">Analyse de la sécurité</h3>
+                            <p className="text-xs md:text-sm text-white/80 leading-relaxed">{safety_comment}</p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                    
+                    {/* Comparaison */}
+                    {comparison && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.45 }}
+                        className="p-3 md:p-4 rounded-xl bg-white/[0.02] border border-white/[0.08] mb-4"
+                      >
+                        <div className="text-xs md:text-sm text-white/70">
+                          <strong className="text-white">Comparaison :</strong> {comparison}
+                        </div>
+                      </motion.div>
+                    )}
+                    
+                    {/* Sources */}
+                    {sources && sources.length > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.5 }}
+                        className="p-3 md:p-4 rounded-xl bg-white/[0.02] border border-white/[0.08] mb-4"
+                      >
+                        <h3 className="text-xs md:text-sm font-semibold text-white mb-2">Sources</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {sources.map((source: string, idx: number) => (
+                            <span
+                              key={idx}
+                              className="px-2.5 py-1 rounded-full bg-white/5 text-white/60 border border-white/10 text-[10px] md:text-xs"
+                            >
+                              {source}
+                            </span>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                    
+                    {/* Badge info */}
+                    <div className="flex items-start gap-2 p-3 rounded-lg bg-purple-500/10 border border-purple-500/20 mt-4">
+                      <Sparkles className="w-4 h-4 text-purple-400 flex-shrink-0 mt-0.5" />
+                      <div className="text-xs text-white/70">
+                        <strong>Données Gemini :</strong> Informations trouvées en temps réel via recherche web Google. 
+                        Données récentes sur la criminalité et la sécurité du quartier.
+                      </div>
+                    </div>
+                  </PremiumCard>
+                </motion.div>
+              );
+            })()}
 
             {/* Section Analyse IA */}
             {activeTab === 'ai' && ai && (

@@ -127,19 +127,19 @@ export default function QuickActions({
   };
 
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 ${className}`}>
-      <div className="flex items-center justify-between mb-6">
+    <div className={`bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl border border-gray-200 dark:border-gray-700 p-3 sm:p-4 lg:p-6 ${className}`}>
+      <div className="flex items-center justify-between mb-3 sm:mb-4 lg:mb-6">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          <h3 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900 dark:text-gray-100">
             Actions rapides
           </h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          <p className="text-[10px] sm:text-xs lg:text-sm text-gray-600 dark:text-gray-400 mt-0.5 sm:mt-1 hidden sm:block">
             Raccourcis vers les tâches courantes
           </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:gap-4">
         {quickActions.map((action) => {
           const colorClasses = getColorClasses(action.color);
           const Icon = action.icon;
@@ -151,41 +151,41 @@ export default function QuickActions({
               onClick={() => executeAction(action.id, action.action)}
               disabled={action.disabled || isLoading}
               className={`
-                relative p-4 rounded-lg border transition-all duration-200 text-left
+                relative p-2.5 sm:p-3 lg:p-4 rounded-md sm:rounded-lg border transition-all duration-200 text-left
                 ${colorClasses.bg} ${colorClasses.border}
                 ${action.disabled 
                   ? 'opacity-50 cursor-not-allowed' 
-                  : 'hover:shadow-md hover:scale-105 active:scale-95'
+                  : 'hover:shadow-md hover:scale-[1.02] sm:hover:scale-105 active:scale-95'
                 }
                 disabled:hover:shadow-none disabled:hover:scale-100
               `}
             >
               {action.badge && (
-                <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium">
+                <div className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 bg-red-500 text-white text-[9px] sm:text-xs rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center font-medium">
                   {action.badge}
                 </div>
               )}
               
-              <div className={`${colorClasses.icon} mb-3`}>
+              <div className={`${colorClasses.icon} mb-1.5 sm:mb-2 lg:mb-3`}>
                 {isLoading ? (
-                  <div className="w-6 h-6 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  <div className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 border-2 border-current border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  <Icon className="w-6 h-6" />
+                  <Icon className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" />
                 )}
               </div>
               
               <div>
-                <h4 className="font-medium text-gray-900 dark:text-gray-100 text-sm mb-1">
+                <h4 className="font-medium text-gray-900 dark:text-gray-100 text-[11px] sm:text-xs lg:text-sm mb-0.5 sm:mb-1">
                   {action.title}
                 </h4>
-                <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+                <p className="text-[9px] sm:text-[10px] lg:text-xs text-gray-600 dark:text-gray-400 leading-relaxed line-clamp-2">
                   {action.description}
                 </p>
               </div>
               
               {isLoading && (
-                <div className="absolute inset-0 bg-white/50 dark:bg-gray-800/50 rounded-lg flex items-center justify-center">
-                  <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                <div className="absolute inset-0 bg-white/50 dark:bg-gray-800/50 rounded-md sm:rounded-lg flex items-center justify-center">
+                  <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
                 </div>
               )}
             </button>
@@ -193,11 +193,11 @@ export default function QuickActions({
         })}
       </div>
 
-      <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+      <div className="mt-3 sm:mt-4 lg:mt-6 pt-3 sm:pt-4 lg:pt-6 border-t border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-            <span className="text-gray-600 dark:text-gray-400">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full animate-pulse" />
+            <span className="text-[10px] sm:text-xs lg:text-sm text-gray-600 dark:text-gray-400">
               Tous les services fonctionnent
             </span>
           </div>

@@ -8,6 +8,8 @@ import { adminAuth, adminDb } from '@/lib/firebase-admin';
 import { FieldValue } from '@/lib/firebase-admin';
 import { HouseProfile } from '@/lib/house-profile-types';
 import { v4 as uuidv4 } from 'uuid';
+import { enrichMarketWithMelo, mergeMeloWithMarket } from '@/lib/melo-market-enrichment';
+import { enrichSafetyWithGeminiWebSearch } from '@/lib/gemini-web-search';
 
 /**
  * POST /api/reports/generate
@@ -69,7 +71,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Vérifier et débiter les crédits de l'utilisateur
+    // Vérifier les crédits disponibles (SANS débiter pour l'instant)
     const creditsRef = adminDb.collection('credits').doc(uid);
     const creditsDoc = await creditsRef.get();
     
@@ -89,22 +91,6 @@ export async function POST(request: NextRequest) {
         { status: 402 }
       );
     }
-
-    // Débiter un crédit
-    const now = Date.now();
-    const historyEntry = {
-      type: 'consume' as const,
-      qty: 1,
-      source: 'unite' as const,
-      ts: now,
-      note: `Génération rapport pour ${address}`,
-    };
-
-    await creditsRef.update({
-      total: currentCredits - 1,
-      history: [...(credits.history || []), historyEntry],
-      updatedAt: now,
-    });
 
     // Générer un ID de rapport unique
     const reportId = uuidv4();
@@ -133,6 +119,97 @@ export async function POST(request: NextRequest) {
     // Nettoyer les données en supprimant les champs raw (surtout pappers.raw qui peut être très volumineux)
     const cleanedProfileData = removeRawFields(profileData) as HouseProfile;
 
+    // Enrichir avec l'API Melo (enrichissement optionnel, ne bloque pas si échoue)
+    // ⚠️ TEMPORAIREMENT DÉSACTIVÉ - L'API Melo est en pause, pas encore d'accès
+    // Pour réactiver: décommenter le code ci-dessous et s'assurer que MELO_API_KEY est configurée
+    let enrichedProfileData = cleanedProfileData;
+    
+    const MELO_ENABLED = process.env.MELO_ENABLED === 'true'; // Flag pour activer/désactiver Melo
+    const meloApiKey = process.env.MELO_API_KEY;
+    
+    if (MELO_ENABLED && meloApiKey) {
+      const meloEnvironment = process.env.MELO_ENVIRONMENT || 'production';
+      console.log(`[Melo] Démarrage enrichissement (env: ${meloEnvironment})...`);
+      try {
+        const lat = cleanedProfileData.location?.gps?.lat;
+        const lon = cleanedProfileData.location?.gps?.lon;
+        
+        if (!lat || !lon) {
+          console.warn('[Melo] Coordonnées GPS manquantes, impossible d\'enrichir');
+        } else {
+          console.log(`[Melo] Recherche autour de ${lat}, ${lon} (rayon: 2000m)`);
+          
+          const meloEnrichment = await enrichMarketWithMelo(cleanedProfileData, {
+            radius_m: 2000, // 2km de rayon
+            limit: 20, // Maximum 20 annonces
+            propertyType: 'all',
+          });
+
+          if (meloEnrichment && meloEnrichment.similarListings?.length > 0) {
+            // Fusionner les données Melo avec les données de marché existantes
+            enrichedProfileData = {
+              ...cleanedProfileData,
+              market: mergeMeloWithMarket(cleanedProfileData.market, meloEnrichment),
+            };
+            
+            console.log(`✅ [Melo] ${meloEnrichment.similarListings.length} annonces similaires ajoutées`);
+            if (meloEnrichment.marketInsights?.averagePriceM2) {
+              console.log(`✅ [Melo] Prix/m² moyen: ${meloEnrichment.marketInsights.averagePriceM2.toLocaleString('fr-FR')} €/m²`);
+            }
+          } else {
+            console.log('[Melo] Aucune annonce trouvée dans la zone');
+          }
+        }
+      } catch (meloError: any) {
+        // Ne pas bloquer la génération du rapport si Melo échoue
+        const errorMessage = meloError?.message || String(meloError);
+        if (errorMessage.includes('ENOTFOUND') || errorMessage.includes('getaddrinfo')) {
+          console.warn('⚠️  [Melo] API non accessible (vérifiez la connexion réseau et l\'URL)');
+        } else if (errorMessage.includes('timeout')) {
+          console.warn('⚠️  [Melo] Timeout - enrichissement ignoré');
+        } else if (errorMessage.includes('401') || errorMessage.includes('Unauthorized')) {
+          console.warn('⚠️  [Melo] Erreur d\'authentification - vérifiez la clé API');
+        } else if (errorMessage.includes('403') || errorMessage.includes('Forbidden')) {
+          console.warn('⚠️  [Melo] Accès refusé (403) - La clé API peut être invalide pour l\'environnement production, ou l\'endpoint n\'est pas autorisé');
+          console.warn('⚠️  [Melo] Vérifiez que la clé API est bien une clé de production et que l\'environnement est correct');
+        } else {
+          // Ne logger que le début du message pour éviter les logs trop longs
+          const shortMessage = errorMessage.length > 100 ? errorMessage.substring(0, 100) + '...' : errorMessage;
+          console.warn(`⚠️  [Melo] Erreur: ${shortMessage}`);
+        }
+      }
+    } else {
+      // Enrichissement Melo désactivé (pas d'erreur, juste un log informatif)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Melo] Enrichissement désactivé (MELO_ENABLED=false ou clé API non configurée)');
+      }
+    }
+
+    // Enrichir avec Gemini Crime Search si activé
+    if (process.env.GEMINI_API_KEY && process.env.GEMINI_WEB_SEARCH_ENABLED !== 'false') {
+      try {
+        console.log('[Gemini Crime] Recherche de données de criminalité...');
+        const crimeData = await enrichSafetyWithGeminiWebSearch(enrichedProfileData);
+        
+        if (crimeData) {
+          // Stocker les données de criminalité dans profileData.safety
+          if (!enrichedProfileData.safety) {
+            enrichedProfileData.safety = {} as any;
+          }
+          (enrichedProfileData.safety as any).gemini_crime_data = crimeData;
+          console.log(`✅ [Gemini Crime] Données trouvées: taux=${crimeData.crime_rate}, score=${crimeData.safety_score}/100`);
+        } else {
+          console.log('[Gemini Crime] Aucune donnée trouvée');
+        }
+      } catch (crimeError: any) {
+        console.warn('[Gemini Crime] Erreur recherche (ignoré):', crimeError?.message || crimeError);
+      }
+    } else {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Gemini Crime] Recherche désactivée (GEMINI_API_KEY non configurée ou GEMINI_WEB_SEARCH_ENABLED=false)');
+      }
+    }
+
     // Créer le rapport dans Firestore
     const reportData = {
       id: reportId,
@@ -147,16 +224,16 @@ export async function POST(request: NextRequest) {
         gps: profileData.location.gps,
         admin: profileData.location.admin,
       },
-      // Données agrégées nettoyées (sans raw)
-      profileData: cleanedProfileData,
+      // Données agrégées nettoyées (sans raw) + enrichies avec Melo si disponible
+      profileData: enrichedProfileData,
       // Données du rapport
       report: {
         generatedAt: FieldValue.serverTimestamp(),
         status: 'complete',
         // Utiliser le score IA si disponible, sinon calcul basique
-        score: profileData.ai_analysis?.score ?? calculateReportScore(profileData),
+        score: enrichedProfileData.ai_analysis?.score ?? calculateReportScore(enrichedProfileData),
         // Utiliser la synthèse IA si disponible, sinon génération basique
-        summary: profileData.ai_analysis?.summary ?? generateReportSummary(profileData),
+        summary: enrichedProfileData.ai_analysis?.summary ?? generateReportSummary(enrichedProfileData),
       },
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
@@ -164,34 +241,92 @@ export async function POST(request: NextRequest) {
       emailSent: false,
     };
 
-    // Sauvegarder le rapport
-    await adminDb.collection('reports').doc(reportId).set(reportData);
+    // Sauvegarder le rapport D'ABORD
+    try {
+      await adminDb.collection('reports').doc(reportId).set(reportData);
 
-    // Créer aussi une entrée dans orders pour la cohérence
-    await adminDb.collection('orders').add({
-      id: orderId,
-      customerUid: uid,
-      customerEmail: email,
-      status: 'COMPLETE',
-      houseData: {
-        address,
-        postalCode,
-        city,
-      },
-      reportData: reportData.report,
-      reportId,
-      createdAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
-      pdfGenerated: false,
-      emailSent: false,
-    });
+      // Créer aussi une entrée dans orders pour la cohérence
+      await adminDb.collection('orders').add({
+        id: orderId,
+        customerUid: uid,
+        customerEmail: email,
+        status: 'COMPLETE',
+        houseData: {
+          address,
+          postalCode,
+          city,
+        },
+        reportData: reportData.report,
+        reportId,
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+        pdfGenerated: false,
+        emailSent: false,
+      });
 
-    return NextResponse.json({
-      success: true,
-      reportId,
-      orderId,
-      message: 'Rapport généré avec succès',
-    });
+      // Vérifier que le rapport est bien sauvegardé et marqué comme 'complete'
+      const savedReport = await adminDb.collection('reports').doc(reportId).get();
+      if (!savedReport.exists) {
+        throw new Error('Rapport non sauvegardé');
+      }
+
+      const savedData = savedReport.data();
+      if (savedData?.report?.status !== 'complete') {
+        throw new Error('Rapport non marqué comme complet');
+      }
+
+      // MAINTENANT que le rapport est sauvegardé avec succès, débiter le crédit
+      const now = Date.now();
+      const historyEntry = {
+        type: 'consume' as const,
+        qty: 1,
+        source: 'unite' as const,
+        ts: now,
+        note: `Génération rapport pour ${address}`,
+        reportId, // Ajouter le reportId pour traçabilité
+      };
+
+      // Re-vérifier les crédits avant de débiter (protection contre les race conditions)
+      const creditsDocCheck = await creditsRef.get();
+      const creditsCheck = creditsDocCheck.data();
+      const currentCreditsCheck = creditsCheck?.total || 0;
+
+      if (currentCreditsCheck <= 0) {
+        // Si les crédits ont été épuisés entre temps, supprimer le rapport et retourner une erreur
+        await adminDb.collection('reports').doc(reportId).delete();
+        return NextResponse.json(
+          { error: 'Insufficient credits (credits were consumed by another process)' },
+          { status: 402 }
+        );
+      }
+
+      // Débiter le crédit
+      await creditsRef.update({
+        total: currentCreditsCheck - 1,
+        history: [...(creditsCheck.history || []), historyEntry],
+        updatedAt: now,
+      });
+
+      return NextResponse.json({
+        success: true,
+        reportId,
+        orderId,
+        message: 'Rapport généré avec succès',
+      });
+    } catch (saveError) {
+      // En cas d'erreur lors de la sauvegarde, ne PAS débiter le crédit
+      console.error('Erreur sauvegarde rapport:', saveError);
+      
+      // Nettoyer le rapport partiel si créé
+      try {
+        await adminDb.collection('reports').doc(reportId).delete();
+      } catch (deleteError) {
+        console.error('Erreur suppression rapport partiel:', deleteError);
+      }
+
+      // Propager l'erreur sans avoir débité le crédit
+      throw saveError;
+    }
   } catch (error) {
     console.error('Erreur génération rapport:', error);
     return NextResponse.json(

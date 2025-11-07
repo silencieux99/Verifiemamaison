@@ -288,66 +288,114 @@ export async function fetchGPU(
 
 /**
  * Récupération du DPE via API ADEME et autres sources
+ * Améliorée pour utiliser plusieurs sources et formats d'adresse
  */
 export async function fetchDPE(
   address: string,
-  citycode: string
+  citycode: string,
+  lat?: number,
+  lon?: number
 ): Promise<HouseProfile['energy']> {
   const energy: HouseProfile['energy'] = {};
   
+  console.log(`[fetchDPE] Recherche DPE pour: ${address}, citycode: ${citycode}`);
+  
+  // Normaliser l'adresse pour différentes tentatives
+  const addressVariations = [
+    address,
+    address.replace(/\s+/g, ' ').trim(),
+    address.split(',').slice(0, 2).join(',').trim(), // Juste rue + code postal
+  ];
+  
+  // Extraire le code postal
+  const postalCode = address.match(/\d{5}/)?.[0];
+  
   try {
-    // 1. Essayer API ADEME DPE (source officielle)
-    try {
-      const dpeUrl = `https://data.ademe.fr/data-fair/api/v1/datasets/dpe-v2-logements-existants/lines?q=${encodeURIComponent(address)}&limit=1`;
-      const response = await fetchWithRetry(dpeUrl, {}, 1);
-      if (response.ok) {
-        const data = await response.json();
-        
-        if (data.results && data.results.length > 0) {
-          const dpe = data.results[0];
-          energy.dpe = {
-            id: dpe.id_dpe,
-            class_energy: dpe.classe_consommation_energie || dpe.classe_consommation,
-            class_ges: dpe.classe_emission_ges || dpe.classe_ges,
-            date: dpe.date_etablissement_dpe || dpe.date_etablissement,
-            surface_m2: dpe.surface_habitable_logement || dpe.surface_habitable,
-            housing_type: dpe.type_batiment || dpe.type_logement,
-            raw: dpe,
-          };
-          return energy;
+    // 1. Essayer API ADEME DPE (source officielle) avec différentes variations d'adresse
+    for (const addr of addressVariations) {
+      try {
+        // Essayer avec recherche par adresse complète
+        const dpeUrl = `https://data.ademe.fr/data-fair/api/v1/datasets/dpe-v2-logements-existants/lines?q=${encodeURIComponent(addr)}&limit=5`;
+        console.log(`[fetchDPE] Tentative ADEME avec: ${addr}`);
+        const response = await fetchWithRetry(dpeUrl, {}, 2);
+        if (response.ok) {
+          const data = await response.json();
+          console.log(`[fetchDPE] ADEME réponse: ${data.results?.length || 0} résultats`);
+          
+          if (data.results && data.results.length > 0) {
+            // Prendre le premier résultat qui correspond le mieux
+            const dpe = data.results[0];
+            
+            // Vérifier que les données sont valides
+            const classEnergy = (dpe.classe_consommation_energie || dpe.classe_consommation || '').toUpperCase().trim();
+            if (classEnergy && ['A', 'B', 'C', 'D', 'E', 'F', 'G'].includes(classEnergy)) {
+              energy.dpe = {
+                id: dpe.id_dpe || dpe.id,
+                class_energy: classEnergy,
+                class_ges: (dpe.classe_emission_ges || dpe.classe_ges || '').toUpperCase().trim(),
+                date: dpe.date_etablissement_dpe || dpe.date_etablissement || dpe.date_visite_diagnostiqueur,
+                surface_m2: dpe.surface_habitable_logement || dpe.surface_habitable || dpe.surface,
+                housing_type: dpe.type_batiment || dpe.type_logement || dpe.type,
+                raw: dpe,
+              };
+              
+              console.log(`[fetchDPE] ✅ DPE trouvé via ADEME: ${classEnergy}`);
+              return energy;
+            }
+          }
         }
+      } catch (e) {
+        console.log(`[fetchDPE] Erreur ADEME pour ${addr}:`, e);
+        continue;
       }
-    } catch (e) {
-      // Continue vers la source suivante
     }
     
-    // 2. Essayer API GeoRisques (peut avoir des données DPE)
-    try {
-      const georisquesUrl = `https://www.georisques.gouv.fr/api/v1/dpe?address=${encodeURIComponent(address)}`;
-      const response = await fetchWithRetry(georisquesUrl, {}, 1);
-      if (response.ok) {
-        const data = await response.json();
-        if (data?.dpe) {
-          energy.dpe = {
-            id: data.dpe.id,
-            class_energy: data.dpe.classe_energie || data.dpe.class_energy,
-            class_ges: data.dpe.classe_ges || data.dpe.class_ges,
-            date: data.dpe.date,
-            surface_m2: data.dpe.surface,
-            housing_type: data.dpe.type,
-            raw: data.dpe,
-          };
-          return energy;
+    // 2. Essayer avec recherche par code postal uniquement
+    if (postalCode) {
+      try {
+        // Essayer avec le paramètre code_postal si disponible
+        const dpeUrlByPostal = `https://data.ademe.fr/data-fair/api/v1/datasets/dpe-v2-logements-existants/lines?code_postal=${encodeURIComponent(postalCode)}&limit=20`;
+        console.log(`[fetchDPE] Tentative ADEME par code postal: ${postalCode}`);
+        const response = await fetchWithRetry(dpeUrlByPostal, {}, 1);
+        if (response.ok) {
+          const data = await response.json();
+          console.log(`[fetchDPE] ADEME par code postal: ${data.results?.length || 0} résultats`);
+          
+          if (data.results && data.results.length > 0) {
+            // Chercher le résultat le plus proche de l'adresse
+            const searchStreet = address.split(',')[0].toLowerCase().trim();
+            const bestMatch = data.results.find((dpe: any) => {
+              const dpeAddress = (dpe.adresse || dpe.adresse_ban || dpe.adresse_numero || '').toLowerCase();
+              return dpeAddress.includes(searchStreet) || searchStreet.includes(dpeAddress.split(' ')[0]);
+            }) || data.results[0];
+            
+            const classEnergy = (bestMatch?.classe_consommation_energie || bestMatch?.classe_consommation || '').toUpperCase().trim();
+            if (bestMatch && classEnergy && ['A', 'B', 'C', 'D', 'E', 'F', 'G'].includes(classEnergy)) {
+              energy.dpe = {
+                id: bestMatch.id_dpe || bestMatch.id,
+                class_energy: classEnergy,
+                class_ges: (bestMatch.classe_emission_ges || bestMatch.classe_ges || '').toUpperCase().trim(),
+                date: bestMatch.date_etablissement_dpe || bestMatch.date_etablissement || bestMatch.date_visite_diagnostiqueur,
+                surface_m2: bestMatch.surface_habitable_logement || bestMatch.surface_habitable || bestMatch.surface,
+                housing_type: bestMatch.type_batiment || bestMatch.type_logement || bestMatch.type,
+                raw: bestMatch,
+              };
+              
+              console.log(`[fetchDPE] ✅ DPE trouvé via code postal: ${classEnergy}`);
+              return energy;
+            }
+          }
         }
+      } catch (e) {
+        console.log(`[fetchDPE] Erreur ADEME par code postal:`, e);
       }
-    } catch (e) {
-      // Continue
     }
     
   } catch (error) {
-    // Continue
+    console.error('[fetchDPE] Erreur globale:', error);
   }
   
+  console.log(`[fetchDPE] ❌ Aucune donnée DPE trouvée pour: ${address}`);
   // Si aucune donnée trouvée, retourner un objet vide
   return energy;
 }

@@ -546,57 +546,69 @@ export function convertHouseProfileToSections(profile: HouseProfile): ReportSect
   
 
   // 3. Performance énergétique (DPE)
-  if (profile.energy?.dpe) {
-    const energyItems = [];
-    
-    if (profile.energy.dpe.class_energy) {
-      const classEnergy = profile.energy.dpe.class_energy;
-      energyItems.push({
-        label: 'Classe énergétique',
-        value: classEnergy,
-        flag: ['E', 'F', 'G'].includes(classEnergy) ? 'risk' as const :
-              classEnergy === 'D' ? 'warn' as const : 'ok' as const
-      });
-    }
-    
-    if (profile.energy.dpe.class_ges) {
-      energyItems.push({
-        label: 'Classe GES',
-        value: profile.energy.dpe.class_ges,
-        flag: ['E', 'F', 'G'].includes(profile.energy.dpe.class_ges) ? 'risk' as const :
-              profile.energy.dpe.class_ges === 'D' ? 'warn' as const : 'ok' as const
-      });
-    }
-    
-    if (profile.energy.dpe.date) {
-      energyItems.push({
-        label: 'Date du DPE',
-        value: new Date(profile.energy.dpe.date).toLocaleDateString('fr-FR')
-      });
-    }
-    
-    if (profile.energy.dpe.surface_m2) {
-      energyItems.push({
-        label: 'Surface',
-        value: `${profile.energy.dpe.surface_m2} m²`
-      });
-    }
-    
-    if (profile.energy.dpe.housing_type) {
-      energyItems.push({
-        label: 'Type de logement',
-        value: profile.energy.dpe.housing_type
-      });
-    }
-    
-    if (energyItems.length > 0) {
-      sections.push({
-        id: 'energy',
-        title: 'Performance énergétique',
-        items: energyItems
-      });
-    }
+  // Toujours afficher la section énergie, même si les données DPE ne sont pas disponibles
+  const energyItems = [];
+  
+  if (profile.energy?.dpe?.class_energy) {
+    const classEnergy = profile.energy.dpe.class_energy;
+    energyItems.push({
+      label: 'Classe énergétique',
+      value: classEnergy,
+      flag: ['E', 'F', 'G'].includes(classEnergy) ? 'risk' as const :
+            classEnergy === 'D' ? 'warn' as const : 'ok' as const
+    });
   }
+  
+  if (profile.energy?.dpe?.class_ges) {
+    energyItems.push({
+      label: 'Classe GES',
+      value: profile.energy.dpe.class_ges,
+      flag: ['E', 'F', 'G'].includes(profile.energy.dpe.class_ges) ? 'risk' as const :
+            profile.energy.dpe.class_ges === 'D' ? 'warn' as const : 'ok' as const
+    });
+  }
+  
+  if (profile.energy?.dpe?.date) {
+    energyItems.push({
+      label: 'Date du DPE',
+      value: new Date(profile.energy.dpe.date).toLocaleDateString('fr-FR')
+    });
+  }
+  
+  if (profile.energy?.dpe?.surface_m2) {
+    energyItems.push({
+      label: 'Surface',
+      value: `${profile.energy.dpe.surface_m2} m²`
+    });
+  }
+  
+  if (profile.energy?.dpe?.housing_type) {
+    energyItems.push({
+      label: 'Type de logement',
+      value: profile.energy.dpe.housing_type
+    });
+  }
+  
+  // Si aucune donnée DPE, afficher un message informatif
+  if (energyItems.length === 0) {
+    energyItems.push({
+      label: 'Diagnostic de Performance Énergétique',
+      value: 'Non disponible',
+      flag: 'info' as const
+    });
+    energyItems.push({
+      label: 'Information',
+      value: 'Les données DPE ne sont pas disponibles pour cette adresse. Un DPE peut être réalisé par un professionnel certifié.',
+      flag: 'info' as const
+    });
+  }
+  
+  // Toujours ajouter la section énergie
+  sections.push({
+    id: 'energy',
+    title: 'Performance énergétique',
+    items: energyItems
+  });
 
   // 4. Marché immobilier (DVF)
   if (profile.market?.dvf) {
@@ -687,6 +699,82 @@ export function convertHouseProfileToSections(profile: HouseProfile): ReportSect
         });
       }
     }
+  }
+
+  // 4.5. Annonces similaires (Melo)
+  if (profile.market?.melo) {
+    const meloData = profile.market.melo;
+    
+    console.log('[Convert Sections] Données Melo trouvées:', {
+      hasSimilarListings: !!meloData.similarListings,
+      listingsCount: meloData.similarListings?.length || 0,
+      hasMarketInsights: !!meloData.marketInsights,
+    });
+    
+    if (meloData.similarListings && meloData.similarListings.length > 0) {
+      // Section résumé avec statistiques
+      const meloSummaryItems = [];
+      
+      if (meloData.marketInsights?.activeListings) {
+        meloSummaryItems.push({
+          label: 'Annonces actives trouvées',
+          value: `${meloData.marketInsights.activeListings} annonce${meloData.marketInsights.activeListings > 1 ? 's' : ''}`,
+          flag: 'ok' as const
+        });
+      }
+      
+      if (meloData.marketInsights?.averagePriceM2) {
+        meloSummaryItems.push({
+          label: 'Prix/m² moyen (annonces actives)',
+          value: `${meloData.marketInsights.averagePriceM2.toLocaleString('fr-FR')} €/m²`
+        });
+      }
+      
+      if (meloData.marketInsights?.priceRange) {
+        meloSummaryItems.push({
+          label: 'Fourchette de prix/m²',
+          value: `${meloData.marketInsights.priceRange.min.toLocaleString('fr-FR')} - ${meloData.marketInsights.priceRange.max.toLocaleString('fr-FR')} €/m²`
+        });
+      }
+      
+      if (meloData.marketInsights?.averageSurface) {
+        meloSummaryItems.push({
+          label: 'Surface moyenne',
+          value: `${meloData.marketInsights.averageSurface} m²`
+        });
+      }
+      
+      if (meloData.fetchedAt) {
+        meloSummaryItems.push({
+          label: 'Données mises à jour',
+          value: new Date(meloData.fetchedAt).toLocaleString('fr-FR')
+        });
+      }
+      
+      if (meloSummaryItems.length > 0) {
+        const meloSection = {
+          id: 'melo_summary',
+          title: 'Marché actuel - Annonces similaires',
+          items: meloSummaryItems,
+          notes: [meloData.similarListings] as any // Stocker les listings pour le composant spécialisé
+        };
+        
+        console.log('[Convert Sections] Section Melo créée:', {
+          id: meloSection.id,
+          itemsCount: meloSection.items.length,
+          listingsCount: meloData.similarListings.length,
+          notesIsArray: Array.isArray(meloSection.notes),
+          notesLength: meloSection.notes.length,
+          firstNoteIsArray: Array.isArray(meloSection.notes[0]),
+        });
+        
+        sections.push(meloSection);
+      }
+    } else {
+      console.log('[Convert Sections] Pas de listings Melo ou liste vide');
+    }
+  } else {
+    console.log('[Convert Sections] Pas de données Melo dans profile.market.melo');
   }
 
   // 5. Urbanisme et PLU

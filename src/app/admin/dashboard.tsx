@@ -376,50 +376,53 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 sm:space-y-6 lg:space-y-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-            Dashboard
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Vue d'ensemble de votre plateforme VerifieMaMaison
-          </p>
-        </div>
-        
-        <div className="flex items-center gap-4">
-          <select
-            value={period}
-            onChange={(e) => setPeriod(e.target.value as any)}
-            className="h-9 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-sm focus:border-purple-500 focus:ring-purple-500"
-          >
-            <option value="today">Aujourd'hui</option>
-            <option value="24h">24h</option>
-            <option value="7d">7 jours</option>
-            <option value="30d">30 jours</option>
-          </select>
+      <div className="flex flex-col gap-3 sm:gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100 truncate">
+              Dashboard
+            </h1>
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1 hidden sm:block">
+              Vue d'ensemble de votre plateforme VerifieMaMaison
+            </p>
+          </div>
           
-          <button
-            onClick={refreshStats}
-            disabled={refreshing || loading}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 text-sm font-medium"
-          >
-            <ArrowPathIcon className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-            Actualiser
-          </button>
-          
-          <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
-            <div className={`w-2 h-2 rounded-full ${!loading ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
-            <span className="text-xs text-gray-600 dark:text-gray-400">
-              {!loading ? 'Temps réel actif' : 'Chargement...'}
-            </span>
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <select
+              value={period}
+              onChange={(e) => setPeriod(e.target.value as any)}
+              className="flex-1 sm:flex-none h-9 min-w-[140px] rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-xs sm:text-sm focus:border-purple-500 focus:ring-purple-500"
+            >
+              <option value="today">Aujourd'hui</option>
+              <option value="24h">24h</option>
+              <option value="7d">7 jours</option>
+              <option value="30d">30 jours</option>
+            </select>
+            
+            <button
+              onClick={refreshStats}
+              disabled={refreshing || loading}
+              className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 text-xs sm:text-sm font-medium"
+            >
+              <ArrowPathIcon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Actualiser</span>
+              <span className="sm:hidden">Rafr.</span>
+            </button>
+            
+            <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
+              <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${!loading ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
+              <span className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                {!loading ? 'Temps réel' : 'Chargement...'}
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
         <KpiCard
           title="Visiteurs en direct"
           value={activeVisitors.length}
@@ -465,51 +468,51 @@ export default function Dashboard() {
       </div>
 
       {/* Pages visitées en temps réel */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-        <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div className="flex items-center gap-3">
-              <GlobeAltIcon className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
-              <div>
-                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
+      <div className="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="p-3 sm:p-4 lg:p-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between flex-wrap gap-2 sm:gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+              <GlobeAltIcon className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-purple-600 flex-shrink-0" />
+              <div className="min-w-0 flex-1">
+                <h2 className="text-sm sm:text-base lg:text-lg xl:text-xl font-semibold text-gray-900 dark:text-white truncate">
                   Pages visitées en temps réel
                 </h2>
-                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-0.5">
+                <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 mt-0.5 hidden sm:block">
                   Actualisation automatique
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-              <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">En direct</span>
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+              <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-500 animate-pulse"></div>
+              <span className="text-[10px] sm:text-xs lg:text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">En direct</span>
             </div>
           </div>
         </div>
-        <div className="p-4 sm:p-6">
+        <div className="p-3 sm:p-4 lg:p-6">
           {Object.keys(pagesVisited).length === 0 ? (
-            <div className="text-center py-8 text-gray-500 dark:text-gray-400 text-sm">
+            <div className="text-center py-6 sm:py-8 text-gray-500 dark:text-gray-400 text-xs sm:text-sm">
               Aucune page visitée
             </div>
           ) : (
-            <div className="space-y-2 sm:space-y-3">
+            <div className="space-y-1.5 sm:space-y-2 lg:space-y-3">
               {Object.entries(pagesVisited)
                 .sort(([, a], [, b]) => (b as number) - (a as number))
                 .map(([path, count]) => (
                   <div
                     key={path}
-                    className="flex items-center justify-between p-2 sm:p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    className="flex items-center justify-between p-2 sm:p-2.5 lg:p-3 bg-gray-50 dark:bg-gray-700/50 rounded-md sm:rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                   >
-                    <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-500 flex-shrink-0"></div>
-                      <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white truncate">
+                    <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-3 flex-1 min-w-0">
+                      <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 lg:w-2 lg:h-2 rounded-full bg-green-500 flex-shrink-0"></div>
+                      <p className="text-[11px] sm:text-xs lg:text-sm font-medium text-gray-900 dark:text-white truncate">
                         {path || '/'}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="text-xs sm:text-sm font-semibold text-purple-600 dark:text-purple-400">
+                    <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                      <span className="text-[11px] sm:text-xs lg:text-sm font-semibold text-purple-600 dark:text-purple-400">
                         {count as number}
                       </span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                      <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 hidden sm:inline">
                         visiteur{(count as number) > 1 ? 's' : ''}
                       </span>
                     </div>
@@ -521,13 +524,13 @@ export default function Dashboard() {
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         <RealtimeChart
           data={chartData.salesData}
           title="Évolution des ventes"
           type="area"
           color="#10B981"
-          height={300}
+          height={250}
           loading={loading}
         />
         
@@ -536,14 +539,14 @@ export default function Dashboard() {
           title="Trafic du site"
           type="line"
           color="#3B82F6"
-          height={300}
+          height={250}
           loading={loading}
         />
       </div>
 
       {/* Content Row */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <div className="xl:col-span-2">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className="lg:col-span-2 order-2 lg:order-1">
           <RecentOrdersTable
             limit={20}
             onViewOrder={handleViewOrder}
@@ -552,12 +555,14 @@ export default function Dashboard() {
           />
         </div>
         
-        <QuickActions 
-          onExportData={async () => {
-            // TODO: Implémenter l'export
-            alert('Export à implémenter');
-          }}
-        />
+        <div className="order-1 lg:order-2">
+          <QuickActions 
+            onExportData={async () => {
+              // TODO: Implémenter l'export
+              alert('Export à implémenter');
+            }}
+          />
+        </div>
       </div>
 
       {/* Modales */}

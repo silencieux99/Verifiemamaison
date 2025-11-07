@@ -150,7 +150,7 @@ export async function GET(request: NextRequest) {
         warnings.push('Géoportail Urbanisme indisponible');
         return {};
       }),
-      fetchDPE(address, citycode).catch((e) => {
+      fetchDPE(address, citycode, lat, lon).catch((e) => {
         warnings.push('DPE indisponible');
         return {};
       }),

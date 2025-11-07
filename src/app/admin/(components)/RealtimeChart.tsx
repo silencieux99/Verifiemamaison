@@ -36,6 +36,16 @@ export default function RealtimeChart({
   className = ''
 }: RealtimeChartProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Auto-refresh logic
   useEffect(() => {
@@ -70,11 +80,11 @@ export default function RealtimeChart({
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
-          <p className="text-sm font-semibold text-gray-900 dark:text-white">
+        <div className="bg-white dark:bg-gray-800 p-2 sm:p-3 rounded-md sm:rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+          <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
             {payload[0].payload.name}
           </p>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
             Valeur: <span className="font-semibold" style={{ color }}>{payload[0].value}</span>
           </p>
         </div>
@@ -85,11 +95,11 @@ export default function RealtimeChart({
 
   if (loading) {
     return (
-      <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 ${className}`}>
-        <div className="flex items-center justify-center" style={{ height }}>
+      <div className={`bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl border border-gray-200 dark:border-gray-700 p-3 sm:p-4 lg:p-6 ${className}`}>
+        <div className="flex items-center justify-center" style={{ height: Math.min(height, 200) }}>
           <div className="text-center">
-            <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-400">Chargement...</p>
+            <div className="w-6 h-6 sm:w-8 sm:h-8 border-2 sm:border-3 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3 sm:mb-4"></div>
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Chargement...</p>
           </div>
         </div>
       </div>
@@ -97,18 +107,19 @@ export default function RealtimeChart({
   }
 
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 ${className}`}>
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{title}</h3>
+    <div className={`bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl border border-gray-200 dark:border-gray-700 p-3 sm:p-4 lg:p-6 ${className}`}>
+      <div className="flex items-center justify-between mb-3 sm:mb-4 lg:mb-6">
+        <h3 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900 dark:text-white truncate">{title}</h3>
         {isRefreshing && (
-          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-            Actualisation...
+          <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs lg:text-sm text-gray-500 dark:text-gray-400 flex-shrink-0">
+            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-500 rounded-full animate-pulse"></div>
+            <span className="hidden sm:inline">Actualisation...</span>
           </div>
         )}
       </div>
       
-      <ResponsiveContainer width="100%" height={height}>
+      <div className="w-full" style={{ height: `${isMobile ? Math.min(height, 200) : height}px` }}>
+      <ResponsiveContainer width="100%" height="100%">
         {type === 'area' ? (
           <AreaChart data={chartData}>
             {showGrid && <ReferenceLine y={0} stroke="#e5e7eb" />}
@@ -121,13 +132,17 @@ export default function RealtimeChart({
             <XAxis 
               dataKey="name" 
               stroke="#9ca3af"
-              fontSize={12}
+              fontSize={isMobile ? 10 : 12}
               tickLine={false}
+              angle={isMobile ? -45 : 0}
+              textAnchor={isMobile ? 'end' : 'middle'}
+              height={isMobile ? 50 : 30}
             />
             <YAxis 
               stroke="#9ca3af"
-              fontSize={12}
+              fontSize={isMobile ? 10 : 12}
               tickLine={false}
+              width={isMobile ? 40 : 50}
             />
             {showTooltip && <Tooltip content={<CustomTooltip />} />}
             <Area
@@ -145,13 +160,17 @@ export default function RealtimeChart({
             <XAxis 
               dataKey="name" 
               stroke="#9ca3af"
-              fontSize={12}
+              fontSize={isMobile ? 10 : 12}
               tickLine={false}
+              angle={isMobile ? -45 : 0}
+              textAnchor={isMobile ? 'end' : 'middle'}
+              height={isMobile ? 50 : 30}
             />
             <YAxis 
               stroke="#9ca3af"
-              fontSize={12}
+              fontSize={isMobile ? 10 : 12}
               tickLine={false}
+              width={isMobile ? 40 : 50}
             />
             {showTooltip && <Tooltip content={<CustomTooltip />} />}
             <Bar
@@ -166,13 +185,17 @@ export default function RealtimeChart({
             <XAxis 
               dataKey="name" 
               stroke="#9ca3af"
-              fontSize={12}
+              fontSize={isMobile ? 10 : 12}
               tickLine={false}
+              angle={isMobile ? -45 : 0}
+              textAnchor={isMobile ? 'end' : 'middle'}
+              height={isMobile ? 50 : 30}
             />
             <YAxis 
               stroke="#9ca3af"
-              fontSize={12}
+              fontSize={isMobile ? 10 : 12}
               tickLine={false}
+              width={isMobile ? 40 : 50}
             />
             {showTooltip && <Tooltip content={<CustomTooltip />} />}
             <Line
@@ -186,6 +209,7 @@ export default function RealtimeChart({
           </LineChart>
         )}
       </ResponsiveContainer>
+      </div>
     </div>
   );
 }

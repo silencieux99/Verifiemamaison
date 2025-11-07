@@ -1,9 +1,12 @@
 /**
- * Analyse IA avec OpenAI ChatGPT
+ * Analyse IA avec OpenAI ChatGPT / Gemini
  * Analyse complète des données immobilières pour générer un score, une synthèse et des insights
+ * 
+ * Supporte également Gemini avec Google Search Grounding pour des recherches web en temps réel
  */
 
 import { HouseProfile } from './house-profile-types';
+import { enrichMarketWithGeminiWebSearch } from './gemini-web-search';
 
 export interface AIAnalysis {
   score: number; // Score global sur 100
@@ -13,6 +16,18 @@ export interface AIAnalysis {
     market_trend?: 'hausse' | 'baisse' | 'stable';
     market_comment?: string;
     price_comparison?: string;
+    gemini_data?: {
+      price_m2?: number;
+      price_m2_range?: { min: number; max: number };
+      recent_sales?: Array<{
+        price_m2: number;
+        surface: number;
+        date?: string;
+        address?: string;
+      }>;
+      sources?: string[];
+      neighborhood_info?: string;
+    };
   };
   neighborhood_analysis: {
     shops_analysis?: string;
@@ -37,8 +52,12 @@ export interface AIAnalysis {
 
 /**
  * Génère un prompt structuré pour Gemini basé sur les données collectées
+ * @param webSearchData Données de recherche web Gemini (optionnel)
  */
-function generatePrompt(profile: Partial<HouseProfile>): string {
+function generatePrompt(
+  profile: Partial<HouseProfile>,
+  webSearchData?: Partial<import('./gemini-web-search').GeminiWebSearchResult> | null
+): string {
   const address = profile.location?.normalized_address || profile.query?.address || 'Adresse inconnue';
   const city = profile.location?.admin?.city || '';
   const postcode = profile.location?.admin?.postcode || '';
@@ -87,10 +106,23 @@ function generatePrompt(profile: Partial<HouseProfile>): string {
     },
   };
 
+  // Ajouter les données de recherche web si disponibles
+  const webSearchInfo = webSearchData ? `
+DONNÉES DE RECHERCHE WEB RÉCENTES (Gemini + Google Search):
+- Prix/m² trouvé: ${webSearchData.price_m2 ? `${webSearchData.price_m2} €/m²` : 'Non disponible'}
+- Fourchette prix/m²: ${webSearchData.price_m2_range ? `${webSearchData.price_m2_range.min} - ${webSearchData.price_m2_range.max} €/m²` : 'Non disponible'}
+- Tendance marché: ${webSearchData.market_trend || 'Non disponible'}
+- Commentaire marché: ${webSearchData.market_comment || 'Non disponible'}
+- Informations quartier: ${webSearchData.neighborhood_info || 'Non disponible'}
+- Ventes récentes similaires: ${webSearchData.recent_sales?.length || 0} trouvée(s)
+- Sources: ${webSearchData.sources?.join(', ') || 'Non disponible'}
+` : '';
+
   return `Tu es un expert immobilier français. Analyse les données suivantes pour le bien situé à ${address}, ${city} ${postcode} et génère une analyse complète.
 
 DONNÉES DISPONIBLES:
 ${JSON.stringify(data, null, 2)}
+${webSearchInfo}
 
 Génère une analyse JSON structurée avec les champs suivants. IMPORTANT: Réponds UNIQUEMENT avec un objet JSON valide, sans texte avant ou après, sans markdown, sans code block:
 
@@ -98,7 +130,7 @@ Génère une analyse JSON structurée avec les champs suivants. IMPORTANT: Répo
   "score": <nombre entre 0 et 100>,
   "summary": "<synthèse générale du bien très détaillée et complète (minimum 8-10 phrases, jusqu'à 15 phrases). Analyse en profondeur tous les aspects : localisation, risques, marché immobilier, commodités, transports, écoles, qualité de vie, potentiel d'investissement, points forts et faibles. Sois exhaustif et donne une vision complète du bien pour un acheteur potentiel>",
   "market_analysis": {
-    "estimated_value_m2": <estimation €/m² réaliste. Si données DVF disponibles, utilise-les. Sinon, estime selon la région/ville (ex: Paris 8000-12000€/m², grandes villes 3000-5000€/m², petites villes 1500-2500€/m², campagne 1000-2000€/m²). IMPORTANT: Toujours fournir une estimation réaliste, même approximative>,
+    "estimated_value_m2": <estimation €/m² réaliste. PRIORITÉ: 1) Données de recherche web Gemini si disponibles, 2) Données DVF si disponibles, 3) Estimation selon la région/ville. IMPORTANT: Toujours fournir une estimation réaliste>,
     "market_trend": "<hausse|baisse|stable>. Si données DVF disponibles, utilise la tendance. Sinon, estime selon le contexte général du marché immobilier français>",
     "market_comment": "<commentaire sur le marché immobilier du quartier. Si pas de données, base-toi sur la localisation, la région, et les tendances générales>",
     "price_comparison": "<comparaison avec le marché local. Si pas de données précises, compare avec le marché régional>"
@@ -139,6 +171,21 @@ IMPORTANT:
  */
 export async function analyzeWithOpenAI(profile: Partial<HouseProfile>): Promise<AIAnalysis | null> {
   const apiKey = process.env.OPENAI_API_KEY;
+  const geminiApiKey = process.env.GEMINI_API_KEY;
+  
+  // Enrichir avec Gemini Web Search si disponible (recherches web en temps réel)
+  let webSearchData: Partial<import('./gemini-web-search').GeminiWebSearchResult> | null = null;
+  if (geminiApiKey && process.env.GEMINI_WEB_SEARCH_ENABLED !== 'false') {
+    try {
+      console.log('🔍 [Gemini] Recherche d\'informations web en temps réel...');
+      webSearchData = await enrichMarketWithGeminiWebSearch(profile);
+      if (webSearchData) {
+        console.log(`✅ [Gemini] Données web trouvées: prix/m²=${webSearchData.price_m2}€`);
+      }
+    } catch (error) {
+      console.warn('[Gemini] Erreur recherche web (ignoré):', error);
+    }
+  }
   
   if (!apiKey) {
     console.warn('⚠️ OPENAI_API_KEY not configured, skipping AI analysis');
@@ -149,7 +196,8 @@ export async function analyzeWithOpenAI(profile: Partial<HouseProfile>): Promise
   console.log('🤖 Démarrage de l\'analyse IA avec OpenAI ChatGPT...');
 
   try {
-    const prompt = generatePrompt(profile);
+    // Enrichir le prompt avec les données de recherche web si disponibles
+    const prompt = generatePrompt(profile, webSearchData);
 
     // Appel à l'API OpenAI
     // Utilisation de gpt-4o-mini (rapide et économique, excellent rapport qualité/prix)
@@ -215,8 +263,15 @@ export async function analyzeWithOpenAI(profile: Partial<HouseProfile>): Promise
     // Valider et normaliser les données
         // Si pas de prix estimé, essayer de l'estimer depuis les données du profil
         let estimatedValueM2 = analysis.market_analysis?.estimated_value_m2;
+        
+        // Priorité 1: Données de recherche web Gemini (les plus récentes)
+        if (webSearchData?.price_m2 && webSearchData.price_m2 > 500 && webSearchData.price_m2 < 50000) {
+          estimatedValueM2 = webSearchData.price_m2;
+          console.log(`✅ [Gemini] Utilisation du prix/m² trouvé via recherche web: ${estimatedValueM2}€`);
+        }
+        
+        // Priorité 2: Données DVF si pas de données web ou si estimation invalide
         if (!estimatedValueM2 || estimatedValueM2 < 500 || estimatedValueM2 > 50000) {
-          // Estimer depuis les données DVF si disponibles
           const dvfPrice = profile.market?.dvf?.summary?.price_m2_median_1y || 
                           profile.market?.dvf?.summary?.price_m2_median_3y;
           if (dvfPrice && dvfPrice > 500 && dvfPrice < 50000) {
@@ -244,9 +299,17 @@ export async function analyzeWithOpenAI(profile: Partial<HouseProfile>): Promise
           summary: analysis.summary || 'Analyse non disponible',
           market_analysis: {
             estimated_value_m2: estimatedValueM2,
-            market_trend: analysis.market_analysis?.market_trend || 'stable',
-            market_comment: analysis.market_analysis?.market_comment || '',
+            market_trend: webSearchData?.market_trend || analysis.market_analysis?.market_trend || 'stable',
+            market_comment: webSearchData?.market_comment || analysis.market_analysis?.market_comment || '',
             price_comparison: analysis.market_analysis?.price_comparison || '',
+            // Stocker les données Gemini complètes pour l'affichage
+            gemini_data: webSearchData ? {
+              price_m2: webSearchData.price_m2,
+              price_m2_range: webSearchData.price_m2_range,
+              recent_sales: webSearchData.recent_sales,
+              sources: webSearchData.sources,
+              neighborhood_info: webSearchData.neighborhood_info,
+            } : undefined,
           },
       neighborhood_analysis: {
         shops_analysis: analysis.neighborhood_analysis?.shops_analysis || '',

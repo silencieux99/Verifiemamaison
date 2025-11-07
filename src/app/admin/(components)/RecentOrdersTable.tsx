@@ -94,17 +94,17 @@ export default function RecentOrdersTable({
   }
 
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 ${className}`}>
-      <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
-        <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
+    <div className={`bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden ${className}`}>
+      <div className="p-3 sm:p-4 lg:p-6 border-b border-gray-200 dark:border-gray-700">
+        <h2 className="text-base sm:text-lg lg:text-xl font-semibold text-gray-900 dark:text-white">
           {orderLimit} dernières commandes
         </h2>
       </div>
       
-      <div className="overflow-x-auto">
-        <div className="min-w-full">
+      <div className="overflow-x-auto -mx-3 sm:mx-0">
+        <div className="min-w-full px-3 sm:px-0">
           {orders.length === 0 ? (
-            <div className="p-8 text-center text-gray-500 dark:text-gray-400 text-sm">
+            <div className="p-6 sm:p-8 text-center text-gray-500 dark:text-gray-400 text-xs sm:text-sm">
               Aucune commande
             </div>
           ) : (
@@ -112,58 +112,64 @@ export default function RecentOrdersTable({
               {orders.map((order) => (
                 <div
                   key={order.id}
-                  className="p-3 sm:p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                  className="p-2.5 sm:p-3 lg:p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                        <p className="text-xs sm:text-sm font-mono text-gray-900 dark:text-white">
-                          {order.id?.substring(0, 8) || 'N/A'}
-                        </p>
-                        <span className="text-gray-400">•</span>
-                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">
-                          {order.customerEmail || 'N/A'}
-                        </p>
-                        <span className="text-gray-400">•</span>
-                        <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
-                          {order.amount ? `${(order.amount / 100).toFixed(2)}€` : 'N/A'}
-                        </p>
-                        <span className={`text-xs px-2 py-0.5 sm:py-1 rounded-full ${
-                          order.status === 'paid' || order.status === 'COMPLETE'
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                            : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                        }`}>
-                          {order.status || 'pending'}
-                        </span>
+                  <div className="flex flex-col gap-2 sm:gap-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 lg:gap-3 flex-wrap">
+                          <div className="flex items-center gap-1.5 sm:gap-2">
+                            <p className="text-[10px] sm:text-xs lg:text-sm font-mono text-gray-900 dark:text-white">
+                              {order.id?.substring(0, 8) || 'N/A'}
+                            </p>
+                            <span className="text-gray-400 hidden sm:inline">•</span>
+                            <p className="text-[10px] sm:text-xs lg:text-sm text-gray-600 dark:text-gray-400 truncate max-w-[120px] sm:max-w-none">
+                              {order.customerEmail || 'N/A'}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1.5 sm:gap-2">
+                            <span className="text-gray-400 hidden sm:inline">•</span>
+                            <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
+                              {order.amount ? `${(order.amount / 100).toFixed(2)}€` : 'N/A'}
+                            </p>
+                            <span className={`text-[9px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full whitespace-nowrap ${
+                              order.status === 'paid' || order.status === 'COMPLETE'
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                            }`}>
+                              {order.status || 'pending'}
+                            </span>
+                          </div>
+                        </div>
+                        {order.createdAt && (
+                          <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            {format(new Date(order.createdAt), 'PPpp', { locale: fr })}
+                          </p>
+                        )}
                       </div>
-                      {order.createdAt && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          {format(new Date(order.createdAt), 'PPpp', { locale: fr })}
-                        </p>
+                      {showActions && (
+                        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                          {onViewOrder && (
+                            <button
+                              onClick={() => onViewOrder(order)}
+                              className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-xs lg:text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md sm:rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                            >
+                              <EyeIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5 lg:w-4 lg:h-4" />
+                              <span className="hidden sm:inline">Voir</span>
+                            </button>
+                          )}
+                          {onViewUser && order.customerUid && (
+                            <button
+                              onClick={() => onViewUser(order)}
+                              className="flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-xs lg:text-sm font-medium text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900 rounded-md sm:rounded-lg hover:bg-purple-200 dark:hover:bg-purple-800 transition-colors"
+                            >
+                              <UserIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5 lg:w-4 lg:h-4" />
+                              <span className="hidden sm:inline">Client</span>
+                            </button>
+                          )}
+                        </div>
                       )}
                     </div>
-                    {showActions && (
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        {onViewOrder && (
-                          <button
-                            onClick={() => onViewOrder(order)}
-                            className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                          >
-                            <EyeIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                            <span className="hidden sm:inline">Voir</span>
-                          </button>
-                        )}
-                        {onViewUser && order.customerUid && (
-                          <button
-                            onClick={() => onViewUser(order)}
-                            className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-800 transition-colors"
-                          >
-                            <UserIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                            <span className="hidden sm:inline">Client</span>
-                          </button>
-                        )}
-                      </div>
-                    )}
                   </div>
                 </div>
               ))}

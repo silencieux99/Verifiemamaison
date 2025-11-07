@@ -99,6 +99,33 @@ export interface HouseProfileMarket {
     };
     raw?: any;
   };
+  melo?: {
+    similarListings?: Array<{
+      id: string;
+      title: string;
+      price: number;
+      price_m2?: number;
+      surface: number;
+      rooms?: number;
+      type: string;
+      address: string;
+      url: string;
+      distance_m?: number;
+      published_date?: string;
+      energy_class?: string;
+    }>;
+    marketInsights?: {
+      averagePriceM2?: number;
+      priceRange?: {
+        min: number;
+        max: number;
+      };
+      activeListings?: number;
+      averageSurface?: number;
+    };
+    source: 'melo';
+    fetchedAt: string;
+  };
 }
 
 

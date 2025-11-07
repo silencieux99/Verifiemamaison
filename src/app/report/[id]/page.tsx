@@ -85,8 +85,50 @@ export default function RapportInteractifPage({ params }: { params: Promise<{ id
         }
 
         const data = await response.json();
+        const report = data.report;
         
-        setReportData(data.report);
+        // Debug: vérifier les données Melo
+        if (report?.profileData?.market?.melo) {
+          console.log('[Report Page] Données Melo trouvées:', {
+            listingsCount: report.profileData.market.melo.similarListings?.length || 0,
+            hasInsights: !!report.profileData.market.melo.marketInsights,
+          });
+        } else {
+          console.log('[Report Page] Pas de données Melo dans le rapport');
+        }
+        
+        setReportData(report);
+        
+        // Si les données DPE sont vides, essayer de les récupérer automatiquement
+        if (!report?.profileData?.energy?.dpe || !report.profileData.energy.dpe.class_energy) {
+          try {
+            const energyResponse = await fetch(`/api/reports/${reportId}/energy`, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+              },
+            });
+            
+            if (energyResponse.ok) {
+              const energyData = await energyResponse.json();
+              if (energyData.success && energyData.energy?.dpe) {
+                // Recharger le rapport avec les nouvelles données DPE
+                const updatedResponse = await fetch(`/api/reports/${reportId}`, {
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                  },
+                });
+                
+                if (updatedResponse.ok) {
+                  const updatedData = await updatedResponse.json();
+                  setReportData(updatedData.report);
+                }
+              }
+            }
+          } catch (energyError) {
+            // Ignorer les erreurs de récupération DPE, ne pas bloquer l'affichage
+            console.debug('Erreur récupération DPE:', energyError);
+          }
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Erreur de chargement');
       } finally {
@@ -133,7 +175,10 @@ export default function RapportInteractifPage({ params }: { params: Promise<{ id
   return (
     <PremiumReportView 
       sections={sections}
-      vehicleInfo={reportData.address}
+      vehicleInfo={{
+        ...reportData.address,
+        profileData: reportData.profileData // Passer profileData pour accéder à safety.gemini_crime_data
+      }}
       ai={reportData.report ? {
         score: reportData.report.score,
         summary: reportData.report.summary,
