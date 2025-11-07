@@ -39,6 +39,16 @@ export interface AIVerification {
     comment?: string;
     recommendations?: string[];
   };
+  rental_yield_analysis?: {
+    estimated_rent_monthly?: number;
+    estimated_rent_yearly?: number;
+    yield_percentage?: number;
+    yield_rating?: 'excellent' | 'bon' | 'moyen' | 'faible';
+    market_rent_comparison?: string;
+    rental_demand?: 'forte' | 'moyenne' | 'faible';
+    rental_comment?: string;
+    rental_recommendations?: string[];
+  };
   strengths?: string[];
   weaknesses?: string[];
 }

@@ -1,7 +1,7 @@
 'use client';
 
-import { Fragment, useState, useRef } from 'react';
-import { Dialog, Transition } from '@headlessui/react';
+import { useState, useRef, useEffect } from 'react';
+import { Dialog } from '@headlessui/react';
 import { useRouter } from 'next/navigation';
 import { pricingPlans } from '@/lib/pricing';
 import { loadStripe } from '@stripe/stripe-js';
@@ -22,6 +22,14 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const intentCreatedRef = useRef(false); // Protection contre les doubles créations de PaymentIntent
+
+  // Debug: Log l'état de la modale
+  useEffect(() => {
+    console.log('💳 [PaymentModal] isOpen:', isOpen);
+    if (isOpen) {
+      console.log('💳 [PaymentModal] Modale ouverte, rendu du composant');
+    }
+  }, [isOpen]);
 
   const handlePlanSelect = (plan: typeof pricingPlans[0]) => {
     setSelectedPlan(plan);
@@ -74,35 +82,51 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
     router.push(`/checkout/success?email=${encodeURIComponent(customerEmail)}&plan=${selectedPlan.sku}`);
   };
 
-  return (
-    <Transition appear show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-50" onClose={onClose}>
-        <Transition.Child
-          as={Fragment}
-          enter="ease-out duration-300"
-          enterFrom="opacity-0"
-          enterTo="opacity-100"
-          leave="ease-in duration-200"
-          leaveFrom="opacity-100"
-          leaveTo="opacity-0"
-        >
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
-        </Transition.Child>
+  if (!isOpen) {
+    return null;
+  }
 
-        <div className="fixed inset-0 overflow-y-auto">
-          <div className="flex min-h-full items-end sm:items-center justify-center p-0 sm:p-4">
-            <Transition.Child
-              as={Fragment}
-              enter="ease-out duration-300"
-              enterFrom="opacity-0 translate-y-full sm:scale-95"
-              enterTo="opacity-100 translate-y-0 sm:scale-100"
-              leave="ease-in duration-200"
-              leaveFrom="opacity-100 translate-y-0 sm:scale-100"
-              leaveTo="opacity-0 translate-y-full sm:scale-95"
-            >
-              <Dialog.Panel className="w-full max-w-2xl transform rounded-t-3xl sm:rounded-2xl bg-white text-left align-middle shadow-2xl transition-all max-h-[95vh] overflow-y-auto flex flex-col">
+  return (
+    <Dialog 
+      as="div" 
+      className="fixed inset-0 z-[9999]"
+      onClose={onClose}
+      open={isOpen}
+    >
+      {/* Overlay */}
+      <div 
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm" 
+        onClick={onClose}
+        style={{
+          zIndex: 9998,
+          WebkitBackdropFilter: 'blur(4px)',
+        }}
+      />
+
+      {/* Modal Container */}
+      <div 
+        className="fixed inset-0 overflow-y-auto"
+        style={{
+          zIndex: 9999,
+          WebkitOverflowScrolling: 'touch',
+        }}
+      >
+        <div className="flex min-h-full items-end sm:items-center justify-center p-0 sm:p-4">
+          <Dialog.Panel 
+            className="w-full max-w-2xl rounded-t-3xl sm:rounded-2xl bg-white text-left align-middle shadow-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto flex flex-col"
+            style={{
+              zIndex: 10000,
+              WebkitOverflowScrolling: 'touch',
+            }}
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
+          >
                 {/* Header */}
-                <div className="sticky top-0 bg-white/95 backdrop-blur-md border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 z-10">
+                <div 
+                  className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 z-10"
+                  style={{
+                    WebkitBackdropFilter: 'blur(8px)',
+                  }}
+                >
                   <div className="flex items-center justify-between">
                     <Dialog.Title as="h3" className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">
                       {showPayment ? 'Paiement sécurisé' : 'Choisissez votre pack'}
@@ -110,6 +134,10 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                     <button
                       onClick={onClose}
                       className="text-gray-600 hover:text-gray-900 transition-colors p-1"
+                      style={{
+                        WebkitTapHighlightColor: 'transparent',
+                        touchAction: 'manipulation',
+                      }}
                     >
                       <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -119,7 +147,7 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                 </div>
 
                 {/* Contenu */}
-                <div className="px-4 sm:px-6 py-4 sm:py-6 flex-1 overflow-y-auto">
+                <div className="px-4 sm:px-6 py-4 sm:py-6 flex-1 overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
                   {!showPayment ? (
                     <>
                       {/* Sélection du pack */}
@@ -138,6 +166,10 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                                 ? 'border-purple-500 bg-purple-50 shadow-lg'
                                 : 'border-gray-200 bg-gray-50 hover:border-gray-300'
                             }`}
+                            style={{
+                              WebkitTapHighlightColor: 'transparent',
+                              touchAction: 'manipulation',
+                            }}
                           >
                             {plan.badge && (
                               <div className="text-center mb-2">
@@ -164,6 +196,9 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                           onChange={(e) => setCustomerEmail(e.target.value)}
                           placeholder="votre@email.com"
                           className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:border-purple-500 focus:outline-none focus:bg-white transition-all text-base"
+                          style={{
+                            WebkitTapHighlightColor: 'transparent',
+                          }}
                         />
                         <p className="text-xs text-gray-500 mt-1.5">
                           Un compte sera créé automatiquement avec cet email
@@ -175,10 +210,14 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                         onClick={handleContinueToPayment}
                         disabled={loading || !customerEmail || intentCreatedRef.current}
                         className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 sm:px-6 py-3 sm:py-3.5 rounded-lg font-semibold hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+                        style={{
+                          WebkitTapHighlightColor: 'transparent',
+                          touchAction: 'manipulation',
+                        }}
                       >
                         {loading ? (
                           <>
-                            <span className="inline-block animate-spin mr-2">⏳</span>
+                            <span className="inline-block mr-2">⏳</span>
                             Préparation du paiement...
                           </>
                         ) : (
@@ -187,7 +226,54 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                       </button>
                     </>
                   ) : clientSecret ? (
-                    <Elements stripe={stripePromise} options={{ clientSecret }}>
+                    <Elements 
+                      stripe={stripePromise} 
+                      options={{ 
+                        clientSecret,
+                        appearance: {
+                          theme: 'stripe',
+                          variables: {
+                            colorPrimary: '#9333ea',
+                            colorBackground: '#ffffff',
+                            colorText: '#111827',
+                            colorDanger: '#ef4444',
+                            fontFamily: 'system-ui, -apple-system, sans-serif',
+                            spacingUnit: '4px',
+                            borderRadius: '8px',
+                          },
+                          rules: {
+                            '.Input': {
+                              border: '1px solid #d1d5db',
+                              borderRadius: '8px',
+                              padding: '12px 16px',
+                              fontSize: '16px',
+                              boxShadow: 'none',
+                            },
+                            '.Input:focus': {
+                              border: '1px solid #9333ea',
+                              boxShadow: '0 0 0 3px rgba(147, 51, 234, 0.1)',
+                            },
+                            '.Input--invalid': {
+                              border: '1px solid #ef4444',
+                            },
+                            '.Label': {
+                              fontSize: '14px',
+                              fontWeight: '500',
+                              color: '#374151',
+                              marginBottom: '8px',
+                            },
+                            '.Tab': {
+                              borderRadius: '8px',
+                              padding: '12px 16px',
+                            },
+                            '.Tab--selected': {
+                              backgroundColor: '#f3f4f6',
+                            },
+                          },
+                        },
+                        locale: 'fr',
+                      }}
+                    >
                       <CheckoutForm
                         onSuccess={handlePaymentSuccess}
                         onCancel={() => setShowPayment(false)}
@@ -200,11 +286,9 @@ export default function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                   )}
                 </div>
               </Dialog.Panel>
-            </Transition.Child>
           </div>
         </div>
       </Dialog>
-    </Transition>
   );
 }
 
@@ -232,6 +316,11 @@ function CheckoutForm({ onSuccess, onCancel, email, plan }: { onSuccess: () => v
         elements,
         confirmParams: {
           return_url: `${window.location.origin}/checkout/success?email=${encodeURIComponent(email)}&plan=${plan.sku}`,
+          payment_method_data: {
+            billing_details: {
+              email: email,
+            },
+          },
         },
         redirect: 'if_required', // Éviter la redirection automatique sauf pour 3DS
       });
@@ -260,27 +349,83 @@ function CheckoutForm({ onSuccess, onCancel, email, plan }: { onSuccess: () => v
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
-      <div className="max-h-[400px] overflow-y-auto">
-        <PaymentElement />
+      {/* Info du plan */}
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-sm text-gray-600">Vous payez</div>
+            <div className="text-xl font-bold text-gray-900">{plan.priceLabel}</div>
+          </div>
+          <div className="text-right">
+            <div className="text-sm text-gray-600">Pour</div>
+            <div className="text-lg font-semibold text-gray-900">{plan.reports} rapport{plan.reports > 1 ? 's' : ''}</div>
+          </div>
+        </div>
       </div>
-      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+
+      {/* PaymentElement avec styles mobile-friendly */}
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Informations de paiement
+          </label>
+          <div 
+            className="border border-gray-200 rounded-lg p-3 sm:p-4 bg-white"
+            style={{
+              minHeight: '200px',
+            }}
+          >
+            <PaymentElement 
+              options={{
+                layout: {
+                  type: 'tabs',
+                  defaultCollapsed: false,
+                },
+                fields: {
+                  billingDetails: {
+                    email: 'never',
+                  },
+                },
+                wallets: {
+                  applePay: 'auto',
+                  googlePay: 'auto',
+                },
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Boutons d'action */}
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4 border-t border-gray-200">
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 px-4 py-2.5 sm:py-3 bg-gray-200 text-gray-900 rounded-lg hover:bg-gray-300 transition-colors font-medium text-sm sm:text-base"
+          className="w-full sm:flex-1 px-6 py-3.5 sm:py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium text-base sm:text-base"
+          style={{
+            WebkitTapHighlightColor: 'transparent',
+            touchAction: 'manipulation',
+          }}
         >
-          Annuler
+          Retour
         </button>
         <button
           type="submit"
           disabled={!stripe || loading || processingRef.current}
-          className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2.5 sm:py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+          className="w-full sm:flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3.5 sm:py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-base sm:text-base shadow-lg"
+          style={{
+            WebkitTapHighlightColor: 'transparent',
+            touchAction: 'manipulation',
+          }}
         >
           {loading ? (
-            <>
-              <span className="inline-block animate-spin mr-2">⏳</span>
+            <span className="flex items-center justify-center gap-2">
+              <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
               Traitement en cours...
-            </>
+            </span>
           ) : (
             `Payer ${plan.priceLabel}`
           )}

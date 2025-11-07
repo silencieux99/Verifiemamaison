@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useMemo } from 'react';
-import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { 
   Home, MapPin, Shield, Zap, TrendingUp, School, ShoppingCart,
   Brain, Download, Share2, CheckCircle, AlertCircle, AlertTriangle, Info, Calendar,
@@ -45,31 +44,31 @@ interface PremiumReportViewProps {
   pdfUrl?: string;
 }
 
-// Carte premium avec glassmorphism
+// Carte premium sans animations (optimisé pour iPhone/Safari)
 const PremiumCard: React.FC<{
   children: React.ReactNode;
   className?: string;
   delay?: number;
   hover?: boolean;
-}> = ({ children, className = '', delay = 0, hover = true }) => {
+}> = ({ children, className = '' }) => {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
-      whileHover={hover ? { y: -2, transition: { duration: 0.2 } } : undefined}
+    <div
       className={cn(
         'relative overflow-hidden rounded-2xl',
-        'backdrop-blur-xl bg-white/[0.02]',
-        'border border-white/[0.08]',
+        'border border-white/[0.15]',
         'shadow-2xl shadow-black/20',
-        hover && 'transition-all duration-300 hover:border-white/[0.12] hover:bg-white/[0.03]',
         className
       )}
+      style={{
+        // Background solide pour Safari (évite les problèmes de transparence)
+        backgroundColor: 'rgba(26, 27, 30, 0.95)',
+        WebkitTransform: 'translateZ(0)',
+        transform: 'translateZ(0)',
+      }}
     >
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
       <div className="relative z-10">{children}</div>
-    </motion.div>
+    </div>
   );
 };
 
@@ -118,7 +117,7 @@ const PremiumGauge: React.FC<{
             fill="none"
           />
           
-          <motion.circle
+          <circle
             cx={config.width / 2}
             cy={config.height / 2}
             r={radius}
@@ -127,21 +126,16 @@ const PremiumGauge: React.FC<{
             fill="none"
             strokeLinecap="round"
             strokeDasharray={circumference}
-            initial={showAnimation ? { strokeDashoffset: circumference } : { strokeDashoffset }}
-            animate={{ strokeDashoffset }}
-            transition={{ duration: 1.5, ease: 'easeOut' }}
+            strokeDashoffset={strokeDashoffset}
           />
         </svg>
         
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <motion.div 
+          <div 
             className={cn(config.fontSize, 'font-bold text-white')}
-            initial={showAnimation ? { scale: 0 } : { scale: 1 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.5, type: 'spring', stiffness: 200 }}
           >
             {value}
-          </motion.div>
+          </div>
           <div className="text-xs text-white/50 font-medium">/ 100</div>
         </div>
       </div>
@@ -158,11 +152,11 @@ const StatusBadge: React.FC<{
   icon?: React.ReactNode;
 }> = ({ type, children, icon }) => {
   const styles = {
-    success: 'bg-green-500/10 border-green-500/20 text-green-400',
-    warning: 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400',
-    danger: 'bg-red-500/10 border-red-500/20 text-red-400',
-    info: 'bg-blue-500/10 border-blue-500/20 text-blue-400',
-    neutral: 'bg-white/5 border-white/10 text-white/70',
+    success: 'bg-green-500/25 border-green-500/40 text-green-300',
+    warning: 'bg-yellow-500/25 border-yellow-500/40 text-yellow-300',
+    danger: 'bg-red-500/25 border-red-500/40 text-red-300',
+    info: 'bg-blue-500/25 border-blue-500/40 text-blue-300',
+    neutral: 'bg-[rgba(26,27,30,0.95)] border-white/[0.15] text-white/80',
   };
   
   return (
@@ -187,7 +181,6 @@ export default function PremiumReportView({
   const [activeTab, setActiveTab] = useState('overview');
   const [copied, setCopied] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ container: containerRef });
   
   const navigationTabs = [
     { id: 'overview', label: 'Vue d\'ensemble', icon: Home },
@@ -195,6 +188,7 @@ export default function PremiumReportView({
     { id: 'risks', label: 'Risques', icon: Shield },
     { id: 'energy', label: 'Énergie', icon: Zap },
     { id: 'market', label: 'Marché', icon: TrendingUp },
+    { id: 'rental_yield', label: 'Rentabilité', icon: TrendingUp },
     { id: 'education', label: 'Éducation', icon: School },
     { id: 'amenities', label: 'Commodités', icon: ShoppingCart },
     { id: 'crime', label: 'Criminalité', icon: Shield },
@@ -213,22 +207,30 @@ export default function PremiumReportView({
     return Math.max(0, Math.min(100, score));
   }, [sections]);
   
-  const [touchStart, setTouchStart] = useState(0);
-  const handleTouchStart = (e: React.TouchEvent) => setTouchStart(e.touches[0].clientX);
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    const touchEnd = e.changedTouches[0].clientX;
-    const diff = touchStart - touchEnd;
-    
-    // Augmenter le seuil à 120px pour éviter les changements accidentels
-    if (Math.abs(diff) > 120) {
-      const currentIndex = navigationTabs.findIndex(t => t.id === activeTab);
-      if (diff > 0 && currentIndex < navigationTabs.length - 1) {
-        setActiveTab(navigationTabs[currentIndex + 1].id);
-      } else if (diff < 0 && currentIndex > 0) {
-        setActiveTab(navigationTabs[currentIndex - 1].id);
-      }
+  // Désactivé: swipe entre sections
+  // const [touchStart, setTouchStart] = useState(0);
+  // const handleTouchStart = (e: React.TouchEvent) => setTouchStart(e.touches[0].clientX);
+  // const handleTouchEnd = (e: React.TouchEvent) => {
+  //   const touchEnd = e.changedTouches[0].clientX;
+  //   const diff = touchStart - touchEnd;
+  //   
+  //   // Augmenter le seuil à 120px pour éviter les changements accidentels
+  //   if (Math.abs(diff) > 120) {
+  //     const currentIndex = navigationTabs.findIndex(t => t.id === activeTab);
+  //     if (diff > 0 && currentIndex < navigationTabs.length - 1) {
+  //       setActiveTab(navigationTabs[currentIndex + 1].id);
+  //     } else if (diff < 0 && currentIndex > 0) {
+  //       setActiveTab(navigationTabs[currentIndex - 1].id);
+  //     }
+  //   }
+  // };
+  
+  // Faire remonter en haut à chaque changement de section
+  useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  };
+  }, [activeTab]);
   
   const handleShare = async () => {
     const shareUrl = `${window.location.origin}/report/${reportId}`;
@@ -260,16 +262,31 @@ export default function PremiumReportView({
   };
   
   return (
-    <div className="min-h-screen bg-[#0A0B0D] text-white">
-      <div className="fixed inset-0 z-0">
+    <div className="min-h-screen bg-[#0A0B0D] text-white" style={{ minHeight: '-webkit-fill-available' }}>
+      <div 
+        className="fixed inset-0 z-0"
+        style={{
+          // Fix pour Safari mobile fixed
+          WebkitTransform: 'translateZ(0)',
+          transform: 'translateZ(0)',
+        }}
+      >
         <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5" />
       </div>
       
       {/* Header simplifié sans menu hamburger */}
-      <header className="sticky top-0 z-50 backdrop-blur-xl bg-black/50 border-b border-white/[0.08]">
-        <motion.div 
+      <header 
+        className="sticky top-0 z-50 border-b border-white/[0.15]"
+        style={{
+          // Background solide pour Safari
+          backgroundColor: 'rgba(0, 0, 0, 0.85)',
+          WebkitTransform: 'translateZ(0)',
+          transform: 'translateZ(0)',
+        }}
+      >
+        <div 
           className="absolute top-0 left-0 h-0.5 bg-gradient-to-r from-blue-500 to-purple-500"
-          style={{ width: useTransform(scrollYProgress, [0, 1], ['0%', '100%']) }}
+          style={{ width: '100%' }}
         />
         
         <div className="container mx-auto px-4">
@@ -285,27 +302,23 @@ export default function PremiumReportView({
             </div>
             
             <div className="flex items-center gap-2">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+              <button
                 onClick={handleShare}
-                className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors flex items-center gap-2"
+                className="px-3 py-2 rounded-xl bg-[rgba(26,27,30,0.95)] border border-white/[0.15] flex items-center gap-2"
               >
                 {copied ? <Copy className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
                 <span className="text-sm hidden sm:inline">{copied ? 'Copié!' : 'Partager'}</span>
-              </motion.button>
+              </button>
               
               {pdfUrl && (
-                <motion.a
+                <a
                   href={pdfUrl}
                   download
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors flex items-center gap-2"
+                  className="px-3 py-2 rounded-xl bg-[rgba(26,27,30,0.95)] border border-white/[0.15] flex items-center gap-2"
                 >
                   <Download className="w-4 h-4" />
                   <span className="text-sm hidden sm:inline">PDF</span>
-                </motion.a>
+                </a>
               )}
             </div>
           </div>
@@ -313,9 +326,25 @@ export default function PremiumReportView({
       </header>
       
       {/* Navigation horizontale scrollable - visible sur tous les écrans */}
-      <div className="sticky top-16 z-40 backdrop-blur-xl bg-black/30 border-b border-white/[0.08]">
+      <div 
+        className="sticky top-16 z-40 border-b border-white/[0.15]"
+        style={{
+          // Background solide pour Safari
+          backgroundColor: 'rgba(0, 0, 0, 0.75)',
+          WebkitTransform: 'translateZ(0)',
+          transform: 'translateZ(0)',
+        }}
+      >
         <div className="container mx-auto px-4">
-          <div className="flex gap-2 py-3 overflow-x-auto scrollbar-hide">
+          <div 
+            className="flex gap-2 py-3 overflow-x-auto scrollbar-hide"
+            style={{
+              // Fix pour Safari mobile scroll horizontal
+              WebkitOverflowScrolling: 'touch',
+              // Empêcher le scroll vertical lors du scroll horizontal
+              overscrollBehaviorX: 'contain',
+            }}
+          >
             {navigationTabs.map((tab) => {
               const Icon = tab.icon;
               return (
@@ -323,10 +352,10 @@ export default function PremiumReportView({
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={cn(
-                    'flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all whitespace-nowrap flex-shrink-0',
+                    'flex items-center gap-2 px-4 py-2.5 rounded-xl whitespace-nowrap flex-shrink-0',
                     activeTab === tab.id
                       ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border border-blue-500/30 shadow-lg shadow-blue-500/10'
-                      : 'text-white/60 hover:text-white hover:bg-white/5 border border-transparent'
+                      : 'text-white/60 border border-transparent'
                   )}
                 >
                   <Icon className="w-4 h-4 flex-shrink-0" />
@@ -341,17 +370,11 @@ export default function PremiumReportView({
       <main 
         ref={containerRef}
         className="relative z-10 pb-20"
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
       >
         <div className="container mx-auto px-4 py-8 max-w-7xl">
-          <AnimatePresence mode="wait">
+          <div>
             {activeTab === 'overview' && (
-              <motion.div
-                key="overview"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
+              <div
                 className="space-y-6"
               >
                 {ai && (
@@ -380,24 +403,31 @@ export default function PremiumReportView({
                         </div>
                         <div className="text-3xl font-bold text-green-400">
                           {(() => {
-                            // Priorité 1: Prix/m² Gemini (données web en temps réel - les plus récentes)
-                            const geminiPrice = ai.market_analysis?.estimated_value_m2;
-                            if (geminiPrice && typeof geminiPrice === 'number' && geminiPrice > 500 && geminiPrice < 50000) {
-                              return `${Math.round(geminiPrice).toLocaleString('fr-FR')} €/m²`;
+                            // Prix/m² calculé par GPT uniquement
+                            const gptPrice = ai.market_analysis?.estimated_value_m2;
+                            // Vérifier aussi dans les sections market si pas dans ai
+                            const marketSection = sections.find(s => s.id === 'market');
+                            const marketPriceItem = marketSection?.items?.find(item => 
+                              item.label?.toLowerCase().includes('prix') || 
+                              item.label?.toLowerCase().includes('m²') ||
+                              item.label?.toLowerCase().includes('m2')
+                            );
+                            
+                            if (gptPrice && typeof gptPrice === 'number' && gptPrice > 0) {
+                              return `${Math.round(gptPrice).toLocaleString('fr-FR')} €/m²`;
                             }
                             
-                            // Priorité 2: Prix/m² moyen Melo (données actuelles)
-                            const meloSection = sections.find(s => s.id === 'melo_summary');
-                            if (meloSection?.items) {
-                              const meloPriceM2 = meloSection.items.find(i => i.label.includes('Prix/m² moyen'));
-                              if (meloPriceM2?.value) {
-                                return meloPriceM2.value;
+                            // Fallback: chercher dans les items de la section market
+                            if (marketPriceItem?.value) {
+                              const priceValue = typeof marketPriceItem.value === 'string' 
+                                ? parseFloat(marketPriceItem.value.replace(/[^\d.,]/g, '').replace(',', '.'))
+                                : typeof marketPriceItem.value === 'number' 
+                                  ? marketPriceItem.value 
+                                  : null;
+                              if (priceValue && priceValue > 0) {
+                                return `${Math.round(priceValue).toLocaleString('fr-FR')} €/m²`;
                               }
                             }
-                            
-                            // Priorité 3: Prix/m² DVF (données historiques)
-                            const marketPrice = sections.find(s => s.id === 'market')?.items.find(i => i.label.includes('Prix'))?.value;
-                            if (marketPrice) return marketPrice;
                             
                             return 'N/A';
                           })()}
@@ -411,11 +441,9 @@ export default function PremiumReportView({
                               "text-gray-400"
                             )} />
                             <span>Tendance: {ai.market_analysis.market_trend}</span>
-                            {ai.market_analysis?.estimated_value_m2 && (
-                              <span className="ml-2 px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[10px]">
-                                🔍 Gemini
-                              </span>
-                            )}
+                            <span className="ml-2 px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 text-[10px]">
+                              🤖 GPT
+                            </span>
                           </div>
                         )}
                       </PremiumCard>
@@ -445,48 +473,87 @@ export default function PremiumReportView({
                     </div>
                   </PremiumCard>
                 )}
-              </motion.div>
+              </div>
             )}
             
             {/* Section Localisation */}
             {activeTab === 'location' && (
-              <motion.div
-                key="location"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
+              <div
                 className="space-y-6"
               >
-                {/* Image du bien avec Google Street View */}
+                {/* Carte du bien avec OpenStreetMap */}
                 <PremiumCard className="p-0 overflow-hidden" delay={0}>
                   <div 
                     className="relative w-full h-96 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center"
                     onTouchStart={(e) => e.stopPropagation()}
                     onTouchEnd={(e) => e.stopPropagation()}
                   >
-                    {/* Image si disponible */}
+                    {/* Image personnalisée si disponible */}
                     {vehicleInfo?.image ? (
                       <img
                         src={vehicleInfo.image}
                         alt="Photo du bien"
                         className="w-full h-full object-cover"
+                        onError={(e) => {
+                          // Si l'image ne charge pas, masquer et afficher la carte
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
                       />
-                    ) : vehicleInfo?.gps && process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY ? (
-                      // Google Maps Static API - Image satellite propre
-                      <img
-                        src={`https://maps.googleapis.com/maps/api/staticmap?center=${vehicleInfo.gps.lat},${vehicleInfo.gps.lon}&zoom=18&size=1200x600&maptype=satellite&markers=color:red%7C${vehicleInfo.gps.lat},${vehicleInfo.gps.lon}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY}`}
-                        alt="Image satellite du bien"
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                    ) : vehicleInfo?.gps ? (
-                      // Fallback: Google Street View si pas de clé API
-                      <img
-                        src={`https://maps.googleapis.com/maps/api/streetview?size=1200x600&location=${vehicleInfo.gps.lat},${vehicleInfo.gps.lon}&heading=0&pitch=0&fov=90`}
-                        alt="Vue Street View du bien"
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
+                    ) : null}
+                    
+                    {/* Carte OpenStreetMap (toujours affichée si GPS disponible, ou si image échoue) */}
+                    {vehicleInfo?.gps && typeof vehicleInfo.gps.lat === 'number' && typeof vehicleInfo.gps.lon === 'number' && !isNaN(vehicleInfo.gps.lat) && !isNaN(vehicleInfo.gps.lon) ? (
+                      (() => {
+                        // Fonction pour générer l'URL OpenStreetMap
+                        const getMapEmbedUrl = () => {
+                          const lat = vehicleInfo.gps.lat;
+                          const lon = vehicleInfo.gps.lon;
+                          // Calculer la bounding box pour un zoom approprié
+                          const zoom = 16;
+                          const bboxSize = 0.008; // Taille de la bounding box (plus petit = zoom plus proche)
+                          const bbox = `${lon - bboxSize},${lat - bboxSize},${lon + bboxSize},${lat + bboxSize}`;
+                          // URL pour iframe OpenStreetMap
+                          const url = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lon}`;
+                          return url;
+                        };
+                        
+                        return (
+                          <>
+                            {/* Fallback coloré toujours visible en arrière-plan */}
+                            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 z-0 flex items-center justify-center">
+                              <MapPin className="w-16 h-16 text-blue-400 opacity-50" />
+                            </div>
+                            
+                            {/* Carte OpenStreetMap par-dessus */}
+                            <iframe
+                              key={`map-property-${vehicleInfo.gps.lat}-${vehicleInfo.gps.lon}`}
+                              src={getMapEmbedUrl()}
+                              className="relative z-10 w-full h-full border-0"
+                              loading="lazy"
+                              title="Carte de localisation du bien"
+                              onLoad={() => {
+                                if (process.env.NODE_ENV === 'development') {
+                                  console.log('✅ [Localisation] Carte chargée avec succès', {
+                                    lat: vehicleInfo.gps.lat,
+                                    lon: vehicleInfo.gps.lon,
+                                    url: getMapEmbedUrl()
+                                  });
+                                }
+                              }}
+                              onError={(e) => {
+                                // Si la carte ne charge pas, la masquer (le fallback reste visible)
+                                console.warn('❌ [Localisation] Erreur chargement carte', {
+                                  lat: vehicleInfo.gps.lat,
+                                  lon: vehicleInfo.gps.lon,
+                                  url: getMapEmbedUrl(),
+                                  error: e
+                                });
+                                (e.target as HTMLIFrameElement).style.display = 'none';
+                              }}
+                            />
+                          </>
+                        );
+                      })()
                     ) : (
                       // Placeholder si pas d'image et pas de GPS
                       <div className="flex flex-col items-center justify-center gap-4 p-8 text-center">
@@ -516,7 +583,7 @@ export default function PremiumReportView({
                             href={`https://www.google.com/maps?q=${vehicleInfo.gps.lat},${vehicleInfo.gps.lon}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white hover:bg-white/20 transition-colors flex items-center gap-2 text-sm"
+                            className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white flex items-center gap-2 text-sm"
                           >
                             <MapPin className="w-4 h-4" />
                             Maps
@@ -541,29 +608,22 @@ export default function PremiumReportView({
                   
                   <div className="space-y-3">
                     {sections.find(s => s.id === 'location')?.items.map((item, index) => (
-                      <motion.div
+                      <div
                         key={index}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.05 }}
                         className="flex items-center justify-between py-3 border-b border-white/5 last:border-0"
                       >
                         <span className="text-white/70">{item.label}</span>
                         <span className="text-white font-medium">{item.value}</span>
-                      </motion.div>
+                      </div>
                     ))}
                   </div>
                 </PremiumCard>
-              </motion.div>
+              </div>
             )}
             
             {/* Section Risques */}
             {activeTab === 'risks' && (
-              <motion.div
-                key="risks"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
+              <div
                 className="space-y-6"
               >
                 {/* En-tête */}
@@ -590,17 +650,14 @@ export default function PremiumReportView({
                     const colors = getRiskColor();
                     
                     return (
-                      <motion.div
+                      <div
                         key={index}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: index * 0.05 }}
                         className={cn(
                           'relative overflow-hidden rounded-2xl border p-6',
-                          'backdrop-blur-xl bg-white/[0.02]',
+                          ' bg-[rgba(26,27,30,0.95)]',
                           colors.bg,
                           colors.border,
-                          'transition-all hover:bg-white/[0.04]'
+                          ''
                         )}
                       >
                         {/* Reflet en haut */}
@@ -642,7 +699,7 @@ export default function PremiumReportView({
                             </span>
                           </div>
                         </div>
-                      </motion.div>
+                      </div>
                     );
                   })}
                 </div>
@@ -665,36 +722,28 @@ export default function PremiumReportView({
                         return (
                           <>
                             {riskCount > 0 && (
-                              <motion.div
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
+                              <div
                                 className="flex items-center justify-between p-3 bg-red-500/10 border border-red-500/20 rounded-lg"
                               >
                                 <span className="text-white/80">Risques détectés</span>
                                 <span className="text-red-400 font-semibold">{riskCount}</span>
-                              </motion.div>
+                              </div>
                             )}
                             {warnCount > 0 && (
-                              <motion.div
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: 0.1 }}
+                              <div
                                 className="flex items-center justify-between p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg"
                               >
                                 <span className="text-white/80">Points à vérifier</span>
                                 <span className="text-yellow-400 font-semibold">{warnCount}</span>
-                              </motion.div>
+                              </div>
                             )}
                             {okCount > 0 && (
-                              <motion.div
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: 0.2 }}
+                              <div
                                 className="flex items-center justify-between p-3 bg-green-500/10 border border-green-500/20 rounded-lg"
                               >
                                 <span className="text-white/80">Éléments sécurisés</span>
                                 <span className="text-green-400 font-semibold">{okCount}</span>
-                              </motion.div>
+                              </div>
                             )}
                           </>
                         );
@@ -702,16 +751,12 @@ export default function PremiumReportView({
                     </div>
                   </PremiumCard>
                 )}
-              </motion.div>
+              </div>
             )}
             
             {/* Section Énergie */}
             {activeTab === 'energy' && (
-              <motion.div
-                key="energy"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
+              <div
                 className="space-y-6"
               >
                 <PremiumCard className="p-6 md:p-8">
@@ -727,29 +772,22 @@ export default function PremiumReportView({
                   
                   <div className="space-y-3">
                     {sections.find(s => s.id === 'energy')?.items.map((item, index) => (
-                      <motion.div
+                      <div
                         key={index}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.05 }}
                         className="flex items-center justify-between py-3 border-b border-white/5 last:border-0"
                       >
                         <span className="text-white/70">{item.label}</span>
                         <span className="text-white font-medium">{item.value}</span>
-                      </motion.div>
+                      </div>
                     ))}
                   </div>
                 </PremiumCard>
-              </motion.div>
+              </div>
             )}
 
             {/* Section Marché */}
             {activeTab === 'market' && (
-              <motion.div
-                key="market"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
+              <div
                 className="space-y-6"
               >
                 <PremiumCard className="p-6 md:p-8">
@@ -770,16 +808,13 @@ export default function PremiumReportView({
                       const isVolume = item.label.includes('Volume') || item.label.includes('Nombre');
                       
                       return (
-                        <motion.div
+                        <div
                           key={index}
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: index * 0.05 }}
                           className={cn(
-                            "backdrop-blur-xl border rounded-xl p-4",
+                            " border rounded-xl p-4",
                             isPrice ? "bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/30" :
                             isTrend ? "bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border-blue-500/30" :
-                            "bg-white/[0.02] border-white/[0.08]"
+                            "bg-[rgba(26,27,30,0.95)] border-white/[0.15]"
                           )}
                         >
                           <div className="flex items-center gap-2 mb-2">
@@ -818,40 +853,35 @@ export default function PremiumReportView({
                               </StatusBadge>
                             </div>
                           )}
-                        </motion.div>
+                        </div>
                       );
                     })}
                   </div>
                 </PremiumCard>
 
-                {/* Section Gemini - Marché en temps réel */}
+                {/* Section GPT - Marché en temps réel */}
                 {(() => {
-                  // Vérifier si on a des données Gemini (prix/m² dans market_analysis avec commentaire détaillé)
-                  const hasGeminiData = ai.market_analysis?.estimated_value_m2 && 
-                                       ai.market_analysis?.market_comment && 
-                                       ai.market_analysis.market_comment.length > 50;
+                  // Vérifier si on a des données GPT (prix/m² dans market_analysis avec commentaire détaillé)
+                  const hasGPTData = ai.market_analysis?.estimated_value_m2 && 
+                                     ai.market_analysis?.market_comment && 
+                                     ai.market_analysis.market_comment.length > 50;
                   
-                  if (!hasGeminiData) return null;
+                  if (!hasGPTData) return null;
                   
-                  const geminiPrice = ai.market_analysis.estimated_value_m2;
-                  const geminiTrend = ai.market_analysis.market_trend || 'stable';
-                  const geminiComment = ai.market_analysis.market_comment || '';
-                  const geminiComparison = ai.market_analysis.price_comparison || '';
-                  const geminiData = (ai.market_analysis as any)?.gemini_data;
+                  const gptPrice = ai.market_analysis.estimated_value_m2;
+                  const gptTrend = ai.market_analysis.market_trend || 'stable';
+                  const gptComment = ai.market_analysis.market_comment || '';
+                  const gptComparison = ai.market_analysis.price_comparison || '';
                   
-                  // Utiliser la fourchette Gemini si disponible, sinon estimer
-                  const priceRange = geminiData?.price_m2_range || {
-                    min: Math.round(geminiPrice * 0.92),
-                    max: Math.round(geminiPrice * 1.08)
+                  // Estimer la fourchette de prix (92% à 108% du prix estimé)
+                  const priceRange = {
+                    min: Math.round(gptPrice * 0.92),
+                    max: Math.round(gptPrice * 1.08)
                   };
-                  
-                  const recentSales = geminiData?.recent_sales || [];
-                  const geminiSources = geminiData?.sources || [];
-                  const neighborhoodInfo = geminiData?.neighborhood_info || '';
                   
                   return (
                     <div className="space-y-6 mb-6">
-                      {/* Carte principale Gemini */}
+                      {/* Carte principale GPT */}
                       <PremiumCard className="p-6 md:p-8">
                         <div className="flex items-start gap-4 mb-6">
                           <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center flex-shrink-0">
@@ -860,41 +890,35 @@ export default function PremiumReportView({
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <h2 className="text-xl font-semibold">Marché en temps réel</h2>
-                              <span className="px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs font-medium">
-                                🔍 Gemini AI
+                              <span className="px-2.5 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 text-xs font-medium">
+                                🤖 GPT AI
                               </span>
                             </div>
-                            <p className="text-sm text-white/60">Données récentes trouvées via recherche web</p>
+                            <p className="text-sm text-white/60">Analyse précise calculée par intelligence artificielle</p>
                           </div>
                         </div>
                         
                         {/* Grille de statistiques principales */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.1 }}
-                            className="backdrop-blur-xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/30 rounded-xl p-3 md:p-4"
+                          <div
+                            className=" bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/30 rounded-xl p-3 md:p-4"
                           >
                             <div className="flex items-center gap-2 mb-2">
                               <DollarSign className="w-3.5 h-3.5 md:w-4 md:h-4 text-purple-400" />
                               <div className="text-[10px] md:text-xs text-white/50 uppercase tracking-wider">Prix/m²</div>
                             </div>
                             <div className="text-xl md:text-2xl font-bold text-purple-400">
-                              {geminiPrice.toLocaleString('fr-FR')} €
+                              {gptPrice.toLocaleString('fr-FR')} €
                             </div>
                             <div className="text-[10px] md:text-xs text-white/50 mt-1">moyen</div>
-                          </motion.div>
+                          </div>
                           
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.15 }}
+                          <div
                             className={cn(
-                              "backdrop-blur-xl border rounded-xl p-3 md:p-4",
-                              geminiTrend === 'hausse' 
+                              " border rounded-xl p-3 md:p-4",
+                              gptTrend === 'hausse' 
                                 ? "bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/30"
-                                : geminiTrend === 'baisse'
+                                : gptTrend === 'baisse'
                                 ? "bg-gradient-to-br from-red-500/10 to-rose-500/10 border-red-500/30"
                                 : "bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border-blue-500/30"
                             )}
@@ -902,27 +926,24 @@ export default function PremiumReportView({
                             <div className="flex items-center gap-2 mb-2">
                               <TrendingUp className={cn(
                                 "w-3.5 h-3.5 md:w-4 md:h-4",
-                                geminiTrend === 'hausse' ? "text-green-400" :
-                                geminiTrend === 'baisse' ? "text-red-400" :
+                                gptTrend === 'hausse' ? "text-green-400" :
+                                gptTrend === 'baisse' ? "text-red-400" :
                                 "text-blue-400"
                               )} />
                               <div className="text-[10px] md:text-xs text-white/50 uppercase tracking-wider">Tendance</div>
                             </div>
                             <div className={cn(
                               "text-xl md:text-2xl font-bold",
-                              geminiTrend === 'hausse' ? "text-green-400" :
-                              geminiTrend === 'baisse' ? "text-red-400" :
+                              gptTrend === 'hausse' ? "text-green-400" :
+                              gptTrend === 'baisse' ? "text-red-400" :
                               "text-blue-400"
                             )}>
-                              {geminiTrend === 'hausse' ? '↗️ Hausse' : geminiTrend === 'baisse' ? '↘️ Baisse' : '→ Stable'}
+                              {gptTrend === 'hausse' ? '↗️ Hausse' : gptTrend === 'baisse' ? '↘️ Baisse' : '→ Stable'}
                             </div>
-                          </motion.div>
+                          </div>
                           
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.2 }}
-                            className="backdrop-blur-xl bg-gradient-to-br from-orange-500/10 to-amber-500/10 border border-orange-500/30 rounded-xl p-3 md:p-4"
+                          <div
+                            className=" bg-gradient-to-br from-orange-500/10 to-amber-500/10 border border-orange-500/30 rounded-xl p-3 md:p-4"
                           >
                             <div className="flex items-center gap-2 mb-2">
                               <Ruler className="w-3.5 h-3.5 md:w-4 md:h-4 text-orange-400" />
@@ -932,157 +953,66 @@ export default function PremiumReportView({
                               {priceRange.min.toLocaleString('fr-FR')} - {priceRange.max.toLocaleString('fr-FR')} €
                             </div>
                             <div className="text-[10px] md:text-xs text-white/50 mt-1">par m²</div>
-                          </motion.div>
+                          </div>
                           
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.25 }}
-                            className="backdrop-blur-xl bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/30 rounded-xl p-3 md:p-4"
+                          <div
+                            className=" bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/30 rounded-xl p-3 md:p-4"
                           >
                             <div className="flex items-center gap-2 mb-2">
                               <Clock className="w-3.5 h-3.5 md:w-4 md:h-4 text-cyan-400" />
                               <div className="text-[10px] md:text-xs text-white/50 uppercase tracking-wider">Source</div>
                             </div>
-                            <div className="text-base md:text-lg font-bold text-cyan-400">Web</div>
-                            <div className="text-[10px] md:text-xs text-white/50 mt-1">Temps réel</div>
-                          </motion.div>
+                            <div className="text-base md:text-lg font-bold text-cyan-400">GPT</div>
+                            <div className="text-[10px] md:text-xs text-white/50 mt-1">IA</div>
+                          </div>
                         </div>
                         
-                        {/* Informations quartier */}
-                        {neighborhoodInfo && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.28 }}
-                            className="p-4 md:p-5 rounded-xl bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-blue-500/10 border border-blue-500/20 mb-4"
-                          >
-                            <div className="flex items-start gap-3">
-                              <Map className="w-4 h-4 md:w-5 md:h-5 text-blue-400 flex-shrink-0 mt-0.5" />
-                              <div className="flex-1">
-                                <h3 className="text-xs md:text-sm font-semibold text-white mb-2">Informations quartier</h3>
-                                <p className="text-xs md:text-sm text-white/80 leading-relaxed">{neighborhoodInfo}</p>
-                              </div>
+                        {/* Fourchette de prix */}
+                        <div
+                          className="p-4 md:p-5 rounded-xl bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-blue-500/10 border border-blue-500/20 mb-4"
+                        >
+                          <div className="flex items-start gap-3">
+                            <TrendingUp className="w-4 h-4 md:w-5 md:h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                            <div className="flex-1">
+                              <h3 className="text-xs md:text-sm font-semibold text-white mb-2">Fourchette de prix estimée</h3>
+                              <p className="text-xs md:text-sm text-white/80 leading-relaxed">
+                                {priceRange.min.toLocaleString('fr-FR')} - {priceRange.max.toLocaleString('fr-FR')} €/m²
+                              </p>
                             </div>
-                          </motion.div>
-                        )}
-                        
-                        {/* Ventes récentes */}
-                        {recentSales && recentSales.length > 0 && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.3 }}
-                            className="space-y-3 mb-4"
-                          >
-                            <h3 className="text-base md:text-lg font-semibold text-white mb-3 flex items-center gap-2">
-                              <TrendingUp className="w-4 h-4 md:w-5 md:h-5 text-green-400" />
-                              Ventes récentes similaires ({recentSales.length})
-                            </h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-                              {recentSales.map((sale: any, idx: number) => (
-                                <motion.div
-                                  key={idx}
-                                  initial={{ opacity: 0, y: 20 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  transition={{ delay: 0.3 + idx * 0.05 }}
-                                  className="backdrop-blur-xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/30 rounded-xl p-4 hover:border-green-500/50 transition-all"
-                                >
-                                  <div className="flex items-start justify-between gap-3 mb-3">
-                                    <div className="flex-1">
-                                      <div className="flex items-center gap-2 mb-2">
-                                        <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0">
-                                          <span className="text-xs font-bold text-green-400">#{idx + 1}</span>
-                                        </div>
-                                        <div className="text-base md:text-lg font-bold text-green-400">
-                                          {sale.price_m2 ? `${sale.price_m2.toLocaleString('fr-FR')} €/m²` : 'N/A'}
-                                        </div>
-                                      </div>
-                                      {sale.surface && (
-                                        <div className="text-xs md:text-sm text-white/70 mb-1">
-                                          <Ruler className="w-3 h-3 inline mr-1" />
-                                          {sale.surface} m²
-                                        </div>
-                                      )}
-                                      {sale.date && (
-                                        <div className="text-xs text-white/50 flex items-center gap-1 mt-1">
-                                          <Calendar className="w-3 h-3" />
-                                          {sale.date}
-                                        </div>
-                                      )}
-                                      {sale.address && (
-                                        <div className="text-xs text-white/60 mt-2 flex items-start gap-1">
-                                          <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                                          <span className="line-clamp-2">{sale.address}</span>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                </motion.div>
-                              ))}
-                            </div>
-                          </motion.div>
-                        )}
+                          </div>
+                        </div>
                         
                         {/* Commentaire marché détaillé */}
-                        {geminiComment && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.35 }}
+                        {gptComment && (
+                          <div
                             className="p-4 md:p-5 rounded-xl bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-purple-500/10 border border-purple-500/20 mb-4"
                           >
                             <div className="flex items-start gap-3">
                               <Info className="w-4 h-4 md:w-5 md:h-5 text-purple-400 flex-shrink-0 mt-0.5" />
                               <div className="flex-1">
                                 <h3 className="text-xs md:text-sm font-semibold text-white mb-2">Analyse du marché</h3>
-                                <p className="text-xs md:text-sm text-white/80 leading-relaxed">{geminiComment}</p>
+                                <p className="text-xs md:text-sm text-white/80 leading-relaxed">{gptComment}</p>
                               </div>
                             </div>
-                          </motion.div>
+                          </div>
                         )}
                         
                         {/* Comparaison de prix */}
-                        {geminiComparison && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.4 }}
-                            className="p-3 md:p-4 rounded-xl bg-white/[0.02] border border-white/[0.08] mb-4"
+                        {gptComparison && (
+                          <div
+                            className="p-3 md:p-4 rounded-xl bg-[rgba(26,27,30,0.95)] border border-white/[0.15] mb-4"
                           >
                             <div className="text-xs md:text-sm text-white/70">
-                              <strong className="text-white">Comparaison :</strong> {geminiComparison}
+                              <strong className="text-white">Comparaison :</strong> {gptComparison}
                             </div>
-                          </motion.div>
-                        )}
-                        
-                        {/* Sources */}
-                        {geminiSources && geminiSources.length > 0 && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.45 }}
-                            className="p-3 md:p-4 rounded-xl bg-white/[0.02] border border-white/[0.08] mb-4"
-                          >
-                            <h3 className="text-xs md:text-sm font-semibold text-white mb-2">Sources fiables</h3>
-                            <div className="flex flex-wrap gap-2">
-                              {geminiSources.map((source: string, idx: number) => (
-                                <span
-                                  key={idx}
-                                  className="px-2.5 py-1 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/30 text-[10px] md:text-xs font-medium"
-                                >
-                                  {source}
-                                </span>
-                              ))}
-                            </div>
-                          </motion.div>
+                          </div>
                         )}
                         
                         {/* Badge info */}
-                        <div className="flex items-start gap-2 p-3 rounded-lg bg-purple-500/10 border border-purple-500/20 mt-4">
-                          <Sparkles className="w-4 h-4 text-purple-400 flex-shrink-0 mt-0.5" />
+                        <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 mt-4">
+                          <Sparkles className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
                           <div className="text-xs text-white/70">
-                            <strong>Données Gemini :</strong> Informations trouvées en temps réel via recherche web Google. 
+                            <strong>Données GPT :</strong> Analyse précise calculée par intelligence artificielle basée sur les données du bien et les connaissances du marché immobilier français. 
                             Données récentes et à jour pour une analyse précise du marché local.
                           </div>
                         </div>
@@ -1152,53 +1082,41 @@ export default function PremiumReportView({
                         
                         {/* Grille de statistiques */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.1 }}
-                            className="backdrop-blur-xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/30 rounded-xl p-4"
+                          <div
+                            className=" bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/30 rounded-xl p-4"
                           >
                             <div className="text-xs text-white/50 mb-2 uppercase tracking-wider">Nombre</div>
                             <div className="text-2xl font-bold text-green-400">{stats.count}</div>
                             <div className="text-xs text-white/50 mt-1">transaction{stats.count > 1 ? 's' : ''}</div>
-                          </motion.div>
+                          </div>
                           
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.15 }}
-                            className="backdrop-blur-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/30 rounded-xl p-4"
+                          <div
+                            className=" bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/30 rounded-xl p-4"
                           >
                             <div className="text-xs text-white/50 mb-2 uppercase tracking-wider">Prix médian</div>
                             <div className="text-2xl font-bold text-blue-400">
                               {stats.avgPriceM2 > 0 ? `${stats.avgPriceM2.toLocaleString('fr-FR')} €/m²` : 'N/A'}
                             </div>
                             <div className="text-xs text-white/50 mt-1">au m²</div>
-                          </motion.div>
+                          </div>
                           
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.2 }}
-                            className="backdrop-blur-xl bg-white/[0.02] border border-white/[0.08] rounded-xl p-4"
+                          <div
+                            className=" bg-[rgba(26,27,30,0.95)] border border-white/[0.15] rounded-xl p-4"
                           >
                             <div className="text-xs text-white/50 mb-2 uppercase tracking-wider">Prix min</div>
                             <div className="text-xl font-bold text-white">
                               {stats.minPriceM2 > 0 ? `${stats.minPriceM2.toLocaleString('fr-FR')} €/m²` : 'N/A'}
                             </div>
-                          </motion.div>
+                          </div>
                           
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.25 }}
-                            className="backdrop-blur-xl bg-white/[0.02] border border-white/[0.08] rounded-xl p-4"
+                          <div
+                            className=" bg-[rgba(26,27,30,0.95)] border border-white/[0.15] rounded-xl p-4"
                           >
                             <div className="text-xs text-white/50 mb-2 uppercase tracking-wider">Prix max</div>
                             <div className="text-xl font-bold text-white">
                               {stats.maxPriceM2 > 0 ? `${stats.maxPriceM2.toLocaleString('fr-FR')} €/m²` : 'N/A'}
                             </div>
-                          </motion.div>
+                          </div>
                         </div>
                         
                         {/* Info badge */}
@@ -1216,12 +1134,9 @@ export default function PremiumReportView({
                         <h3 className="text-lg font-semibold mb-4">Détail des transactions</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {transactions.map((tx, idx) => (
-                            <motion.div
+                            <div
                               key={idx}
-                              initial={{ opacity: 0, y: 20 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: idx * 0.05 }}
-                              className="backdrop-blur-xl bg-white/[0.02] border border-white/[0.08] rounded-xl p-5 hover:border-white/[0.15] transition-all group"
+                              className=" bg-[rgba(26,27,30,0.95)] border border-white/[0.15] rounded-xl p-5 group"
                             >
                               <div className="flex items-start justify-between gap-3 mb-4">
                                 <div className="flex-1">
@@ -1281,7 +1196,7 @@ export default function PremiumReportView({
                                   </div>
                                 )}
                               </div>
-                            </motion.div>
+                            </div>
                           ))}
                         </div>
                       </PremiumCard>
@@ -1384,11 +1299,8 @@ export default function PremiumReportView({
                         
                         {/* Grille de statistiques principales */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.1 }}
-                            className="backdrop-blur-xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/30 rounded-xl p-4"
+                          <div
+                            className=" bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/30 rounded-xl p-4"
                           >
                             <div className="flex items-center gap-2 mb-2">
                               <Activity className="w-4 h-4 text-purple-400" />
@@ -1396,13 +1308,10 @@ export default function PremiumReportView({
                             </div>
                             <div className="text-2xl font-bold text-purple-400">{stats.count}</div>
                             <div className="text-xs text-white/50 mt-1">actives</div>
-                          </motion.div>
+                          </div>
                           
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.15 }}
-                            className="backdrop-blur-xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/30 rounded-xl p-4"
+                          <div
+                            className=" bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/30 rounded-xl p-4"
                           >
                             <div className="flex items-center gap-2 mb-2">
                               <DollarSign className="w-4 h-4 text-green-400" />
@@ -1412,13 +1321,10 @@ export default function PremiumReportView({
                               {stats.avgPriceM2 > 0 ? `${stats.avgPriceM2.toLocaleString('fr-FR')} €` : 'N/A'}
                             </div>
                             <div className="text-xs text-white/50 mt-1">par m²</div>
-                          </motion.div>
+                          </div>
                           
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.2 }}
-                            className="backdrop-blur-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/30 rounded-xl p-4"
+                          <div
+                            className=" bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/30 rounded-xl p-4"
                           >
                             <div className="flex items-center gap-2 mb-2">
                               <Ruler className="w-4 h-4 text-blue-400" />
@@ -1428,13 +1334,10 @@ export default function PremiumReportView({
                               {stats.avgSurface > 0 ? `${stats.avgSurface} m²` : 'N/A'}
                             </div>
                             <div className="text-xs text-white/50 mt-1">habitable</div>
-                          </motion.div>
+                          </div>
                           
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.25 }}
-                            className="backdrop-blur-xl bg-gradient-to-br from-orange-500/10 to-amber-500/10 border border-orange-500/30 rounded-xl p-4"
+                          <div
+                            className=" bg-gradient-to-br from-orange-500/10 to-amber-500/10 border border-orange-500/30 rounded-xl p-4"
                           >
                             <div className="flex items-center gap-2 mb-2">
                               <Map className="w-4 h-4 text-orange-400" />
@@ -1444,15 +1347,12 @@ export default function PremiumReportView({
                               {stats.avgDistance > 0 ? `${(stats.avgDistance / 1000).toFixed(1)} km` : 'N/A'}
                             </div>
                             <div className="text-xs text-white/50 mt-1">de l'adresse</div>
-                          </motion.div>
+                          </div>
                         </div>
                         
                         {/* Fourchette de prix */}
                         {stats.minPriceM2 > 0 && stats.maxPriceM2 > 0 && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.3 }}
+                          <div
                             className="p-4 rounded-xl bg-gradient-to-r from-green-500/10 via-blue-500/10 to-purple-500/10 border border-white/10"
                           >
                             <div className="flex items-center justify-between">
@@ -1461,7 +1361,7 @@ export default function PremiumReportView({
                                 {stats.minPriceM2.toLocaleString('fr-FR')} - {stats.maxPriceM2.toLocaleString('fr-FR')} €/m²
                               </div>
                             </div>
-                          </motion.div>
+                          </div>
                         )}
                       </PremiumCard>
                       
@@ -1537,13 +1437,10 @@ export default function PremiumReportView({
                                 };
                                 
                                 return (
-                                  <motion.div
+                                  <div
                                     key={type}
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: idx * 0.1 }}
                                     className={cn(
-                                      "p-4 rounded-xl border backdrop-blur-xl",
+                                      "p-4 rounded-xl border ",
                                       typeColors[type] || typeColors['autre']
                                     )}
                                   >
@@ -1556,14 +1453,12 @@ export default function PremiumReportView({
                                       <span className="text-sm font-bold">{countNum} ({percentage}%)</span>
                                     </div>
                                     <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
-                                      <motion.div
-                                        initial={{ width: 0 }}
-                                        animate={{ width: `${percentage}%` }}
-                                        transition={{ delay: idx * 0.1 + 0.3, duration: 0.8 }}
+                                      <div
                                         className="h-full bg-gradient-to-r from-white/40 to-white/20"
+                                        style={{ width: `${percentage}%` }}
                                       />
                                     </div>
-                                  </motion.div>
+                                  </div>
                                 );
                               })}
                             </div>
@@ -1583,12 +1478,9 @@ export default function PremiumReportView({
                             const firstImage = hasImage ? listing.picturesRemote[0] : null;
                             
                             return (
-                              <motion.div
+                              <div
                                 key={listing.id || idx}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: idx * 0.05 }}
-                                className="group relative overflow-hidden rounded-2xl border border-white/10 backdrop-blur-xl bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04] transition-all duration-300"
+                                className="group relative overflow-hidden rounded-2xl border border-white/10  bg-[rgba(26,27,30,0.95)]"
                               >
                                 {/* Image */}
                                 {firstImage && (
@@ -1596,7 +1488,7 @@ export default function PremiumReportView({
                                     <img
                                       src={firstImage}
                                       alt={listing.title || 'Annonce'}
-                                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                      className="w-full h-full object-cover"
                                       onError={(e) => {
                                         (e.target as HTMLImageElement).style.display = 'none';
                                       }}
@@ -1608,7 +1500,7 @@ export default function PremiumReportView({
                                       </div>
                                     </div>
                                     {listing.distance_m && (
-                                      <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-sm border border-white/20">
+                                      <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-black/90 border border-white/30">
                                         <div className="flex items-center gap-1 text-xs text-white">
                                           <Navigation className="w-3 h-3" />
                                           {listing.distance_m < 1000 
@@ -1728,7 +1620,7 @@ export default function PremiumReportView({
                                         {listing.contact.phone && (
                                           <a
                                             href={`tel:${listing.contact.phone}`}
-                                            className="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors"
+                                            className="flex items-center gap-2 text-blue-400"
                                           >
                                             <Phone className="w-3.5 h-3.5" />
                                             {listing.contact.phone}
@@ -1737,7 +1629,7 @@ export default function PremiumReportView({
                                         {listing.contact.email && (
                                           <a
                                             href={`mailto:${listing.contact.email}`}
-                                            className="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors"
+                                            className="flex items-center gap-2 text-blue-400"
                                           >
                                             <Mail className="w-3.5 h-3.5" />
                                             {listing.contact.email}
@@ -1751,7 +1643,7 @@ export default function PremiumReportView({
                                         href={listing.url}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 text-white hover:from-purple-500/30 hover:to-pink-500/30 transition-all text-sm font-medium"
+                                        className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 text-white text-sm font-medium"
                                       >
                                         <ExternalLink className="w-4 h-4" />
                                         Voir l'annonce
@@ -1778,7 +1670,7 @@ export default function PremiumReportView({
                                     </div>
                                   )}
                                 </div>
-                              </motion.div>
+                              </div>
                             );
                           })}
                         </div>
@@ -1795,153 +1687,238 @@ export default function PremiumReportView({
                     </div>
                   );
                 })()}
-              </motion.div>
+              </div>
             )}
 
-            {/* Section Éducation */}
+            {/* Section Éducation - Refonte complète */}
             {activeTab === 'education' && (
-              <motion.div
-                key="education"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
+              <div
                 className="space-y-6"
               >
+                {/* En-tête avec statistiques */}
                 <PremiumCard className="p-6 md:p-8">
-                  <div className="flex items-start gap-4 mb-6">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 flex items-center justify-center flex-shrink-0">
-                      <School className="w-6 h-6 text-blue-400" />
-                    </div>
-                    <div className="flex-1">
-                      <h2 className="text-xl font-semibold mb-1">Établissements Scolaires</h2>
-                      <p className="text-sm text-white/60">Écoles à proximité du bien</p>
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-8">
+                    <div className="flex items-start gap-4">
+                      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500/30 via-indigo-500/25 to-blue-600/30 flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-500/20">
+                        <School className="w-7 h-7 text-blue-300" />
+                      </div>
+                      <div className="flex-1">
+                        <h2 className="text-2xl md:text-3xl font-bold mb-2 bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
+                          Établissements Scolaires
+                        </h2>
+                        <p className="text-sm md:text-base text-white/60">Écoles et établissements à proximité du bien</p>
+                      </div>
                     </div>
                   </div>
                   
-                  {/* Statistiques générales */}
+                  {/* Statistiques générales - Design Professionnel Mobile-Friendly */}
                   {sections.find(s => s.id === 'education')?.items && sections.find(s => s.id === 'education')!.items.length > 0 && (
-                    <div className="mb-6 grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 md:gap-4 mb-6 sm:mb-8">
                       {sections.find(s => s.id === 'education')!.items.slice(0, 4).map((item, index) => (
-                        <div key={index} className="backdrop-blur-xl bg-white/[0.02] border border-white/[0.08] rounded-lg p-3">
-                          <div className="text-xs text-white/50 mb-1">{item.label}</div>
-                          <div className="text-sm font-semibold text-white">{item.value}</div>
+                        <div
+                          key={index}
+                          className="bg-[rgba(26,27,30,0.95)] border border-white/[0.15] rounded-lg p-2.5 sm:p-3 md:p-4 min-w-0"
+                        >
+                          <div className="text-[10px] sm:text-xs md:text-sm text-white/50 mb-1 sm:mb-1.5 md:mb-2 font-medium truncate" title={item.label}>
+                            {item.label}
+                          </div>
+                          <div className="text-base sm:text-lg md:text-2xl lg:text-3xl font-semibold text-white break-words">
+                            {item.value}
+                          </div>
                         </div>
                       ))}
                     </div>
                   )}
+                </PremiumCard>
                   
-                  {/* Cartes des écoles style Google Maps */}
-                  <div className="space-y-4">
-                    {(() => {
-                      const educationSection = sections.find(s => s.id === 'education');
-                      const schoolsData = educationSection?.notes as any[] || [];
-                      
-                      if (schoolsData.length === 0) {
-                        return (
-                          <div className="text-center py-8 text-white/50">
-                            <School className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                            <p>Aucune école trouvée à proximité</p>
+                {/* Liste des écoles - Design premium */}
+                <div className="space-y-4">
+                  {(() => {
+                    const educationSection = sections.find(s => s.id === 'education');
+                    const schoolsData = educationSection?.notes as any[] || [];
+                    
+                    if (schoolsData.length === 0) {
+                      return (
+                        <PremiumCard className="p-12">
+                          <div className="text-center">
+                            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-blue-500/20 to-indigo-500/20 flex items-center justify-center">
+                              <School className="w-10 h-10 text-blue-400/60" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-white mb-2">Aucune école trouvée</h3>
+                            <p className="text-white/50">Aucun établissement scolaire n'a été trouvé à proximité de cette adresse.</p>
                           </div>
-                        );
+                        </PremiumCard>
+                      );
+                    }
+                    
+                    return schoolsData.map((school, index) => {
+                      // Debug: vérifier les données GPS
+                      if (process.env.NODE_ENV === 'development' && index === 0) {
+                        console.log('[Education] Données première école:', {
+                          name: school.name,
+                          gps: school.gps,
+                          hasGps: !!(school.gps && school.gps.lat && school.gps.lon),
+                          lat: school.gps?.lat,
+                          lon: school.gps?.lon
+                        });
                       }
                       
-                      return schoolsData.map((school, index) => {
-                        const getSchoolTypeLabel = (kind: string) => {
-                          const labels: Record<string, string> = {
-                            'maternelle': 'École maternelle',
-                            'élémentaire': 'École élémentaire',
-                            'collège': 'Collège',
-                            'lycée': 'Lycée',
-                            'autre': 'Établissement'
-                          };
-                          return labels[kind] || kind.charAt(0).toUpperCase() + kind.slice(1);
+                      const getSchoolTypeLabel = (kind: string) => {
+                        const labels: Record<string, string> = {
+                          'maternelle': 'Maternelle',
+                          'élémentaire': 'Élémentaire',
+                          'collège': 'Collège',
+                          'lycée': 'Lycée',
+                          'autre': 'Établissement'
                         };
-                        
-                        const formatDistance = (distance_m?: number) => {
-                          if (!distance_m) return '';
-                          if (distance_m < 1000) return `${Math.round(distance_m)} m`;
-                          return `${(distance_m / 1000).toFixed(1)} km`;
+                        return labels[kind] || kind.charAt(0).toUpperCase() + kind.slice(1);
+                      };
+                      
+                      const getSchoolTypeColor = (kind: string) => {
+                        const colors: Record<string, { bg: string; border: string; text: string; icon: string }> = {
+                          'maternelle': { bg: 'bg-pink-500/30', border: 'border-pink-500/50', text: 'text-pink-200', icon: 'text-pink-300' },
+                          'élémentaire': { bg: 'bg-blue-500/30', border: 'border-blue-500/50', text: 'text-blue-200', icon: 'text-blue-300' },
+                          'collège': { bg: 'bg-purple-500/30', border: 'border-purple-500/50', text: 'text-purple-200', icon: 'text-purple-300' },
+                          'lycée': { bg: 'bg-orange-500/30', border: 'border-orange-500/50', text: 'text-orange-200', icon: 'text-orange-300' },
                         };
-                        
-                        const getMapImageUrl = (gps?: { lat: number; lon: number }) => {
-                          if (!gps || !gps.lat || !gps.lon) return null;
-                          // Ne pas utiliser Google Maps si pas de clé API - utiliser un placeholder coloré à la place
-                          // const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY;
-                          // if (apiKey) {
-                          //   return `https://maps.googleapis.com/maps/api/staticmap?center=${gps.lat},${gps.lon}&zoom=16&size=400x200&maptype=roadmap&markers=color:blue%7C${gps.lat},${gps.lon}&key=${apiKey}`;
-                          // }
-                          return null; // Retourner null pour utiliser le fallback coloré
-                        };
-                        
-                        return (
-                          <motion.div
-                            key={index}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: index * 0.1 }}
-                            className="backdrop-blur-xl bg-white/[0.02] border border-white/[0.08] rounded-xl overflow-hidden hover:border-white/[0.15] transition-all"
-                          >
-                            <div className="flex flex-col md:flex-row">
-                              {/* Image/Photo style Google Maps */}
-                              <div className="relative w-full md:w-48 h-32 md:h-auto bg-gradient-to-br from-blue-500/30 via-blue-600/20 to-indigo-500/30 flex-shrink-0 overflow-hidden">
-                                {/* Fallback toujours visible en arrière-plan */}
-                                <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500/30 via-blue-600/20 to-indigo-500/30 z-0">
-                                  <School className="w-12 h-12 text-blue-400/60" />
+                        return colors[kind] || { bg: 'bg-gray-500/30', border: 'border-gray-500/50', text: 'text-gray-200', icon: 'text-gray-300' };
+                      };
+                      
+                      const formatDistance = (distance_m?: number) => {
+                        if (!distance_m) return '';
+                        if (distance_m < 1000) return `${Math.round(distance_m)} m`;
+                        return `${(distance_m / 1000).toFixed(1)} km`;
+                      };
+                      
+                      const getMapEmbedUrl = (gps?: { lat: number; lon: number }) => {
+                        if (!gps || !gps.lat || !gps.lon || isNaN(gps.lat) || isNaN(gps.lon)) {
+                          console.warn('[Education] Pas de coordonnées GPS valides pour la carte', gps);
+                          return null;
+                        }
+                        // Utiliser OpenStreetMap embed (gratuit, sans clé API)
+                        const lat = gps.lat;
+                        const lon = gps.lon;
+                        // Calculer la bounding box pour un zoom approprié
+                        const zoom = 15;
+                        const bboxSize = 0.01; // Taille de la bounding box
+                        const bbox = `${lon - bboxSize},${lat - bboxSize},${lon + bboxSize},${lat + bboxSize}`;
+                        // URL pour iframe OpenStreetMap
+                        const url = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lon}`;
+                        if (process.env.NODE_ENV === 'development') {
+                          console.log('[Education] URL carte générée:', url, { lat, lon });
+                        }
+                        return url;
+                      };
+                      
+                      const typeColor = getSchoolTypeColor(school.kind);
+                      
+                      return (
+                        <div
+                          key={index}
+                          className="group relative overflow-hidden rounded-2xl border border-white/[0.15]"
+                          style={{
+                            backgroundColor: 'rgba(26, 27, 30, 0.95)',
+                          }}
+                        >
+                          {/* Effet de brillance au hover */}
+                          
+                          <div className="relative flex flex-col md:flex-row">
+                            {/* Carte avec fallback coloré */}
+                            <div className="relative w-full md:w-56 h-40 md:h-auto flex-shrink-0 overflow-hidden rounded-l-2xl md:rounded-l-2xl md:rounded-r-none">
+                              {/* Fallback coloré toujours visible en arrière-plan */}
+                              <div className={`absolute inset-0 ${typeColor.bg} z-0`}>
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <School className={`w-12 h-12 ${typeColor.icon} opacity-50`} />
                                 </div>
-                                
-                                {/* Image Google Maps par-dessus si disponible */}
-                                {getMapImageUrl(school.gps) ? (
-                                  <img
-                                    src={getMapImageUrl(school.gps)!}
-                                    alt={school.name}
-                                    className="relative z-10 w-full h-full object-cover"
-                                    loading="lazy"
-                                    onError={(e) => {
-                                      // Si l'image ne charge pas, la masquer (le fallback reste visible)
-                                      (e.target as HTMLImageElement).style.display = 'none';
-                                    }}
-                                  />
-                                ) : null}
-                                
-                                {/* Pastille de distance */}
-                                {school.distance_m && (
-                                  <div className="absolute top-2 right-2 z-20 px-2.5 py-1.5 rounded-lg bg-black/90 backdrop-blur-md border border-white/30 text-xs font-bold text-white shadow-xl">
-                                    <div className="flex items-center gap-1.5">
-                                      <Navigation className="w-3.5 h-3.5" />
-                                      <span>{formatDistance(school.distance_m)}</span>
-                                    </div>
-                                  </div>
-                                )}
                               </div>
                               
-                              {/* Contenu de la carte */}
-                              <div className="flex-1 p-4 md:p-5">
-                                <div className="flex items-start justify-between gap-3 mb-2">
-                                  <div className="flex-1 min-w-0">
-                                    <h3 className="text-lg font-semibold text-white mb-1 truncate">
-                                      {school.name}
-                                    </h3>
-                                    <div className="flex items-center gap-2 flex-wrap mt-2">
-                                      <span className="text-xs px-3 py-1.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 font-medium backdrop-blur-sm">
-                                        {getSchoolTypeLabel(school.kind)}
+                              {/* Carte OpenStreetMap par-dessus si disponible */}
+                              {school.gps && typeof school.gps.lat === 'number' && typeof school.gps.lon === 'number' && !isNaN(school.gps.lat) && !isNaN(school.gps.lon) ? (
+                                <iframe
+                                  key={`map-${school.name}-${school.gps.lat}-${school.gps.lon}`}
+                                  src={getMapEmbedUrl(school.gps)!}
+                                  className="relative z-10 w-full h-full border-0"
+                                  loading="lazy"
+                                  title={`Carte de ${school.name}`}
+                                  onLoad={() => {
+                                    // Carte chargée avec succès
+                                    console.log(`✅ [Education] Carte chargée pour ${school.name}`, {
+                                      lat: school.gps?.lat,
+                                      lon: school.gps?.lon,
+                                      url: getMapEmbedUrl(school.gps)
+                                    });
+                                  }}
+                                  onError={(e) => {
+                                    // Si la carte ne charge pas, la masquer (le fallback reste visible)
+                                    console.warn(`❌ [Education] Erreur chargement carte pour ${school.name}`, {
+                                      lat: school.gps?.lat,
+                                      lon: school.gps?.lon,
+                                      url: getMapEmbedUrl(school.gps),
+                                      error: e
+                                    });
+                                    (e.target as HTMLIFrameElement).style.display = 'none';
+                                  }}
+                                />
+                              ) : (
+                                // Si pas de GPS, afficher un message
+                                <div className="relative z-10 w-full h-full flex items-center justify-center">
+                                  <div className="text-center text-white/40 text-xs p-2">
+                                    <MapPin className="w-6 h-6 mx-auto mb-1" />
+                                    <div>Pas de coordonnées</div>
+                                    {process.env.NODE_ENV === 'development' && (
+                                      <div className="text-[10px] mt-1 text-white/20">
+                                        GPS: {JSON.stringify(school.gps)}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Pastille de distance - Design premium */}
+                              {school.distance_m && (
+                                <div
+                                  className="absolute top-3 right-3 z-20 px-3 py-1.5 rounded-xl bg-black/95  border-2 border-white/50 text-xs font-bold text-white shadow-2xl"
+                                >
+                                  <div className="flex items-center gap-1.5">
+                                    <Navigation className="w-4 h-4" />
+                                    <span>{formatDistance(school.distance_m)}</span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Contenu de la carte */}
+                            <div className="flex-1 p-5 md:p-6">
+                              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-4">
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="text-xl md:text-2xl font-bold text-white mb-3 leading-tight">
+                                    {school.name}
+                                  </h3>
+                                  
+                                  {/* Badges de type et statut - Design Professionnel */}
+                                  <div className="flex items-center gap-2 flex-wrap mb-4">
+                                    <span className={cn(
+                                      "text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 rounded-md font-medium border",
+                                      `${typeColor.bg} ${typeColor.border} ${typeColor.text}`
+                                    )}>
+                                      {getSchoolTypeLabel(school.kind)}
+                                    </span>
+                                    {school.public_private && (
+                                      <span className={cn(
+                                        "text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 rounded-md border font-medium bg-[rgba(26,27,30,0.95)] border-white/[0.15]",
+                                        school.public_private === 'public'
+                                          ? "text-green-300/90"
+                                          : "text-purple-300/90"
+                                      )}>
+                                        {school.public_private === 'public' ? 'Public' : 'Privé'}
                                       </span>
-                                      {school.public_private && (
-                                        <span className={cn(
-                                          "text-xs px-3 py-1.5 rounded-full border font-medium backdrop-blur-sm",
-                                          school.public_private === 'public'
-                                            ? "bg-green-500/20 text-green-300 border-green-500/30"
-                                            : "bg-purple-500/20 text-purple-300 border-purple-500/30"
-                                        )}>
-                                          {school.public_private === 'public' ? 'Public' : 'Privé'}
-                                        </span>
-                                      )}
-                                    </div>
+                                    )}
                                   </div>
                                   
-                                  {/* Note Google avec étoiles */}
+                                  {/* Note Google avec étoiles - Design amélioré */}
                                   {school.rating && (
-                                    <div className="flex items-center gap-2 flex-shrink-0">
-                                      <div className="flex items-center gap-0.5">
+                                    <div className="flex items-center gap-3 mb-4">
+                                      <div className="flex items-center gap-1">
                                         {[...Array(5)].map((_, i) => {
                                           const starValue = i + 1;
                                           const rating = school.rating || 0;
@@ -1949,110 +1926,98 @@ export default function PremiumReportView({
                                           const isHalf = !isFull && starValue - 0.5 <= rating;
                                           
                                           return (
-                                            <div key={i} className="relative w-4 h-4">
-                                              {/* Étoile de fond (vide) */}
-                                              <Star className="absolute inset-0 w-4 h-4 text-gray-500/40 fill-gray-500/20" />
-                                              {/* Étoile pleine ou demi */}
+                                            <div key={i} className="relative w-5 h-5">
+                                              <Star className="absolute inset-0 w-5 h-5 text-gray-500/30 fill-gray-500/10" />
                                               {isFull ? (
-                                                <Star className="absolute inset-0 w-4 h-4 text-yellow-400 fill-yellow-400" />
+                                                <Star className="absolute inset-0 w-5 h-5 text-yellow-400 fill-yellow-400 drop-shadow-sm" />
                                               ) : isHalf ? (
                                                 <div className="absolute inset-0 overflow-hidden">
-                                                  <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" style={{ clipPath: 'inset(0 50% 0 0)' }} />
+                                                  <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" style={{ clipPath: 'inset(0 50% 0 0)' }} />
                                                 </div>
                                               ) : null}
                                             </div>
                                           );
                                         })}
                                       </div>
-                                      <div className="flex items-center gap-1">
-                                        <span className="text-sm font-semibold text-white">
+                                      <div className="flex items-baseline gap-2">
+                                        <span className="text-lg font-bold text-white">
                                           {school.rating.toFixed(1)}
                                         </span>
                                         {school.rating_count && (
                                           <span className="text-xs text-white/50">
-                                            ({school.rating_count.toLocaleString('fr-FR')})
+                                            ({school.rating_count.toLocaleString('fr-FR')} avis)
                                           </span>
                                         )}
                                       </div>
                                     </div>
                                   )}
-                                </div>
-                                
-                                {/* Adresse */}
-                                {(school.address || school.postcode || school.city) && (
-                                  <div className="flex items-start gap-2 mb-3">
-                                    <MapPin className="w-4 h-4 text-white/50 flex-shrink-0 mt-0.5" />
-                                    <div className="text-sm text-white/70">
-                                      {school.address && <div>{school.address}</div>}
-                                      <div>
-                                        {school.postcode && school.city 
-                                          ? `${school.postcode} ${school.city}`
-                                          : school.postcode 
-                                          ? school.postcode
-                                          : school.city || ''}
+                                  
+                                  {/* Adresse */}
+                                  {(school.address || school.postcode || school.city) && (
+                                    <div className="flex items-start gap-3 mb-4 p-3 rounded-xl bg-[rgba(26,27,30,0.95)] border border-white/[0.15]">
+                                      <MapPin className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                                      <div className="text-sm text-white/80">
+                                        {school.address && <div className="font-medium">{school.address}</div>}
+                                        <div className="text-white/60">
+                                          {school.postcode && school.city 
+                                            ? `${school.postcode} ${school.city}`
+                                            : school.postcode 
+                                            ? school.postcode
+                                            : school.city || ''}
+                                        </div>
                                       </div>
                                     </div>
-                                  </div>
-                                )}
-                                
-                                {/* Actions */}
-                                <div className="flex items-center gap-2 mt-4 flex-wrap">
-                                  {school.gps && (
-                                    <motion.a
-                                      href={`https://www.google.com/maps?q=${school.gps.lat},${school.gps.lon}`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      whileHover={{ scale: 1.02 }}
-                                      whileTap={{ scale: 0.98 }}
-                                      className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border border-blue-500/30 hover:from-blue-500/30 hover:to-indigo-500/30 transition-all text-xs font-medium text-white flex items-center gap-2 shadow-lg shadow-blue-500/10"
-                                    >
-                                      <Navigation className="w-4 h-4" />
-                                      <span>Maps</span>
-                                    </motion.a>
-                                  )}
-                                  {school.website && (
-                                    <motion.a
-                                      href={school.website.startsWith('http') ? school.website : `https://${school.website}`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      whileHover={{ scale: 1.02 }}
-                                      whileTap={{ scale: 0.98 }}
-                                      className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border border-blue-500/30 hover:from-blue-500/30 hover:to-indigo-500/30 transition-all text-xs font-medium text-white flex items-center gap-2 shadow-lg shadow-blue-500/10"
-                                    >
-                                      <ExternalLink className="w-4 h-4" />
-                                      <span>Site web</span>
-                                    </motion.a>
-                                  )}
-                                  {school.phone && (
-                                    <motion.a
-                                      href={`tel:${school.phone}`}
-                                      whileHover={{ scale: 1.02 }}
-                                      whileTap={{ scale: 0.98 }}
-                                      className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border border-blue-500/30 hover:from-blue-500/30 hover:to-indigo-500/30 transition-all text-xs font-medium text-white flex items-center gap-2 shadow-lg shadow-blue-500/10"
-                                    >
-                                      <Phone className="w-4 h-4" />
-                                      <span>Appeler</span>
-                                    </motion.a>
                                   )}
                                 </div>
                               </div>
+                              
+                              {/* Actions - Design moderne */}
+                              <div className="flex items-center gap-3 flex-wrap pt-4 border-t border-white/[0.15]">
+                                {school.gps && (
+                                  <a
+                                    href={`https://www.google.com/maps?q=${school.gps.lat},${school.gps.lon}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-500/25 to-indigo-500/25 border border-blue-500/40 text-sm font-semibold text-white flex items-center gap-2 shadow-lg shadow-blue-500/20"
+                                  >
+                                    <Navigation className="w-4 h-4" />
+                                    <span>Voir sur Maps</span>
+                                  </a>
+                                )}
+                                {school.website && (
+                                  <a
+                                    href={school.website.startsWith('http') ? school.website : `https://${school.website}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-500/25 to-pink-500/25 border border-purple-500/40 text-sm font-semibold text-white flex items-center gap-2 shadow-lg shadow-purple-500/20"
+                                  >
+                                    <ExternalLink className="w-4 h-4" />
+                                    <span>Site web</span>
+                                  </a>
+                                )}
+                                {school.phone && (
+                                  <a
+                                    href={`tel:${school.phone}`}
+                                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-green-500/25 to-emerald-500/25 border border-green-500/40 text-sm font-semibold text-white flex items-center gap-2 shadow-lg shadow-green-500/20"
+                                  >
+                                    <Phone className="w-4 h-4" />
+                                    <span>Appeler</span>
+                                  </a>
+                                )}
+                              </div>
                             </div>
-                          </motion.div>
-                        );
-                      });
-                    })()}
-                  </div>
-                </PremiumCard>
-              </motion.div>
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              </div>
             )}
 
             {/* Section Commodités */}
             {activeTab === 'amenities' && (
-              <motion.div
-                key="amenities"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
+              <div
                 className="space-y-6"
               >
                 <PremiumCard className="p-6 md:p-8">
@@ -2066,13 +2031,20 @@ export default function PremiumReportView({
                     </div>
                   </div>
                   
-                  {/* Statistiques générales */}
+                  {/* Statistiques générales - Design Professionnel Mobile-Friendly */}
                   {sections.find(s => s.id === 'amenities')?.items && sections.find(s => s.id === 'amenities')!.items.length > 0 && (
-                    <div className="mb-6 grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="mb-6 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
                       {sections.find(s => s.id === 'amenities')!.items.slice(0, 4).map((item, index) => (
-                        <div key={index} className="backdrop-blur-xl bg-white/[0.02] border border-white/[0.08] rounded-lg p-3">
-                          <div className="text-xs text-white/50 mb-1">{item.label}</div>
-                          <div className="text-sm font-semibold text-white">{item.value}</div>
+                        <div
+                          key={index}
+                          className="bg-[rgba(26,27,30,0.95)] border border-white/[0.15] rounded-lg p-2.5 sm:p-3 md:p-4 min-w-0"
+                        >
+                          <div className="text-[10px] sm:text-xs md:text-sm text-white/50 mb-1 sm:mb-1.5 md:mb-2 font-medium truncate" title={item.label}>
+                            {item.label}
+                          </div>
+                          <div className="text-base sm:text-lg md:text-2xl lg:text-3xl font-semibold text-white break-words">
+                            {item.value}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -2126,26 +2098,36 @@ export default function PremiumReportView({
                           return `${(distance_m / 1000).toFixed(1)} km`;
                         };
                         
-                        const getMapImageUrl = (gps?: { lat: number; lon: number }) => {
-                          if (!gps || !gps.lat || !gps.lon) return null;
-                          // Ne pas utiliser Google Maps si pas de clé API - utiliser un placeholder coloré à la place
-                          // const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY;
-                          // if (apiKey) {
-                          //   return `https://maps.googleapis.com/maps/api/staticmap?center=${gps.lat},${gps.lon}&zoom=16&size=400x200&maptype=roadmap&markers=color:purple%7C${gps.lat},${gps.lon}&key=${apiKey}`;
-                          // }
-                          return null; // Retourner null pour utiliser le fallback coloré
+                        const getMapEmbedUrl = (gps?: { lat: number; lon: number }) => {
+                          if (!gps || !gps.lat || !gps.lon || isNaN(gps.lat) || isNaN(gps.lon)) {
+                            console.warn('[Commodités] Pas de coordonnées GPS valides pour la carte', gps);
+                            return null;
+                          }
+                          // Utiliser OpenStreetMap embed (gratuit, sans clé API)
+                          const lat = gps.lat;
+                          const lon = gps.lon;
+                          // Calculer la bounding box pour un zoom approprié
+                          const zoom = 15;
+                          const bboxSize = 0.01; // Taille de la bounding box
+                          const bbox = `${lon - bboxSize},${lat - bboxSize},${lon + bboxSize},${lat + bboxSize}`;
+                          // URL pour iframe OpenStreetMap
+                          const url = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lon}`;
+                          if (process.env.NODE_ENV === 'development') {
+                            console.log('[Commodités] URL carte générée:', url, { lat, lon });
+                          }
+                          return url;
                         };
                         
                         const CategoryIcon = getCategoryIcon(amenity.type, amenity.category);
                         const colors = getCategoryColor(amenity.type);
                         
                         return (
-                          <motion.div
+                          <div
                             key={index}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: index * 0.1 }}
-                            className="backdrop-blur-xl bg-white/[0.02] border border-white/[0.08] rounded-xl overflow-hidden hover:border-white/[0.15] transition-all"
+                            className="border border-white/[0.15] rounded-xl overflow-hidden"
+                            style={{
+                              backgroundColor: 'rgba(26, 27, 30, 0.95)',
+                            }}
                           >
                             <div className="flex flex-col md:flex-row">
                               {/* Image/Photo style Google Maps */}
@@ -2155,23 +2137,38 @@ export default function PremiumReportView({
                                   <CategoryIcon className={`w-12 h-12 ${colors.icon} opacity-60`} />
                                 </div>
                                 
-                                {/* Image Google Maps par-dessus si disponible */}
-                                {getMapImageUrl(amenity.gps) ? (
-                                  <img
-                                    src={getMapImageUrl(amenity.gps)!}
-                                    alt={amenity.name}
-                                    className="relative z-10 w-full h-full object-cover"
+                                {/* Carte OpenStreetMap par-dessus si disponible */}
+                                {amenity.gps && typeof amenity.gps.lat === 'number' && typeof amenity.gps.lon === 'number' && !isNaN(amenity.gps.lat) && !isNaN(amenity.gps.lon) ? (
+                                  <iframe
+                                    key={`map-amenity-${amenity.name}-${amenity.gps.lat}-${amenity.gps.lon}`}
+                                    src={getMapEmbedUrl(amenity.gps)!}
+                                    className="relative z-10 w-full h-full border-0"
                                     loading="lazy"
+                                    title={`Carte de ${amenity.name}`}
+                                    onLoad={() => {
+                                      // Carte chargée avec succès
+                                      console.log(`✅ [Commodités] Carte chargée pour ${amenity.name}`, {
+                                        lat: amenity.gps?.lat,
+                                        lon: amenity.gps?.lon,
+                                        url: getMapEmbedUrl(amenity.gps)
+                                      });
+                                    }}
                                     onError={(e) => {
-                                      // Si l'image ne charge pas, la masquer (le fallback reste visible)
-                                      (e.target as HTMLImageElement).style.display = 'none';
+                                      // Si la carte ne charge pas, la masquer (le fallback reste visible)
+                                      console.warn(`❌ [Commodités] Erreur chargement carte pour ${amenity.name}`, {
+                                        lat: amenity.gps?.lat,
+                                        lon: amenity.gps?.lon,
+                                        url: getMapEmbedUrl(amenity.gps),
+                                        error: e
+                                      });
+                                      (e.target as HTMLIFrameElement).style.display = 'none';
                                     }}
                                   />
                                 ) : null}
                                 
                                 {/* Pastille de distance */}
                                 {amenity.distance_m && (
-                                  <div className="absolute top-2 right-2 z-20 px-2.5 py-1.5 rounded-lg bg-black/90 backdrop-blur-md border border-white/30 text-xs font-bold text-white shadow-xl">
+                                  <div className="absolute top-2 right-2 z-20 px-2.5 py-1.5 rounded-lg bg-black/95 border border-white/40 text-xs font-bold text-white shadow-xl">
                                     <div className="flex items-center gap-1.5">
                                       <Navigation className="w-3.5 h-3.5" />
                                       <span>{formatDistance(amenity.distance_m)}</span>
@@ -2189,8 +2186,8 @@ export default function PremiumReportView({
                                     </h3>
                                     <div className="flex items-center gap-2 flex-wrap mt-2">
                                       <span className={cn(
-                                        "text-xs px-3 py-1.5 rounded-full border font-medium backdrop-blur-sm",
-                                        `bg-gradient-to-r ${colors.bg} ${colors.border} ${colors.text}`
+                                        "text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 rounded-md border font-medium",
+                                        `bg-[rgba(26,27,30,0.95)] ${colors.border} ${colors.text} border-white/[0.15]`
                                       )}>
                                         {getCategoryLabel(amenity.type, amenity.category, amenity.transit_type)}
                                       </span>
@@ -2250,55 +2247,49 @@ export default function PremiumReportView({
                                 {/* Actions */}
                                 <div className="flex items-center gap-2 mt-4 flex-wrap">
                                   {amenity.gps && (
-                                    <motion.a
+                                    <a
                                       href={`https://www.google.com/maps?q=${amenity.gps.lat},${amenity.gps.lon}`}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      whileHover={{ scale: 1.02 }}
-                                      whileTap={{ scale: 0.98 }}
-                                      className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border border-blue-500/30 hover:from-blue-500/30 hover:to-indigo-500/30 transition-all text-xs font-medium text-white flex items-center gap-2 shadow-lg shadow-blue-500/10"
+                                      className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border border-blue-500/30 text-xs font-medium text-white flex items-center gap-2 shadow-lg shadow-blue-500/10"
                                     >
                                       <Navigation className="w-4 h-4" />
                                       <span>Maps</span>
-                                    </motion.a>
+                                    </a>
                                   )}
                                   {amenity.website && (
-                                    <motion.a
+                                    <a
                                       href={amenity.website.startsWith('http') ? amenity.website : `https://${amenity.website}`}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      whileHover={{ scale: 1.02 }}
-                                      whileTap={{ scale: 0.98 }}
-                                      className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border border-blue-500/30 hover:from-blue-500/30 hover:to-indigo-500/30 transition-all text-xs font-medium text-white flex items-center gap-2 shadow-lg shadow-blue-500/10"
+                                      className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border border-blue-500/30 text-xs font-medium text-white flex items-center gap-2 shadow-lg shadow-blue-500/10"
                                     >
                                       <ExternalLink className="w-4 h-4" />
                                       <span>Site web</span>
-                                    </motion.a>
+                                    </a>
                                   )}
                                   {amenity.phone && (
-                                    <motion.a
+                                    <a
                                       href={`tel:${amenity.phone}`}
-                                      whileHover={{ scale: 1.02 }}
-                                      whileTap={{ scale: 0.98 }}
-                                      className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border border-blue-500/30 hover:from-blue-500/30 hover:to-indigo-500/30 transition-all text-xs font-medium text-white flex items-center gap-2 shadow-lg shadow-blue-500/10"
+                                      className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border border-blue-500/30 text-xs font-medium text-white flex items-center gap-2 shadow-lg shadow-blue-500/10"
                                     >
                                       <Phone className="w-4 h-4" />
                                       <span>Appeler</span>
-                                    </motion.a>
+                                    </a>
                                   )}
                                 </div>
                               </div>
                             </div>
-                          </motion.div>
+                          </div>
                         );
                       });
                     })()}
                   </div>
                 </PremiumCard>
-              </motion.div>
+              </div>
             )}
 
-            {/* Section Criminalité - Gemini */}
+            {/* Section Criminalité */}
             {activeTab === 'crime' && (() => {
               // Récupérer les données de criminalité depuis sections ou ai
               // Les données sont stockées dans profileData.safety.gemini_crime_data
@@ -2308,18 +2299,14 @@ export default function PremiumReportView({
                                null;
               
               // Si pas de données dans sections, essayer de les extraire depuis vehicleInfo (qui contient profileData)
-              let geminiCrimeData = null;
+              let crimeDataFromProfile = null;
               if (vehicleInfo?.profileData?.safety?.gemini_crime_data) {
-                geminiCrimeData = vehicleInfo.profileData.safety.gemini_crime_data;
+                crimeDataFromProfile = vehicleInfo.profileData.safety.gemini_crime_data;
               }
               
-              if (!geminiCrimeData) {
+              if (!crimeDataFromProfile) {
                 return (
-                  <motion.div
-                    key="crime"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
+                  <div
                     className="space-y-6"
                   >
                     <PremiumCard className="p-6 md:p-8">
@@ -2329,18 +2316,14 @@ export default function PremiumReportView({
                         <p className="text-white/60">Aucune donnée disponible pour le moment</p>
                       </div>
                     </PremiumCard>
-                  </motion.div>
+                  </div>
                 );
               }
               
-              const { crime_rate, safety_score, crime_trend, main_crime_types, recent_crimes, safety_comment, comparison, sources } = geminiCrimeData;
+              const { crime_rate, safety_score, crime_trend, main_crime_types, recent_crimes, safety_comment, comparison, sources } = crimeDataFromProfile;
               
               return (
-                <motion.div
-                  key="crime"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
+                <div
                   className="space-y-6"
                 >
                   {/* Carte principale Criminalité */}
@@ -2350,24 +2333,16 @@ export default function PremiumReportView({
                         <Shield className="w-6 h-6 text-red-400" />
                       </div>
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h2 className="text-xl font-semibold">Criminalité & Sécurité</h2>
-                          <span className="px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs font-medium">
-                            🔍 Gemini AI
-                          </span>
-                        </div>
-                        <p className="text-sm text-white/60">Données récentes sur la sécurité du quartier</p>
+                        <h2 className="text-xl font-semibold mb-1">Criminalité & Sécurité</h2>
+                        <p className="text-sm text-white/60">Analyse de la sécurité du quartier</p>
                       </div>
                     </div>
                     
                     {/* Grille de statistiques principales */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.1 }}
+                      <div
                         className={cn(
-                          "backdrop-blur-xl border rounded-xl p-3 md:p-4",
+                          " border rounded-xl p-3 md:p-4",
                           safety_score && safety_score >= 70
                             ? "bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/30"
                             : safety_score && safety_score >= 50
@@ -2392,14 +2367,11 @@ export default function PremiumReportView({
                         )}>
                           {safety_score !== undefined ? `${safety_score}/100` : 'N/A'}
                         </div>
-                      </motion.div>
+                      </div>
                       
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.15 }}
+                      <div
                         className={cn(
-                          "backdrop-blur-xl border rounded-xl p-3 md:p-4",
+                          " border rounded-xl p-3 md:p-4",
                           crime_rate === 'faible'
                             ? "bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/30"
                             : crime_rate === 'moyen'
@@ -2424,14 +2396,11 @@ export default function PremiumReportView({
                         )}>
                           {crime_rate ? crime_rate.charAt(0).toUpperCase() + crime_rate.slice(1) : 'N/A'}
                         </div>
-                      </motion.div>
+                      </div>
                       
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.2 }}
+                      <div
                         className={cn(
-                          "backdrop-blur-xl border rounded-xl p-3 md:p-4",
+                          " border rounded-xl p-3 md:p-4",
                           crime_trend === 'baisse'
                             ? "bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/30"
                             : crime_trend === 'hausse'
@@ -2456,13 +2425,10 @@ export default function PremiumReportView({
                         )}>
                           {crime_trend === 'baisse' ? '↘️ Baisse' : crime_trend === 'hausse' ? '↗️ Hausse' : '→ Stable'}
                         </div>
-                      </motion.div>
+                      </div>
                       
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.25 }}
-                        className="backdrop-blur-xl bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/30 rounded-xl p-3 md:p-4"
+                      <div
+                        className=" bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/30 rounded-xl p-3 md:p-4"
                       >
                         <div className="flex items-center gap-2 mb-2">
                           <Clock className="w-3.5 h-3.5 md:w-4 md:h-4 text-cyan-400" />
@@ -2470,16 +2436,13 @@ export default function PremiumReportView({
                         </div>
                         <div className="text-base md:text-lg font-bold text-cyan-400">Web</div>
                         <div className="text-[10px] md:text-xs text-white/50 mt-1">Temps réel</div>
-                      </motion.div>
+                      </div>
                     </div>
                     
                     {/* Types de crimes principaux */}
                     {main_crime_types && main_crime_types.length > 0 && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.3 }}
-                        className="p-4 md:p-5 rounded-xl bg-white/[0.02] border border-white/[0.08] mb-4"
+                      <div
+                        className="p-4 md:p-5 rounded-xl bg-[rgba(26,27,30,0.95)] border border-white/[0.15] mb-4"
                       >
                         <h3 className="text-xs md:text-sm font-semibold text-white mb-3 flex items-center gap-2">
                           <AlertTriangle className="w-4 h-4 text-red-400" />
@@ -2487,26 +2450,20 @@ export default function PremiumReportView({
                         </h3>
                         <div className="flex flex-wrap gap-2">
                           {main_crime_types.map((type: string, idx: number) => (
-                            <motion.span
+                            <span
                               key={idx}
-                              initial={{ opacity: 0, scale: 0.9 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              transition={{ delay: 0.3 + idx * 0.05 }}
-                              className="px-3 py-1.5 rounded-full bg-red-500/20 text-red-300 border border-red-500/30 text-xs font-medium backdrop-blur-sm"
+                              className="px-3 py-1.5 rounded-full bg-red-500/30 text-red-300 border border-red-500/40 text-xs font-medium"
                             >
                               {type}
-                            </motion.span>
+                            </span>
                           ))}
                         </div>
-                      </motion.div>
+                      </div>
                     )}
                     
                     {/* Crimes récents */}
                     {recent_crimes && recent_crimes.length > 0 && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.35 }}
+                      <div
                         className="space-y-4 mb-4"
                       >
                         <h3 className="text-base md:text-lg font-semibold mb-3 flex items-center gap-2">
@@ -2518,12 +2475,9 @@ export default function PremiumReportView({
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                           {recent_crimes.slice(0, 6).map((crime: any, idx: number) => (
-                            <motion.div
+                            <div
                               key={idx}
-                              initial={{ opacity: 0, y: 20 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: 0.35 + idx * 0.05 }}
-                              className="backdrop-blur-xl bg-gradient-to-br from-red-500/5 to-orange-500/5 border border-red-500/20 rounded-xl p-4 hover:border-red-500/40 transition-all group"
+                              className=" bg-gradient-to-br from-red-500/5 to-orange-500/5 border border-red-500/20 rounded-xl p-4 group"
                             >
                               <div className="flex items-start gap-3 mb-3">
                                 <div className="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center flex-shrink-0">
@@ -2548,18 +2502,15 @@ export default function PremiumReportView({
                                   <span className="line-clamp-2">{crime.location}</span>
                                 </div>
                               )}
-                            </motion.div>
+                            </div>
                           ))}
                         </div>
-                      </motion.div>
+                      </div>
                     )}
                     
                     {/* Commentaire sécurité détaillé */}
                     {safety_comment && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.4 }}
+                      <div
                         className="p-4 md:p-5 rounded-xl bg-gradient-to-r from-red-500/10 via-orange-500/10 to-red-500/10 border border-red-500/20 mb-4"
                       >
                         <div className="flex items-start gap-3">
@@ -2569,30 +2520,24 @@ export default function PremiumReportView({
                             <p className="text-xs md:text-sm text-white/80 leading-relaxed">{safety_comment}</p>
                           </div>
                         </div>
-                      </motion.div>
+                      </div>
                     )}
                     
                     {/* Comparaison */}
                     {comparison && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.45 }}
-                        className="p-3 md:p-4 rounded-xl bg-white/[0.02] border border-white/[0.08] mb-4"
+                      <div
+                        className="p-3 md:p-4 rounded-xl bg-[rgba(26,27,30,0.95)] border border-white/[0.15] mb-4"
                       >
                         <div className="text-xs md:text-sm text-white/70">
                           <strong className="text-white">Comparaison :</strong> {comparison}
                         </div>
-                      </motion.div>
+                      </div>
                     )}
                     
                     {/* Sources */}
                     {sources && sources.length > 0 && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.5 }}
-                        className="p-3 md:p-4 rounded-xl bg-white/[0.02] border border-white/[0.08] mb-4"
+                      <div
+                        className="p-3 md:p-4 rounded-xl bg-[rgba(26,27,30,0.95)] border border-white/[0.15] mb-4"
                       >
                         <h3 className="text-xs md:text-sm font-semibold text-white mb-2">Sources</h3>
                         <div className="flex flex-wrap gap-2">
@@ -2605,29 +2550,109 @@ export default function PremiumReportView({
                             </span>
                           ))}
                         </div>
-                      </motion.div>
+                      </div>
                     )}
-                    
-                    {/* Badge info */}
-                    <div className="flex items-start gap-2 p-3 rounded-lg bg-purple-500/10 border border-purple-500/20 mt-4">
-                      <Sparkles className="w-4 h-4 text-purple-400 flex-shrink-0 mt-0.5" />
-                      <div className="text-xs text-white/70">
-                        <strong>Données Gemini :</strong> Informations trouvées en temps réel via recherche web Google. 
-                        Données récentes sur la criminalité et la sécurité du quartier.
+                  </PremiumCard>
+                </div>
+              );
+            })()}
+
+            {/* Section Rentabilité Locative */}
+            {activeTab === 'rental_yield' && (() => {
+              const rentalSection = sections.find(s => s.id === 'rental_yield');
+              
+              // Vérifier aussi dans ai.rental_yield_analysis si la section n'est pas trouvée
+              const hasRentalData = rentalSection && rentalSection.items && rentalSection.items.length > 0;
+              const hasAIRentalData = ai?.rental_yield_analysis && (
+                ai.rental_yield_analysis.estimated_rent_monthly !== undefined ||
+                ai.rental_yield_analysis.yield_percentage !== undefined
+              );
+              
+              if (!hasRentalData && !hasAIRentalData) {
+                return (
+                  <div
+                    className="space-y-6"
+                  >
+                    <PremiumCard className="p-6 md:p-8">
+                      <div className="text-center py-12">
+                        <TrendingUp className="w-16 h-16 mx-auto mb-4 text-white/30" />
+                        <h2 className="text-xl font-semibold mb-2">Rentabilité Locative</h2>
+                        <p className="text-white/60">L'analyse de rentabilité locative sera disponible après la génération du rapport</p>
+                      </div>
+                    </PremiumCard>
+                  </div>
+                );
+              }
+              
+              // Utiliser les données de la section si disponibles, sinon utiliser ai directement
+              const rentalData = rentalSection?.items || [];
+              const yieldItem = rentalData.find(item => item.label === 'Rendement locatif');
+              const yieldValue = typeof yieldItem?.value === 'string' ? yieldItem.value.replace('%', '') : '0';
+              const yieldNum = parseFloat(yieldValue);
+              const yieldRating = rentalData.find(item => item.label === 'Évaluation du rendement')?.value || '';
+              
+              return (
+                <div
+                  className="space-y-6"
+                >
+                  <PremiumCard className="p-6 md:p-8">
+                    <div className="flex items-start gap-4 mb-6">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500/20 to-green-500/20 flex items-center justify-center flex-shrink-0">
+                        <TrendingUp className="w-6 h-6 text-emerald-400" />
+                      </div>
+                      <div className="flex-1">
+                        <h2 className="text-xl font-semibold mb-1">Rentabilité Locative</h2>
+                        <p className="text-sm text-white/60">Analyse du rendement locatif et du marché locatif</p>
                       </div>
                     </div>
+                    
+                    {/* Indicateurs clés */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                      {rentalData.filter(item => 
+                        ['Loyer mensuel estimé', 'Loyer annuel estimé', 'Rendement locatif', 'Demande locative'].includes(item.label)
+                      ).map((item, index) => (
+                        <div
+                          key={index}
+                          className="bg-[rgba(26,27,30,0.95)] border border-white/[0.15] rounded-lg p-4"
+                        >
+                          <div className="text-xs sm:text-sm text-white/50 mb-1.5 sm:mb-2 font-medium">
+                            {item.label}
+                          </div>
+                          <div className={cn(
+                            "text-xl sm:text-2xl md:text-3xl font-semibold",
+                            item.flag === 'ok' ? "text-green-400" :
+                            item.flag === 'warn' ? "text-yellow-400" :
+                            item.flag === 'risk' ? "text-red-400" :
+                            "text-white"
+                          )}>
+                            {item.value}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {/* Détails */}
+                    <div className="space-y-4">
+                      {rentalData.filter(item => 
+                        !['Loyer mensuel estimé', 'Loyer annuel estimé', 'Rendement locatif', 'Demande locative'].includes(item.label)
+                      ).map((item, index) => (
+                        <div
+                          key={index}
+                          className="bg-[rgba(26,27,30,0.95)] border border-white/[0.15] rounded-lg p-4 md:p-5"
+                        >
+                          <div className="text-sm font-semibold text-white mb-2">{item.label}</div>
+                          <div className="text-sm text-white/80 leading-relaxed">{item.value}</div>
+                        </div>
+                      ))}
+                    </div>
                   </PremiumCard>
-                </motion.div>
+                </div>
               );
             })()}
 
             {/* Section Analyse IA */}
             {activeTab === 'ai' && ai && (
-              <motion.div
-                key="ai"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
+              <div
                 className="space-y-6"
               >
                 <PremiumCard className="p-6 md:p-8">
@@ -2656,26 +2681,27 @@ export default function PremiumReportView({
                       <h3 className="text-lg font-semibold mb-4">Recommandations</h3>
                       <div className="space-y-2">
                         {ai.recommendations.map((rec, index) => (
-                          <motion.div
+                          <div
                             key={index}
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: index * 0.05 }}
-                            className="flex items-start gap-3 p-3 backdrop-blur-xl bg-white/[0.02] border border-white/[0.08] rounded-lg"
+                            className="flex items-start gap-3 p-3  bg-[rgba(26,27,30,0.95)] border border-white/[0.15] rounded-lg"
                           >
                             <Sparkles className="w-4 h-4 text-cyan-400 flex-shrink-0 mt-0.5" />
                             <span className="text-sm text-white/80">{rec}</span>
-                          </motion.div>
+                          </div>
                         ))}
                       </div>
                     </div>
                   )}
                 </PremiumCard>
-              </motion.div>
+              </div>
             )}
-          </AnimatePresence>
+          </div>
         </div>
       </main>
     </div>
   );
 }
+
+
+
+

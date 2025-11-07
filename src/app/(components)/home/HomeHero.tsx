@@ -239,6 +239,12 @@ export default function HomeHero() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
               className="block bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient-x"
+              style={{
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                textDecoration: 'none',
+                WebkitTextDecorationLine: 'none',
+              }}
             >
               Analysez votre bien
             </motion.span>
@@ -273,19 +279,46 @@ export default function HomeHero() {
           >
             <div className="text-center">
               <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-1">
-                <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">2.3M</span>
+                <span 
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent"
+                  style={{
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    textDecoration: 'none',
+                  }}
+                >
+                  2.3M
+                </span>
               </div>
               <div className="text-[10px] sm:text-xs md:text-sm text-gray-600">Biens analysés</div>
             </div>
             <div className="text-center">
               <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-1">
-                <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">98%</span>
+                <span 
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent"
+                  style={{
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    textDecoration: 'none',
+                  }}
+                >
+                  98%
+                </span>
               </div>
               <div className="text-[10px] sm:text-xs md:text-sm text-gray-600">Précision IA</div>
             </div>
             <div className="text-center">
               <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-1">
-                <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">45s</span>
+                <span 
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent"
+                  style={{
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    textDecoration: 'none',
+                  }}
+                >
+                  45s
+                </span>
               </div>
               <div className="text-[10px] sm:text-xs md:text-sm text-gray-600">Temps moyen</div>
             </div>
@@ -574,6 +607,165 @@ export default function HomeHero() {
               </div>
             </div>
           </motion.form>
+
+          {/* Section SEO - Mise en avant des fonctionnalités clés (après le formulaire) */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.9 }}
+            className="mt-12 sm:mt-16 md:mt-20 mb-8 sm:mb-10 md:mb-12 max-w-4xl mx-auto"
+          >
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-4 sm:mb-6 text-center">
+              <span 
+                className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent"
+                style={{
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  textDecoration: 'none',
+                }}
+              >
+                Tout ce dont vous devez savoir sur votre bien immobilier
+              </span>
+            </h2>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
+              {/* Rentabilité Locative */}
+              <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-purple-200 p-4 sm:p-5 shadow-lg hover:shadow-xl transition-shadow">
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex-shrink-0">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1">Rentabilité Locative</h3>
+                    <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
+                      Calcul du rendement locatif, estimation des loyers et analyse de la demande locative dans le quartier
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Éducation */}
+              <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-purple-200 p-4 sm:p-5 shadow-lg hover:shadow-xl transition-shadow">
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex-shrink-0">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1">Établissements Scolaires</h3>
+                    <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
+                      Liste complète des écoles, collèges et lycées à proximité avec distances et informations détaillées
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Commodités */}
+              <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-purple-200 p-4 sm:p-5 shadow-lg hover:shadow-xl transition-shadow">
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex-shrink-0">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1">Commodités & Services</h3>
+                    <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
+                      Commerces, transports, parcs et services essentiels à proximité du bien immobilier
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Criminalité */}
+              <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-purple-200 p-4 sm:p-5 shadow-lg hover:shadow-xl transition-shadow">
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="p-2 bg-gradient-to-br from-red-500 to-orange-600 rounded-lg flex-shrink-0">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1">Sécurité & Criminalité</h3>
+                    <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
+                      Analyse de la sécurité du quartier, taux de criminalité et statistiques de sécurité récentes
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Prix du Marché */}
+              <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-purple-200 p-4 sm:p-5 shadow-lg hover:shadow-xl transition-shadow">
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="p-2 bg-gradient-to-br from-yellow-500 to-amber-600 rounded-lg flex-shrink-0">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1">Prix du Marché</h3>
+                    <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
+                      Estimation précise du prix au m², analyse des transactions récentes et tendances du marché immobilier
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Historique */}
+              <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-purple-200 p-4 sm:p-5 shadow-lg hover:shadow-xl transition-shadow">
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="p-2 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg flex-shrink-0">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1">Historique des Transactions</h3>
+                    <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
+                      Historique complet des ventes (DVF), évolution des prix et données de marché sur plusieurs années
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Risques */}
+              <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-purple-200 p-4 sm:p-5 shadow-lg hover:shadow-xl transition-shadow">
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="p-2 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex-shrink-0">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1">Risques Naturels</h3>
+                    <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
+                      Analyse des risques d'inondation, sismicité, radon et autres risques naturels avec cartes détaillées
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Analyse Complète */}
+              <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-purple-200 p-4 sm:p-5 shadow-lg hover:shadow-xl transition-shadow sm:col-span-2 lg:col-span-1">
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="p-2 bg-gradient-to-br from-purple-500 via-pink-500 to-purple-600 rounded-lg flex-shrink-0">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1">Analyse IA Complète</h3>
+                    <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
+                      Rapport détaillé avec DPE, qualité de l'air, connectivité fibre et recommandations personnalisées par intelligence artificielle
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
 
           {/* Section Trust avec étoiles et avis */}
           <motion.div

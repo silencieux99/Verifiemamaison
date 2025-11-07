@@ -505,6 +505,94 @@ export function convertHouseProfileToSections(profile: HouseProfile): ReportSect
       }
     }
 
+    // Section Rentabilité Locative
+    if (ai.rental_yield_analysis) {
+      const rentalItems = [];
+      
+      if (ai.rental_yield_analysis.estimated_rent_monthly !== undefined) {
+        rentalItems.push({
+          label: 'Loyer mensuel estimé',
+          value: `${ai.rental_yield_analysis.estimated_rent_monthly.toLocaleString('fr-FR')} €/mois`
+        });
+      }
+      
+      if (ai.rental_yield_analysis.estimated_rent_yearly !== undefined) {
+        rentalItems.push({
+          label: 'Loyer annuel estimé',
+          value: `${ai.rental_yield_analysis.estimated_rent_yearly.toLocaleString('fr-FR')} €/an`
+        });
+      }
+      
+      if (ai.rental_yield_analysis.yield_percentage !== undefined) {
+        const yieldRating = ai.rental_yield_analysis.yield_rating || 'moyen';
+        const flag = yieldRating === 'excellent' ? 'ok' as const :
+                     yieldRating === 'bon' ? 'ok' as const :
+                     yieldRating === 'moyen' ? 'warn' as const : 'risk' as const;
+        
+        rentalItems.push({
+          label: 'Rendement locatif',
+          value: `${ai.rental_yield_analysis.yield_percentage.toFixed(2)}%`,
+          flag: flag
+        });
+      }
+      
+      if (ai.rental_yield_analysis.yield_rating) {
+        const ratingLabels: Record<string, string> = {
+          'excellent': 'Excellent (>8%)',
+          'bon': 'Bon (6-8%)',
+          'moyen': 'Moyen (4-6%)',
+          'faible': 'Faible (<4%)'
+        };
+        rentalItems.push({
+          label: 'Évaluation du rendement',
+          value: ratingLabels[ai.rental_yield_analysis.yield_rating] || ai.rental_yield_analysis.yield_rating
+        });
+      }
+      
+      if (ai.rental_yield_analysis.rental_demand) {
+        const demandLabels: Record<string, string> = {
+          'forte': 'Forte',
+          'moyenne': 'Moyenne',
+          'faible': 'Faible'
+        };
+        rentalItems.push({
+          label: 'Demande locative',
+          value: demandLabels[ai.rental_yield_analysis.rental_demand] || ai.rental_yield_analysis.rental_demand
+        });
+      }
+      
+      if (ai.rental_yield_analysis.market_rent_comparison) {
+        rentalItems.push({
+          label: 'Comparaison marché',
+          value: ai.rental_yield_analysis.market_rent_comparison
+        });
+      }
+      
+      if (ai.rental_yield_analysis.rental_comment) {
+        rentalItems.push({
+          label: 'Analyse détaillée',
+          value: ai.rental_yield_analysis.rental_comment
+        });
+      }
+      
+      if (ai.rental_yield_analysis.rental_recommendations && ai.rental_yield_analysis.rental_recommendations.length > 0) {
+        ai.rental_yield_analysis.rental_recommendations.forEach((rec, idx) => {
+          rentalItems.push({
+            label: `Recommandation ${idx + 1}`,
+            value: rec
+          });
+        });
+      }
+      
+      if (rentalItems.length > 0) {
+        sections.push({
+          id: 'rental_yield',
+          title: 'Rentabilité Locative',
+          items: rentalItems
+        });
+      }
+    }
+
     // Points forts et faibles
     if (ai.strengths && ai.strengths.length > 0) {
       sections.push({

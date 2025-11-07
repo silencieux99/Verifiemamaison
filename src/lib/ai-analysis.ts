@@ -6,7 +6,6 @@
  */
 
 import { HouseProfile } from './house-profile-types';
-import { enrichMarketWithGeminiWebSearch } from './gemini-web-search';
 
 export interface AIAnalysis {
   score: number; // Score global sur 100
@@ -45,18 +44,26 @@ export interface AIAnalysis {
     comment?: string;
     recommendations?: string[];
   };
+  rental_yield_analysis?: {
+    estimated_rent_monthly?: number; // Loyer mensuel estimé en €
+    estimated_rent_yearly?: number; // Loyer annuel estimé en €
+    yield_percentage?: number; // Rendement locatif en % (loyer annuel / prix d'achat * 100)
+    yield_rating?: 'excellent' | 'bon' | 'moyen' | 'faible'; // Évaluation du rendement
+    market_rent_comparison?: string; // Comparaison avec le marché locatif local
+    rental_demand?: 'forte' | 'moyenne' | 'faible'; // Demande locative dans le quartier
+    rental_comment?: string; // Commentaire détaillé sur la rentabilité locative
+    rental_recommendations?: string[]; // Recommandations pour optimiser la rentabilité
+  };
   strengths?: string[];
   weaknesses?: string[];
   recommendations?: string[];
 }
 
 /**
- * Génère un prompt structuré pour Gemini basé sur les données collectées
- * @param webSearchData Données de recherche web Gemini (optionnel)
+ * Génère un prompt structuré pour GPT basé sur les données collectées
  */
 function generatePrompt(
-  profile: Partial<HouseProfile>,
-  webSearchData?: Partial<import('./gemini-web-search').GeminiWebSearchResult> | null
+  profile: Partial<HouseProfile>
 ): string {
   const address = profile.location?.normalized_address || profile.query?.address || 'Adresse inconnue';
   const city = profile.location?.admin?.city || '';
@@ -86,6 +93,11 @@ function generatePrompt(
       trend: profile.market?.dvf?.summary?.trend_label,
       transactions_count: profile.market?.dvf?.transactions?.length || 0,
     },
+    building: {
+      surface_m2: profile.building?.declared?.surface_habitable_m2,
+      property_type: profile.building?.declared?.property_type,
+      rooms: profile.building?.declared?.rooms,
+    },
     amenities: {
       supermarkets: profile.amenities?.supermarkets?.length || 0,
       transit: profile.amenities?.transit?.length || 0,
@@ -106,23 +118,10 @@ function generatePrompt(
     },
   };
 
-  // Ajouter les données de recherche web si disponibles
-  const webSearchInfo = webSearchData ? `
-DONNÉES DE RECHERCHE WEB RÉCENTES (Gemini + Google Search):
-- Prix/m² trouvé: ${webSearchData.price_m2 ? `${webSearchData.price_m2} €/m²` : 'Non disponible'}
-- Fourchette prix/m²: ${webSearchData.price_m2_range ? `${webSearchData.price_m2_range.min} - ${webSearchData.price_m2_range.max} €/m²` : 'Non disponible'}
-- Tendance marché: ${webSearchData.market_trend || 'Non disponible'}
-- Commentaire marché: ${webSearchData.market_comment || 'Non disponible'}
-- Informations quartier: ${webSearchData.neighborhood_info || 'Non disponible'}
-- Ventes récentes similaires: ${webSearchData.recent_sales?.length || 0} trouvée(s)
-- Sources: ${webSearchData.sources?.join(', ') || 'Non disponible'}
-` : '';
-
-  return `Tu es un expert immobilier français. Analyse les données suivantes pour le bien situé à ${address}, ${city} ${postcode} et génère une analyse complète.
+  return `Tu es un expert immobilier français ultra-précis. Analyse les données suivantes pour le bien situé à ${address}, ${city} ${postcode} et génère une analyse complète et ultra-précise.
 
 DONNÉES DISPONIBLES:
 ${JSON.stringify(data, null, 2)}
-${webSearchInfo}
 
 Génère une analyse JSON structurée avec les champs suivants. IMPORTANT: Réponds UNIQUEMENT avec un objet JSON valide, sans texte avant ou après, sans markdown, sans code block:
 
@@ -130,10 +129,31 @@ Génère une analyse JSON structurée avec les champs suivants. IMPORTANT: Répo
   "score": <nombre entre 0 et 100>,
   "summary": "<synthèse générale du bien très détaillée et complète (minimum 8-10 phrases, jusqu'à 15 phrases). Analyse en profondeur tous les aspects : localisation, risques, marché immobilier, commodités, transports, écoles, qualité de vie, potentiel d'investissement, points forts et faibles. Sois exhaustif et donne une vision complète du bien pour un acheteur potentiel>",
   "market_analysis": {
-    "estimated_value_m2": <estimation €/m² réaliste. PRIORITÉ: 1) Données de recherche web Gemini si disponibles, 2) Données DVF si disponibles, 3) Estimation selon la région/ville. IMPORTANT: Toujours fournir une estimation réaliste>,
-    "market_trend": "<hausse|baisse|stable>. Si données DVF disponibles, utilise la tendance. Sinon, estime selon le contexte général du marché immobilier français>",
-    "market_comment": "<commentaire sur le marché immobilier du quartier. Si pas de données, base-toi sur la localisation, la région, et les tendances générales>",
-    "price_comparison": "<comparaison avec le marché local. Si pas de données précises, compare avec le marché régional>"
+    "estimated_value_m2": <estimation €/m² ULTRA-PRÉCISE et réaliste. TU DOIS CALCULER ce prix en analysant:
+    1. La localisation exacte (ville, quartier, département, région)
+    2. Les données DVF disponibles (transactions réelles) si présentes dans les données
+    3. Le type de bien (appartement/maison)
+    4. La surface habitable
+    5. Le nombre de pièces
+    6. Les commodités et transports à proximité
+    7. Les risques naturels (impact sur la valeur)
+    8. La classe énergétique DPE (impact sur la valeur)
+    9. Les écoles et services à proximité
+    10. La qualité de vie du quartier
+    
+    UTILISE TES CONNAISSANCES DU MARCHÉ IMMOBILIER FRANÇAIS pour donner un prix au m² EXACT et JUSTIFIÉ.
+    Exemples de références:
+    - Paris intra-muros: 8000-15000 €/m² selon arrondissement
+    - Petite couronne (92,93,94): 4000-8000 €/m² selon ville
+    - Grande couronne: 2500-5000 €/m²
+    - Grandes villes (Lyon, Marseille, Toulouse): 2500-5000 €/m²
+    - Villes moyennes: 1500-3000 €/m²
+    - Petites villes/rural: 1000-2000 €/m²
+    
+    IMPORTANT: Le prix doit être un NOMBRE ENTIER réaliste entre 800€/m² et 15000€/m². Ne jamais laisser vide ou null. Sois ULTRA-PRÉCIS et justifie mentalement ton calcul.>,
+    "market_trend": "<hausse|baisse|stable>. Analyse la tendance du marché dans cette zone géographique. Si données DVF disponibles avec trend_label, utilise-les. Sinon, estime selon tes connaissances du marché immobilier français actuel (2024-2025)>",
+    "market_comment": "<commentaire DÉTAILLÉ et ULTRA-PRÉCIS sur le marché immobilier du quartier/commune. Analyse la dynamique du marché, la demande, l'offre, les perspectives, les facteurs qui influencent les prix. Sois factuel et précis. Minimum 5-6 phrases>",
+    "price_comparison": "<comparaison DÉTAILLÉE avec le marché local et régional. Compare avec les prix moyens du quartier, de la commune, du département, de la région. Donne des exemples concrets si possible. Minimum 4-5 phrases>"
   },
   "neighborhood_analysis": {
     "shops_analysis": "<analyse des commerces et services à proximité>",
@@ -151,18 +171,29 @@ Génère une analyse JSON structurée avec les champs suivants. IMPORTANT: Répo
     "comment": "<commentaire sur le potentiel d'investissement>",
     "recommendations": ["<recommandation 1>", "<recommandation 2>", ...]
   },
+  "rental_yield_analysis": {
+    "estimated_rent_monthly": <loyer mensuel estimé en € basé sur le marché locatif du quartier. Recherche les loyers moyens pour des biens similaires dans ce quartier/commune>,
+    "estimated_rent_yearly": <loyer annuel estimé (estimated_rent_monthly * 12)>,
+    "yield_percentage": <rendement locatif en % calculé comme suit: (estimated_rent_yearly / (estimated_value_m2 * surface_m2)) * 100. Si surface_m2 non disponible, estime à 70m² pour un appartement ou 100m² pour une maison>,
+    "yield_rating": "<excellent|bon|moyen|faible> - excellent si >8%, bon si 6-8%, moyen si 4-6%, faible si <4%",
+    "market_rent_comparison": "<comparaison détaillée avec les loyers du marché local. Recherche les prix de location moyens dans ce quartier/commune pour des biens similaires>",
+    "rental_demand": "<forte|moyenne|faible> - évalue la demande locative dans le quartier basé sur la localisation, les transports, les commodités, les écoles, etc.",
+    "rental_comment": "<commentaire détaillé sur la rentabilité locative du bien. Analyse le rendement, la demande, les perspectives de revalorisation du loyer, les charges, etc. Sois exhaustif et factuel>",
+    "rental_recommendations": ["<recommandation 1 pour optimiser la rentabilité>", "<recommandation 2>", ...]
+  },
   "strengths": ["<point fort 1>", "<point fort 2>", ...],
   "weaknesses": ["<point faible 1>", "<point faible 2>", ...],
   "recommendations": ["<recommandation 1>", "<recommandation 2>", ...]
 }
 
-IMPORTANT:
-- Sois précis et factuel
+IMPORTANT - ULTRA-PRÉCISION REQUISE:
+- Sois ULTRA-PRÉCIS et factuel dans toutes tes analyses
 - Utilise les données fournies pour justifier tes analyses
-- Si une donnée n'est pas disponible, ESTIME intelligemment basé sur la localisation, la région, et les moyennes du marché français
-- Pour estimated_value_m2: TOUJOURS fournir un nombre réaliste (entre 800€/m² et 15000€/m² selon la région). Ne jamais laisser vide ou null.
+- Pour estimated_value_m2: C'EST LA PRIORITÉ ABSOLUE. Tu DOIS calculer un prix au m² ULTRA-PRÉCIS en analysant TOUS les facteurs disponibles (localisation, type, surface, commodités, risques, DPE, etc.). Utilise tes connaissances approfondies du marché immobilier français. Le prix doit être JUSTIFIÉ et RÉALISTE. Ne jamais laisser vide ou null.
+- Si une donnée n'est pas disponible, ESTIME intelligemment basé sur la localisation exacte, la région, et tes connaissances du marché français
+- Pour rental_yield_analysis: RECHERCHE activement les loyers moyens du quartier/commune pour des biens similaires. Utilise tes connaissances du marché locatif français. Calcule le rendement de manière ULTRA-PRÉCISE.
 - Le score global doit refléter l'ensemble des critères (risques, marché, commodités, etc.)
-- Les commentaires doivent être en français, professionnels et utiles pour un acheteur
+- Les commentaires doivent être en français, professionnels, détaillés et utiles pour un acheteur/investisseur
 - Réponds UNIQUEMENT avec le JSON, sans texte avant ou après`;
 }
 
@@ -171,21 +202,6 @@ IMPORTANT:
  */
 export async function analyzeWithOpenAI(profile: Partial<HouseProfile>): Promise<AIAnalysis | null> {
   const apiKey = process.env.OPENAI_API_KEY;
-  const geminiApiKey = process.env.GEMINI_API_KEY;
-  
-  // Enrichir avec Gemini Web Search si disponible (recherches web en temps réel)
-  let webSearchData: Partial<import('./gemini-web-search').GeminiWebSearchResult> | null = null;
-  if (geminiApiKey && process.env.GEMINI_WEB_SEARCH_ENABLED !== 'false') {
-    try {
-      console.log('🔍 [Gemini] Recherche d\'informations web en temps réel...');
-      webSearchData = await enrichMarketWithGeminiWebSearch(profile);
-      if (webSearchData) {
-        console.log(`✅ [Gemini] Données web trouvées: prix/m²=${webSearchData.price_m2}€`);
-      }
-    } catch (error) {
-      console.warn('[Gemini] Erreur recherche web (ignoré):', error);
-    }
-  }
   
   if (!apiKey) {
     console.warn('⚠️ OPENAI_API_KEY not configured, skipping AI analysis');
@@ -196,8 +212,8 @@ export async function analyzeWithOpenAI(profile: Partial<HouseProfile>): Promise
   console.log('🤖 Démarrage de l\'analyse IA avec OpenAI ChatGPT...');
 
   try {
-    // Enrichir le prompt avec les données de recherche web si disponibles
-    const prompt = generatePrompt(profile, webSearchData);
+    // Générer le prompt sans enrichissement externe - GPT calcule tout
+    const prompt = generatePrompt(profile);
 
     // Appel à l'API OpenAI
     // Utilisation de gpt-4o-mini (rapide et économique, excellent rapport qualité/prix)
@@ -258,59 +274,28 @@ export async function analyzeWithOpenAI(profile: Partial<HouseProfile>): Promise
     // Parser le JSON
     const analysis = JSON.parse(cleanText) as AIAnalysis;
     
+    // Valider le prix au m² calculé par GPT
+    let estimatedValueM2 = analysis.market_analysis?.estimated_value_m2;
+    
+    // Validation basique (s'assurer que c'est un nombre valide)
+    if (!estimatedValueM2 || typeof estimatedValueM2 !== 'number' || estimatedValueM2 < 500 || estimatedValueM2 > 50000) {
+      console.warn(`⚠️ Prix/m² GPT invalide (${estimatedValueM2}), utilisation de la valeur GPT telle quelle ou null`);
+      // On laisse GPT gérer, même si invalide, pour voir ce qu'il propose
+    } else {
+      console.log(`✅ Prix/m² calculé par GPT: ${Math.round(estimatedValueM2).toLocaleString('fr-FR')} €/m²`);
+    }
+    
     console.log(`✅ Analyse IA générée avec succès (score: ${analysis.score}/100)`);
 
-    // Valider et normaliser les données
-        // Si pas de prix estimé, essayer de l'estimer depuis les données du profil
-        let estimatedValueM2 = analysis.market_analysis?.estimated_value_m2;
-        
-        // Priorité 1: Données de recherche web Gemini (les plus récentes)
-        if (webSearchData?.price_m2 && webSearchData.price_m2 > 500 && webSearchData.price_m2 < 50000) {
-          estimatedValueM2 = webSearchData.price_m2;
-          console.log(`✅ [Gemini] Utilisation du prix/m² trouvé via recherche web: ${estimatedValueM2}€`);
-        }
-        
-        // Priorité 2: Données DVF si pas de données web ou si estimation invalide
-        if (!estimatedValueM2 || estimatedValueM2 < 500 || estimatedValueM2 > 50000) {
-          const dvfPrice = profile.market?.dvf?.summary?.price_m2_median_1y || 
-                          profile.market?.dvf?.summary?.price_m2_median_3y;
-          if (dvfPrice && dvfPrice > 500 && dvfPrice < 50000) {
-            estimatedValueM2 = dvfPrice;
-          } else {
-            // Estimation par défaut selon la région
-            const region = profile.location?.admin?.region || '';
-            const dept = profile.location?.admin?.department || '';
-            if (dept === '75' || region.includes('Île-de-France')) {
-              estimatedValueM2 = 8000;
-            } else if (['92', '93', '94'].includes(dept)) {
-              estimatedValueM2 = 6000;
-            } else if (region.includes('Provence') || region.includes('PACA')) {
-              estimatedValueM2 = 3500;
-            } else if (region.includes('Auvergne') || region.includes('Rhône')) {
-              estimatedValueM2 = 2800;
-            } else {
-              estimatedValueM2 = 2500; // Moyenne nationale
-            }
-          }
-        }
-
-        return {
-          score: Math.max(0, Math.min(100, analysis.score || 0)),
-          summary: analysis.summary || 'Analyse non disponible',
-          market_analysis: {
-            estimated_value_m2: estimatedValueM2,
-            market_trend: webSearchData?.market_trend || analysis.market_analysis?.market_trend || 'stable',
-            market_comment: webSearchData?.market_comment || analysis.market_analysis?.market_comment || '',
-            price_comparison: analysis.market_analysis?.price_comparison || '',
-            // Stocker les données Gemini complètes pour l'affichage
-            gemini_data: webSearchData ? {
-              price_m2: webSearchData.price_m2,
-              price_m2_range: webSearchData.price_m2_range,
-              recent_sales: webSearchData.recent_sales,
-              sources: webSearchData.sources,
-              neighborhood_info: webSearchData.neighborhood_info,
-            } : undefined,
-          },
+    return {
+      score: Math.max(0, Math.min(100, analysis.score || 0)),
+      summary: analysis.summary || 'Analyse non disponible',
+      market_analysis: {
+        estimated_value_m2: estimatedValueM2, // Utilise directement la valeur calculée par GPT
+        market_trend: analysis.market_analysis?.market_trend || 'stable',
+        market_comment: analysis.market_analysis?.market_comment || '',
+        price_comparison: analysis.market_analysis?.price_comparison || '',
+      },
       neighborhood_analysis: {
         shops_analysis: analysis.neighborhood_analysis?.shops_analysis || '',
         amenities_score: Math.max(0, Math.min(100, analysis.neighborhood_analysis?.amenities_score || 0)),

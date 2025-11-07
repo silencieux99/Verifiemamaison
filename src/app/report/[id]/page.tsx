@@ -40,11 +40,11 @@ interface ReportData {
 }
 
 const ReportHeader = () => (
-  <header className="sticky top-0 z-30 flex items-center justify-between h-[60px] px-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700">
-    <Link href="/account" className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 inline-flex items-center justify-center">
-      <ArrowLeft className="h-5 w-5 text-gray-700 dark:text-gray-200" />
+  <header className="sticky top-0 z-30 flex items-center justify-between h-[60px] px-4 bg-black/80 backdrop-blur-sm border-b border-white/10">
+    <Link href="/account" className="p-2 rounded-full hover:bg-white/10 inline-flex items-center justify-center">
+      <ArrowLeft className="h-5 w-5 text-white" />
     </Link>
-    <h1 className="text-lg font-bold text-gray-900 dark:text-white">Rapport Immobilier</h1>
+    <h1 className="text-lg font-bold text-white">Rapport Immobilier</h1>
     <div className="w-10"></div>
   </header>
 );
@@ -142,7 +142,7 @@ export default function RapportInteractifPage({ params }: { params: Promise<{ id
   // Afficher le spinner pendant le chargement de l'auth ou du rapport
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#0A0B0D] flex items-center justify-center">
         <div className="animate-spin rounded-full h-16 w-16 border-4 border-purple-600 border-t-transparent"></div>
       </div>
     );
@@ -150,13 +150,13 @@ export default function RapportInteractifPage({ params }: { params: Promise<{ id
 
   if (error || !reportData) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen bg-[#0A0B0D] text-white">
         <ReportHeader />
         <div className="max-w-5xl mx-auto px-4 py-8">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
+          <div className="bg-white/[0.02] backdrop-blur-xl rounded-xl shadow-sm border border-white/10 p-8 text-center">
             <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Rapport non disponible</h2>
-            <p className="text-gray-600 mb-6">{error || 'Ce rapport n\'existe pas ou n\'est pas encore généré.'}</p>
+            <h2 className="text-2xl font-bold text-white mb-2">Rapport non disponible</h2>
+            <p className="text-white/70 mb-6">{error || 'Ce rapport n\'existe pas ou n\'est pas encore généré.'}</p>
             <button
               onClick={() => router.push('/account')}
               className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors"

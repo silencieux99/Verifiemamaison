@@ -3,19 +3,33 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 17, 24, 39;
-  --background-start-rgb: 255, 255, 255;
-  --background-end-rgb: 249, 250, 251;
+  --foreground-rgb: 255, 255, 255;
+  --background-start-rgb: 10, 11, 13;
+  --background-end-rgb: 10, 11, 13;
+  color-scheme: dark;
+}
+
+/* Forcer le thème noir - désactiver la détection du thème système */
+@media (prefers-color-scheme: light) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 10, 11, 13;
+    --background-end-rgb: 10, 11, 13;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 10, 11, 13;
+    --background-end-rgb: 10, 11, 13;
+  }
 }
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  background: rgb(var(--background-start-rgb));
+  color-scheme: dark;
 }
 
 @layer utilities {
@@ -33,21 +47,7 @@ body {
   }
 }
 
-/* Animations personnalisées */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fadeInUp {
-  animation: fadeInUp 0.6s ease-out;
-}
+/* Animations désactivées pour iPhone */
 
 /* Fix pour les icônes Leaflet */
 .leaflet-container {
@@ -71,5 +71,222 @@ body {
 .leaflet-top,
 .leaflet-bottom {
   z-index: 400;
+}
+
+/* Fixes spécifiques pour Safari mobile */
+@supports (-webkit-touch-callout: none) {
+  /* Détection Safari */
+  
+  /* Fix pour backdrop-blur sur Safari mobile */
+  .backdrop-blur-xl {
+    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(24px);
+  }
+  
+  /* Fix pour position sticky sur Safari mobile */
+  .sticky {
+    position: -webkit-sticky;
+    position: sticky;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
+  
+  /* Fix pour les éléments fixed sur Safari mobile */
+  .fixed {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
+  
+  /* Fix pour overflow-x-auto sur Safari mobile */
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+  
+  /* Fix pour les animations sur Safari mobile - désactiver les animations complexes si nécessaire */
+  @media (prefers-reduced-motion: no-preference) {
+    /* Garder les animations mais optimiser */
+    * {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+  }
+  
+  /* Fix pour les gradients sur Safari mobile */
+  .bg-gradient-to-br,
+  .bg-gradient-to-r {
+    -webkit-background-clip: padding-box;
+    background-clip: padding-box;
+  }
+  
+  /* Fix pour bg-clip-text sur Safari - éviter le texte barré */
+  [class*="bg-clip-text"] {
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    text-decoration: none !important;
+    text-decoration-line: none !important;
+    -webkit-text-decoration-line: none !important;
+  }
+  
+  /* Forcer Safari à ne pas appliquer de style barré */
+  * {
+    text-decoration: none !important;
+    -webkit-text-decoration: none !important;
+  }
+  
+  /* Exception pour les liens */
+  a {
+    text-decoration: underline !important;
+    -webkit-text-decoration: underline !important;
+  }
+  
+  a:hover {
+    text-decoration: underline !important;
+    -webkit-text-decoration: underline !important;
+  }
+  
+  /* Fix pour les hauteurs 100vh sur Safari mobile */
+  .min-h-screen {
+    min-height: -webkit-fill-available;
+    min-height: 100vh;
+  }
+  
+  /* Fix pour les hauteurs 100% sur Safari mobile */
+  .h-full {
+    height: -webkit-fill-available;
+    height: 100%;
+  }
+  
+  /* Fix pour les problèmes de scroll sur Safari mobile */
+  body {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
+  
+  /* Fix pour les problèmes de z-index sur Safari mobile */
+  [class*="z-"] {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
+  
+  /* Fix pour les iframes sur Safari mobile */
+  iframe {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    will-change: transform;
+  }
+  
+  /* Fix pour les images sur Safari mobile */
+  img {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    image-rendering: -webkit-optimize-contrast;
+  }
+  
+  /* Désactiver toutes les animations sur Safari mobile */
+  * {
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    animation: none !important;
+    transition: none !important;
+  }
+  
+  /* Fix spécifique pour les éléments avec bg-clip-text - éviter le rendu barré */
+  [class*="bg-clip-text"],
+  [class*="bg-gradient"][class*="text-transparent"] {
+    -webkit-text-decoration: none !important;
+    text-decoration: none !important;
+    -webkit-text-decoration-line: none !important;
+    text-decoration-line: none !important;
+    -webkit-text-decoration-style: none !important;
+    text-decoration-style: none !important;
+    -webkit-text-decoration-color: transparent !important;
+    text-decoration-color: transparent !important;
+  }
+  
+  /* Fix pour les barres de gradient qui apparaissent comme des blocs */
+  [class*="bg-gradient-to-r"],
+  [class*="bg-gradient-to-br"] {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    will-change: auto;
+  }
+}
+
+/* Styles personnalisés pour Stripe PaymentElement - Mobile-friendly */
+#root {
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Améliorer l'affichage des champs Stripe sur mobile */
+.StripeElement,
+.StripeElement--focus,
+.StripeElement--invalid,
+.StripeElement--complete {
+  padding: 12px 16px !important;
+  font-size: 16px !important;
+  border-radius: 8px !important;
+  border: 1px solid #d1d5db !important;
+  background-color: #ffffff !important;
+  transition: border-color 0.2s ease !important;
+}
+
+.StripeElement--focus {
+  border-color: #9333ea !important;
+  box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.1) !important;
+}
+
+.StripeElement--invalid {
+  border-color: #ef4444 !important;
+}
+
+/* Améliorer les onglets Stripe sur mobile */
+.StripeElement--Tab {
+  padding: 12px 16px !important;
+  border-radius: 8px !important;
+  font-size: 14px !important;
+}
+
+.StripeElement--Tab--selected {
+  background-color: #f3f4f6 !important;
+}
+
+/* Améliorer les labels Stripe */
+.StripeElement--Label {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: #374151 !important;
+  margin-bottom: 8px !important;
+}
+
+/* Améliorer l'affichage des erreurs Stripe */
+.StripeElement--Error {
+  font-size: 13px !important;
+  color: #ef4444 !important;
+  margin-top: 6px !important;
+}
+
+/* Optimiser pour mobile - éviter le zoom automatique */
+@media (max-width: 640px) {
+  .StripeElement,
+  .StripeElement--focus,
+  .StripeElement--invalid,
+  .StripeElement--complete {
+    font-size: 16px !important;
+    padding: 14px 16px !important;
+  }
+  
+  /* Améliorer l'espacement sur mobile */
+  .StripeElement--Tab {
+    padding: 14px 12px !important;
+    font-size: 15px !important;
+  }
+  
+  /* Améliorer les boutons Stripe sur mobile */
+  button[type="submit"] {
+    min-height: 48px !important;
+    font-size: 16px !important;
+  }
 }
 

@@ -8,22 +8,31 @@ import HomeFooter from "./(components)/home/HomeFooter";
 
 export const metadata: Metadata = {
   title: "Analyse Immobilière Complète en Ligne - Rapport Instantané | VerifieMaMaison.fr",
-  description: "Analysez n'importe quel bien immobilier en quelques minutes. Rapport complet avec risques naturels (inondation, sismicité), DPE, marché immobilier (prix au m², transactions DVF), écoles, commodités, qualité de l'air, et recommandations IA. Service français fiable.",
+  description: "Analysez n'importe quel bien immobilier en quelques minutes. Rapport complet avec rentabilité locative, établissements scolaires, commodités, sécurité et criminalité, prix du marché, historique des transactions DVF, risques naturels (inondation, sismicité), DPE, qualité de l'air, et recommandations IA. Tout ce dont vous devez savoir sur votre bien immobilier.",
   keywords: [
     "analyse immobilière en ligne",
     "rapport maison complet",
     "diagnostic bien immobilier",
+    "rentabilité locative calcul",
+    "rendement locatif estimation",
+    "écoles proximité bien immobilier",
+    "établissements scolaires quartier",
+    "commodités services proximité",
+    "sécurité quartier criminalité",
+    "taux criminalité immobilier",
+    "prix marché immobilier",
+    "prix au m² estimation",
+    "historique transactions DVF",
     "risques naturels maison",
+    "inondation sismicité radon",
     "DPE diagnostic énergétique",
     "marché immobilier analyse",
-    "prix immobilier quartier",
-    "transactions DVF",
-    "écoles proximité",
-    "commodités quartier",
+    "transactions immobilières",
     "qualité air immobilier",
     "rapport IA immobilier",
     "vérifier maison avant achat",
-    "analyse quartier complet"
+    "analyse quartier complet",
+    "tout savoir bien immobilier"
   ],
   openGraph: {
     title: "Analyse Immobilière Complète en Ligne - VerifieMaMaison.fr",

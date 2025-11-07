@@ -9,8 +9,8 @@ export const viewport: Viewport = {
   themeColor: "#9333ea",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 5,
-  userScalable: true,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export const metadata: Metadata = {
@@ -103,11 +103,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr" className="scroll-smooth">
+    <html lang="fr" className="scroll-smooth" style={{ colorScheme: 'dark' }}>
       <head>
-        <meta name="theme-color" content="#9333ea" />
+        <meta name="theme-color" content="#0A0B0D" />
+        <meta name="color-scheme" content="dark" />
       </head>
-      <body className="font-sans antialiased">
+      <body className="font-sans antialiased bg-[#0A0B0D] text-white">
         <StructuredData />
         <AuthProvider>
           <AnalyticsTracker />

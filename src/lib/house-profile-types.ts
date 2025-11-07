@@ -265,6 +265,16 @@ export interface HouseProfileAIAnalysis {
     comment?: string;
     recommendations?: string[];
   };
+  rental_yield_analysis?: {
+    estimated_rent_monthly?: number; // Loyer mensuel estimé en €
+    estimated_rent_yearly?: number; // Loyer annuel estimé en €
+    yield_percentage?: number; // Rendement locatif en % (loyer annuel / prix d'achat * 100)
+    yield_rating?: 'excellent' | 'bon' | 'moyen' | 'faible'; // Évaluation du rendement
+    market_rent_comparison?: string; // Comparaison avec le marché locatif local
+    rental_demand?: 'forte' | 'moyenne' | 'faible'; // Demande locative dans le quartier
+    rental_comment?: string; // Commentaire détaillé sur la rentabilité locative
+    rental_recommendations?: string[]; // Recommandations pour optimiser la rentabilité
+  };
   strengths?: string[];
   weaknesses?: string[];
   recommendations?: string[];
