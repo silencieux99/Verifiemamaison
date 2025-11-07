@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Container from '@/app/(components)/Container';
 import { CheckCircleIcon, EnvelopeIcon, UserIcon, CreditCardIcon } from '@heroicons/react/24/outline';
@@ -15,6 +15,7 @@ function SuccessContent() {
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isConnecting, setIsConnecting] = useState(false);
+  const processedRef = useRef(false); // Protection contre les appels multiples
 
   const email = searchParams.get('email');
   const plan = searchParams.get('plan');
@@ -23,6 +24,13 @@ function SuccessContent() {
 
   useEffect(() => {
     const processPayment = async () => {
+      // Protection contre les appels multiples
+      if (processedRef.current) {
+        console.log('[checkout/success] Paiement déjà traité, ignore');
+        return;
+      }
+      
+      processedRef.current = true;
       // Si pas de payment_intent, on essaie quand même avec email et plan
       // (peut être appelé depuis PaymentModal directement)
       if (!email || !plan) {

@@ -109,22 +109,41 @@ export async function POST(req: NextRequest) {
     // Récupérer le total de crédits après l'ajout
     const totalCredits = await getUserCredits(userId);
 
-    // Créer une commande
-    await adminDb.collection('orders').add({
-      paymentIntentId: paymentIntentId || null,
-      amount: paymentIntent?.amount || plan.price * 100,
-      currency: 'eur',
-      status: 'paid',
-      customerEmail: email,
-      customerUid: userId,
-      sku,
-      productName: plan.name,
-      creditsAdded: plan.reports,
-      createdAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
-      pdfGenerated: false,
-      emailSent: false,
-    });
+    // Vérifier si une commande existe déjà pour ce paymentIntentId (protection contre les doublons)
+    let orderExists = false;
+    if (paymentIntentId) {
+      const existingOrders = await adminDb.collection('orders')
+        .where('paymentIntentId', '==', paymentIntentId)
+        .limit(1)
+        .get();
+      
+      if (!existingOrders.empty) {
+        orderExists = true;
+        console.log(`[handle-payment-success] Commande déjà existante pour paymentIntentId: ${paymentIntentId}`);
+      }
+    }
+
+    // Créer une commande uniquement si elle n'existe pas déjà
+    if (!orderExists) {
+      await adminDb.collection('orders').add({
+        paymentIntentId: paymentIntentId || null,
+        amount: paymentIntent?.amount || plan.price * 100,
+        currency: 'eur',
+        status: 'paid',
+        customerEmail: email,
+        customerUid: userId,
+        sku,
+        productName: plan.name,
+        creditsAdded: plan.reports,
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+        pdfGenerated: false,
+        emailSent: false,
+      });
+      console.log(`[handle-payment-success] Commande créée pour paymentIntentId: ${paymentIntentId || 'N/A'}`);
+    } else {
+      console.log(`[handle-payment-success] Commande ignorée (doublon) pour paymentIntentId: ${paymentIntentId}`);
+    }
 
     // Envoyer l'email avec les credentials (sera fait dans un autre endpoint)
     
