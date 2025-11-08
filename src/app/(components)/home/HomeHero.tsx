@@ -330,39 +330,39 @@ export default function HomeHero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7 }}
             onSubmit={handleSubmit} 
-            className="w-full max-w-3xl mx-auto relative z-40"
+            className="w-full max-w-4xl mx-auto relative z-40"
           >
             <div className="relative">
-              {/* Glow effect */}
-              <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur-xl opacity-30 group-hover:opacity-50 transition duration-1000 hidden sm:block"></div>
+              {/* Glow effect amélioré */}
+              <div className="absolute -inset-2 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 rounded-3xl blur-2xl opacity-40 group-hover:opacity-60 transition duration-1000 animate-pulse"></div>
               
-              {/* Card principale */}
-              <div className="relative bg-white/90 backdrop-blur-xl rounded-xl sm:rounded-2xl border border-purple-200 p-4 sm:p-6 md:p-8 shadow-xl">
-                {/* Header avec icône */}
-                <div className="flex items-center justify-center mb-4 sm:mb-6 md:mb-8">
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl blur-xl opacity-50 hidden sm:block"></div>
-                    <div className="relative bg-gradient-to-r from-purple-600 to-pink-600 p-2 sm:p-3 rounded-lg sm:rounded-xl">
-                      <svg className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {/* Card principale améliorée */}
+              <div className="relative bg-white/95 backdrop-blur-2xl rounded-2xl sm:rounded-3xl border-2 border-purple-200/50 p-6 sm:p-8 md:p-10 shadow-2xl shadow-purple-500/20">
+                {/* Header avec icône amélioré */}
+                <div className="flex items-center justify-center mb-6 sm:mb-8">
+                  <div className="relative group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur-2xl opacity-60 group-hover:opacity-80 transition duration-500"></div>
+                    <div className="relative bg-gradient-to-r from-purple-600 to-pink-600 p-3 sm:p-4 rounded-xl sm:rounded-2xl shadow-lg transform group-hover:scale-110 transition-transform duration-300">
+                      <svg className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                       </svg>
                     </div>
                   </div>
                 </div>
 
-                {/* Input principal d'adresse */}
-                <div className="relative mb-4 sm:mb-6 z-50">
-                  <label className="block text-sm sm:text-base font-medium text-purple-600 mb-2">
+                {/* Input principal d'adresse amélioré */}
+                <div className="relative mb-4 sm:mb-5 z-50">
+                  <label className="block text-sm sm:text-base font-semibold text-purple-700 mb-2">
                     Adresse du bien
                   </label>
                   <div className="relative group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg sm:rounded-xl blur opacity-0 group-hover:opacity-30 transition duration-300"></div>
                     <div className="relative">
                       <div className="relative">
-                        <div className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-purple-600 z-10 pointer-events-none">
-                          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        {/* Icône SVG simple et mobile-friendly */}
+                        <div className="absolute left-4 sm:left-5 top-1/2 -translate-y-1/2 z-10 pointer-events-none flex items-center">
+                          <svg className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                           </svg>
                         </div>
                         <input
@@ -383,31 +383,30 @@ export default function HomeHero() {
                             }
                           }}
                           onBlur={(e) => {
-                            // Ne pas fermer si on clique sur une suggestion
                             const relatedTarget = e.relatedTarget as HTMLElement;
                             if (!relatedTarget || !relatedTarget.closest('.address-suggestions')) {
                               setTimeout(() => setShowSuggestions(false), 250);
                             }
                           }}
                           placeholder="Tapez une adresse..."
-                          className="w-full pl-9 sm:pl-12 pr-9 sm:pr-12 py-2.5 sm:py-3 md:py-4 bg-gray-50 border-2 border-gray-300 rounded-lg sm:rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:bg-white transition-all text-base sm:text-base md:text-lg"
+                          className="w-full pl-12 sm:pl-14 pr-10 sm:pr-12 py-3 sm:py-4 bg-white border-2 border-gray-300 rounded-lg sm:rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:bg-white transition-all text-base sm:text-lg font-medium"
                         />
                         {isSearching && (
                           <div className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none">
-                            <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                            <div className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
                           </div>
                         )}
                       </div>
                     </div>
                   </div>
                   
-                  {/* Suggestions améliorées - z-index très élevé pour passer au-dessus */}
+                  {/* Suggestions améliorées */}
                   {showSuggestions && suggestions.length > 0 && (
                     <motion.div 
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="address-suggestions absolute z-[9999] w-full mt-2 bg-white backdrop-blur-xl border border-purple-200 rounded-xl shadow-2xl overflow-hidden max-h-[300px] sm:max-h-[400px] overflow-y-auto"
+                      className="address-suggestions absolute z-[9999] w-full mt-3 bg-white backdrop-blur-2xl border-2 border-purple-200 rounded-2xl shadow-2xl overflow-hidden max-h-[300px] sm:max-h-[400px] overflow-y-auto"
                       style={{ 
                         position: 'absolute',
                         top: '100%',
@@ -430,28 +429,28 @@ export default function HomeHero() {
                             e.preventDefault();
                             handleSelectSuggestion(suggestion, e);
                           }}
-                          className="w-full text-left px-4 sm:px-6 py-3 sm:py-4 hover:bg-purple-50 active:bg-purple-100 transition-all duration-200 border-b border-gray-200 last:border-b-0 group touch-manipulation"
+                          className="w-full text-left px-5 sm:px-6 py-4 sm:py-5 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 active:bg-purple-100 transition-all duration-200 border-b border-gray-100 last:border-b-0 group touch-manipulation"
                         >
                           <div className="flex items-start gap-2 sm:gap-3">
-                            <div className="text-purple-600 mt-0.5 group-hover:text-purple-700 flex-shrink-0">
-                              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <div className="mt-0.5 text-purple-600 flex-shrink-0">
+                              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                               </svg>
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="text-sm sm:text-base text-gray-900 font-medium group-hover:text-purple-700 transition-colors truncate">
+                              <div className="text-sm sm:text-base md:text-lg text-gray-900 font-semibold group-hover:text-purple-700 transition-colors truncate">
                                 {suggestion.label}
                               </div>
                               {suggestion.postalCode && suggestion.city && (
-                                <div className="text-xs sm:text-sm text-gray-600 mt-0.5">
+                                <div className="text-xs sm:text-sm text-gray-500 mt-1">
                                   {suggestion.postalCode} • {suggestion.city}
                                 </div>
                               )}
                             </div>
-                            <div className="text-purple-600 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 text-purple-600">
+                              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                               </svg>
                             </div>
                           </div>
@@ -461,14 +460,19 @@ export default function HomeHero() {
                   )}
                 </div>
 
-                {/* Code postal et ville en grille moderne */}
-                <div className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6 md:mb-8">
-                  <div className="relative group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg sm:rounded-xl blur opacity-0 group-hover:opacity-20 transition duration-300"></div>
+                {/* Code postal et ville en grille moderne améliorée */}
+                <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-4 sm:mb-5">
+                  <div className="relative">
+                    <label className="block text-xs sm:text-sm font-semibold text-purple-700 mb-1.5 sm:mb-2">
+                      Code postal
+                    </label>
                     <div className="relative">
-                      <label className="block text-xs sm:text-sm font-medium text-purple-600 mb-1.5 sm:mb-2">
-                        Code postal
-                      </label>
+                      {/* Icône SVG simple pour code postal */}
+                      <div className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none flex items-center">
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                        </svg>
+                      </div>
                       <input
                         type="text"
                         value={postalCode}
@@ -479,17 +483,22 @@ export default function HomeHero() {
                         }}
                         placeholder="75001"
                         maxLength={5}
-                        className="w-full px-2 sm:px-3 md:px-4 py-2 sm:py-3 md:py-4 bg-gray-50 border-2 border-gray-300 rounded-lg sm:rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:bg-white transition-all text-base sm:text-base"
+                        className="w-full pl-10 sm:pl-12 pr-2 sm:pr-3 py-2.5 sm:py-3 bg-white border-2 border-gray-300 rounded-lg sm:rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:bg-white transition-all text-sm sm:text-base font-medium"
                       />
                     </div>
                   </div>
                   
-                  <div className="relative group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg sm:rounded-xl blur opacity-0 group-hover:opacity-10 transition duration-300"></div>
+                  <div className="relative">
+                    <label className="block text-xs sm:text-sm font-semibold text-purple-700 mb-1.5 sm:mb-2">
+                      Ville
+                    </label>
                     <div className="relative">
-                      <label className="block text-xs sm:text-sm font-medium text-purple-600 mb-1.5 sm:mb-2">
-                        Ville
-                      </label>
+                      {/* Icône SVG simple pour ville */}
+                      <div className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none flex items-center">
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                      </div>
                       <input
                         type="text"
                         value={city}
@@ -498,7 +507,7 @@ export default function HomeHero() {
                           setError(null);
                         }}
                         placeholder="Paris"
-                        className="w-full px-2 sm:px-3 md:px-4 py-2 sm:py-3 md:py-4 bg-gray-50 border-2 border-gray-300 rounded-lg sm:rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:bg-white transition-all text-base sm:text-base"
+                        className="w-full pl-10 sm:pl-12 pr-2 sm:pr-3 py-2.5 sm:py-3 bg-white border-2 border-gray-300 rounded-lg sm:rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:bg-white transition-all text-sm sm:text-base font-medium"
                       />
                     </div>
                   </div>
@@ -509,45 +518,45 @@ export default function HomeHero() {
                   <motion.div 
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3"
+                    className="mb-6 bg-red-50 border-2 border-red-200 rounded-xl p-4 flex items-center gap-3"
                   >
                     <div className="text-red-600">
                       <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                       </svg>
                     </div>
-                    <p className="text-sm text-red-700">{error}</p>
+                    <p className="text-sm text-red-700 font-medium">{error}</p>
                   </motion.div>
                 )}
 
-                {/* Bouton CTA magnifique */}
+                {/* Bouton CTA magnifique amélioré */}
                 <motion.button
                   type="submit"
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.99 }}
-                  className="relative group w-full overflow-hidden rounded-xl p-[2px] transition-all duration-300"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="relative group w-full overflow-hidden rounded-2xl p-[3px] transition-all duration-300"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-[length:200%_100%] animate-gradient-x"></div>
-                  <div className="relative flex items-center justify-center gap-2 sm:gap-3 rounded-lg sm:rounded-xl px-4 sm:px-6 md:px-8 py-3 sm:py-4 md:py-5 transition-all duration-300">
-                    <span className="text-base sm:text-lg md:text-xl font-bold text-white relative z-10">Analyser ce bien</span>
-                    <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white transition-transform group-hover:translate-x-1 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  <div className="relative flex items-center justify-center gap-3 sm:gap-4 rounded-xl sm:rounded-2xl px-6 sm:px-8 md:px-10 py-4 sm:py-5 md:py-6 transition-all duration-300 bg-gradient-to-r from-purple-600 to-pink-600">
+                    <span className="text-base sm:text-lg md:text-xl lg:text-2xl font-black text-white relative z-10">Analyser ce bien</span>
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-white transition-transform group-hover:translate-x-2 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                     </svg>
                   </div>
                 </motion.button>
 
-                {/* Icônes de moyens de paiement */}
+                {/* Icônes de moyens de paiement améliorées */}
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.75 }}
-                  className="mt-4 sm:mt-6"
+                  className="mt-6 sm:mt-8"
                 >
-                  <p className="text-center text-xs sm:text-sm text-gray-500 mb-2 sm:mb-3">
+                  <p className="text-center text-xs sm:text-sm md:text-base text-gray-500 mb-3 sm:mb-4 font-medium">
                     Paiement sécurisé accepté
                   </p>
-                  <div className="flex items-center justify-center gap-2 sm:gap-3 md:gap-4 flex-wrap">
-                    <div className="h-6 sm:h-7 md:h-8 flex items-center opacity-70 hover:opacity-100 transition-opacity">
+                  <div className="flex items-center justify-center gap-3 sm:gap-4 md:gap-5 flex-wrap">
+                    <div className="h-7 sm:h-8 md:h-10 flex items-center opacity-70 hover:opacity-100 transition-opacity">
                       <img 
                         src="/payment-icons/visa.svg" 
                         alt="Visa" 
@@ -555,7 +564,7 @@ export default function HomeHero() {
                         loading="lazy"
                       />
                     </div>
-                    <div className="h-6 sm:h-7 md:h-8 flex items-center opacity-70 hover:opacity-100 transition-opacity">
+                    <div className="h-7 sm:h-8 md:h-10 flex items-center opacity-70 hover:opacity-100 transition-opacity">
                       <img 
                         src="/payment-icons/mastercard.svg" 
                         alt="Mastercard" 
@@ -563,7 +572,7 @@ export default function HomeHero() {
                         loading="lazy"
                       />
                     </div>
-                    <div className="h-6 sm:h-7 md:h-8 flex items-center opacity-70 hover:opacity-100 transition-opacity">
+                    <div className="h-7 sm:h-8 md:h-10 flex items-center opacity-70 hover:opacity-100 transition-opacity">
                       <img 
                         src="/payment-icons/paypal.svg" 
                         alt="PayPal" 
@@ -571,7 +580,7 @@ export default function HomeHero() {
                         loading="lazy"
                       />
                     </div>
-                    <div className="h-6 sm:h-7 md:h-8 flex items-center opacity-70 hover:opacity-100 transition-opacity">
+                    <div className="h-7 sm:h-8 md:h-10 flex items-center opacity-70 hover:opacity-100 transition-opacity">
                       <img 
                         src="/payment-icons/american_express.svg" 
                         alt="American Express" 
@@ -582,26 +591,26 @@ export default function HomeHero() {
                   </div>
                 </motion.div>
 
-                {/* Trust badges */}
-                <div className="mt-6 flex items-center justify-center gap-6 text-xs text-gray-600">
+                {/* Trust badges améliorés */}
+                <div className="mt-8 flex flex-wrap items-center justify-center gap-4 sm:gap-6 md:gap-8 text-xs sm:text-sm text-gray-600">
                   <div className="flex items-center gap-2">
-                    <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                     </svg>
-                    <span>Données sécurisées</span>
+                    <span className="font-semibold">Données sécurisées</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.293l-3-3a1 1 0 00-1.414 1.414L10.586 9.5H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clipRule="evenodd" />
                     </svg>
-                    <span>Résultats instantanés</span>
+                    <span className="font-semibold">Résultats instantanés</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
                       <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
                     </svg>
-                    <span>100% transparent</span>
+                    <span className="font-semibold">100% transparent</span>
                   </div>
                 </div>
               </div>
@@ -628,171 +637,219 @@ export default function HomeHero() {
               </span>
             </h2>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6">
               {/* Rentabilité Locative */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-purple-200 p-4 sm:p-5 shadow-lg hover:shadow-xl transition-shadow">
-                <div className="flex items-start gap-3 mb-3">
-                  <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex-shrink-0">
-                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                viewport={{ once: true }}
+                className="group bg-white/90 backdrop-blur-xl rounded-2xl border-2 border-purple-200/50 p-5 sm:p-6 shadow-xl hover:shadow-2xl hover:border-purple-300 hover:scale-105 transition-all duration-300"
+              >
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <svg className="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1">Rentabilité Locative</h3>
+                    <h3 className="text-base sm:text-lg md:text-xl font-black text-gray-900 mb-2 group-hover:text-purple-700 transition-colors">Rentabilité Locative</h3>
                     <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
                       Calcul du rendement locatif, estimation des loyers et analyse de la demande locative dans le quartier
                     </p>
                   </div>
                 </div>
-              </div>
+              </motion.div>
 
               {/* Éducation */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-purple-200 p-4 sm:p-5 shadow-lg hover:shadow-xl transition-shadow">
-                <div className="flex items-start gap-3 mb-3">
-                  <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex-shrink-0">
-                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.15 }}
+                viewport={{ once: true }}
+                className="group bg-white/90 backdrop-blur-xl rounded-2xl border-2 border-purple-200/50 p-5 sm:p-6 shadow-xl hover:shadow-2xl hover:border-purple-300 hover:scale-105 transition-all duration-300"
+              >
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <svg className="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                     </svg>
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1">Établissements Scolaires</h3>
+                    <h3 className="text-base sm:text-lg md:text-xl font-black text-gray-900 mb-2 group-hover:text-purple-700 transition-colors">Établissements Scolaires</h3>
                     <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
                       Liste complète des écoles, collèges et lycées à proximité avec distances et informations détaillées
                     </p>
                   </div>
                 </div>
-              </div>
+              </motion.div>
 
               {/* Commodités */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-purple-200 p-4 sm:p-5 shadow-lg hover:shadow-xl transition-shadow">
-                <div className="flex items-start gap-3 mb-3">
-                  <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex-shrink-0">
-                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                viewport={{ once: true }}
+                className="group bg-white/90 backdrop-blur-xl rounded-2xl border-2 border-purple-200/50 p-5 sm:p-6 shadow-xl hover:shadow-2xl hover:border-purple-300 hover:scale-105 transition-all duration-300"
+              >
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <svg className="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                     </svg>
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1">Commodités & Services</h3>
+                    <h3 className="text-base sm:text-lg md:text-xl font-black text-gray-900 mb-2 group-hover:text-purple-700 transition-colors">Commodités & Services</h3>
                     <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
                       Commerces, transports, parcs et services essentiels à proximité du bien immobilier
                     </p>
                   </div>
                 </div>
-              </div>
+              </motion.div>
 
               {/* Criminalité */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-purple-200 p-4 sm:p-5 shadow-lg hover:shadow-xl transition-shadow">
-                <div className="flex items-start gap-3 mb-3">
-                  <div className="p-2 bg-gradient-to-br from-red-500 to-orange-600 rounded-lg flex-shrink-0">
-                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.25 }}
+                viewport={{ once: true }}
+                className="group bg-white/90 backdrop-blur-xl rounded-2xl border-2 border-purple-200/50 p-5 sm:p-6 shadow-xl hover:shadow-2xl hover:border-purple-300 hover:scale-105 transition-all duration-300"
+              >
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="p-3 bg-gradient-to-br from-red-500 to-orange-600 rounded-xl flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <svg className="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                     </svg>
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1">Sécurité & Criminalité</h3>
+                    <h3 className="text-base sm:text-lg md:text-xl font-black text-gray-900 mb-2 group-hover:text-purple-700 transition-colors">Sécurité & Criminalité</h3>
                     <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
                       Analyse de la sécurité du quartier, taux de criminalité et statistiques de sécurité récentes
                     </p>
                   </div>
                 </div>
-              </div>
+              </motion.div>
 
               {/* Prix du Marché */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-purple-200 p-4 sm:p-5 shadow-lg hover:shadow-xl transition-shadow">
-                <div className="flex items-start gap-3 mb-3">
-                  <div className="p-2 bg-gradient-to-br from-yellow-500 to-amber-600 rounded-lg flex-shrink-0">
-                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.3 }}
+                viewport={{ once: true }}
+                className="group bg-white/90 backdrop-blur-xl rounded-2xl border-2 border-purple-200/50 p-5 sm:p-6 shadow-xl hover:shadow-2xl hover:border-purple-300 hover:scale-105 transition-all duration-300"
+              >
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="p-3 bg-gradient-to-br from-yellow-500 to-amber-600 rounded-xl flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <svg className="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                     </svg>
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1">Prix du Marché</h3>
+                    <h3 className="text-base sm:text-lg md:text-xl font-black text-gray-900 mb-2 group-hover:text-purple-700 transition-colors">Prix du Marché</h3>
                     <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
                       Estimation précise du prix au m², analyse des transactions récentes et tendances du marché immobilier
                     </p>
                   </div>
                 </div>
-              </div>
+              </motion.div>
 
               {/* Historique */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-purple-200 p-4 sm:p-5 shadow-lg hover:shadow-xl transition-shadow">
-                <div className="flex items-start gap-3 mb-3">
-                  <div className="p-2 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg flex-shrink-0">
-                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.35 }}
+                viewport={{ once: true }}
+                className="group bg-white/90 backdrop-blur-xl rounded-2xl border-2 border-purple-200/50 p-5 sm:p-6 shadow-xl hover:shadow-2xl hover:border-purple-300 hover:scale-105 transition-all duration-300"
+              >
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="p-3 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <svg className="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1">Historique des Transactions</h3>
+                    <h3 className="text-base sm:text-lg md:text-xl font-black text-gray-900 mb-2 group-hover:text-purple-700 transition-colors">Historique des Transactions</h3>
                     <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
                       Historique complet des ventes (DVF), évolution des prix et données de marché sur plusieurs années
                     </p>
                   </div>
                 </div>
-              </div>
+              </motion.div>
 
               {/* Risques */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-purple-200 p-4 sm:p-5 shadow-lg hover:shadow-xl transition-shadow">
-                <div className="flex items-start gap-3 mb-3">
-                  <div className="p-2 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex-shrink-0">
-                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.4 }}
+                viewport={{ once: true }}
+                className="group bg-white/90 backdrop-blur-xl rounded-2xl border-2 border-purple-200/50 p-5 sm:p-6 shadow-xl hover:shadow-2xl hover:border-purple-300 hover:scale-105 transition-all duration-300"
+              >
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="p-3 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <svg className="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1">Risques Naturels</h3>
+                    <h3 className="text-base sm:text-lg md:text-xl font-black text-gray-900 mb-2 group-hover:text-purple-700 transition-colors">Risques Naturels</h3>
                     <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
                       Analyse des risques d'inondation, sismicité, radon et autres risques naturels avec cartes détaillées
                     </p>
                   </div>
                 </div>
-              </div>
+              </motion.div>
 
               {/* Analyse Complète */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-purple-200 p-4 sm:p-5 shadow-lg hover:shadow-xl transition-shadow sm:col-span-2 lg:col-span-1">
-                <div className="flex items-start gap-3 mb-3">
-                  <div className="p-2 bg-gradient-to-br from-purple-500 via-pink-500 to-purple-600 rounded-lg flex-shrink-0">
-                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.45 }}
+                viewport={{ once: true }}
+                className="group bg-white/90 backdrop-blur-xl rounded-2xl border-2 border-purple-200/50 p-5 sm:p-6 shadow-xl hover:shadow-2xl hover:border-purple-300 hover:scale-105 transition-all duration-300 sm:col-span-2 lg:col-span-1"
+              >
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="p-3 bg-gradient-to-br from-purple-500 via-pink-500 to-purple-600 rounded-xl flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <svg className="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                     </svg>
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1">Analyse IA Complète</h3>
+                    <h3 className="text-base sm:text-lg md:text-xl font-black text-gray-900 mb-2 group-hover:text-purple-700 transition-colors">Analyse IA Complète</h3>
                     <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
                       Rapport détaillé avec DPE, qualité de l'air, connectivité fibre et recommandations personnalisées par intelligence artificielle
                     </p>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             </div>
           </motion.div>
 
-          {/* Section Trust avec étoiles et avis */}
+          {/* Section Trust avec étoiles et avis améliorée */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8 }}
-            className="mt-8 sm:mt-12 mb-8 w-full"
+            className="mt-10 sm:mt-14 mb-8 w-full"
           >
             {/* Avis clients avec étoiles */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-lg sm:rounded-xl border border-purple-200 shadow-lg p-3 sm:p-4 md:p-6 max-w-3xl mx-auto w-full">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
+            <div className="bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl border-2 border-purple-200/50 shadow-2xl shadow-purple-500/10 p-5 sm:p-6 md:p-8 max-w-4xl mx-auto w-full">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6">
                 <div className="text-center sm:text-left">
-                  <div className="flex items-center justify-center sm:justify-start gap-0.5 sm:gap-1 mb-1 sm:mb-2">
+                  <div className="flex items-center justify-center sm:justify-start gap-1 sm:gap-1.5 mb-2 sm:mb-3">
                     {[...Array(5)].map((_, i) => (
-                      <svg key={i} className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-500 fill-current" viewBox="0 0 20 20">
+                      <svg key={i} className="w-5 h-5 sm:w-6 sm:h-7 text-yellow-500 fill-current drop-shadow-sm" viewBox="0 0 20 20">
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                       </svg>
                     ))}
-                    <span className="ml-1 sm:ml-2 text-gray-900 font-semibold text-sm sm:text-base">4.9/5</span>
+                    <span className="ml-2 sm:ml-3 text-gray-900 font-black text-base sm:text-lg md:text-xl">4.9/5</span>
                   </div>
-                  <p className="text-gray-700 text-xs sm:text-sm">Plus de <span className="font-semibold text-gray-900">12 450</span> analyses réalisées</p>
+                  <p className="text-gray-700 text-sm sm:text-base font-medium">Plus de <span className="font-black text-gray-900 text-lg sm:text-xl">12 450</span> analyses réalisées</p>
                 </div>
-                <div className="flex items-center gap-2 sm:gap-4">
-                  <img src="https://avatars.githubusercontent.com/u/1?v=4" alt="Client" className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-purple-300" />
-                  <img src="https://avatars.githubusercontent.com/u/2?v=4" alt="Client" className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-purple-300 -ml-2" />
-                  <img src="https://avatars.githubusercontent.com/u/3?v=4" alt="Client" className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-purple-300 -ml-2" />
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-purple-600 flex items-center justify-center text-white text-[10px] sm:text-xs font-semibold -ml-2 border-2 border-white">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <img src="https://avatars.githubusercontent.com/u/1?v=4" alt="Client" className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-3 border-purple-300 shadow-lg" />
+                  <img src="https://avatars.githubusercontent.com/u/2?v=4" alt="Client" className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-3 border-purple-300 -ml-3 shadow-lg" />
+                  <img src="https://avatars.githubusercontent.com/u/3?v=4" alt="Client" className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-3 border-purple-300 -ml-3 shadow-lg" />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center text-white text-xs sm:text-sm font-black -ml-3 border-3 border-white shadow-lg">
                     +99
                   </div>
                 </div>
