@@ -81,9 +81,9 @@ FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nVOTRE_CLE_ICI\n-----END PRIVA
 
 1. Créez un compte sur [Stripe](https://stripe.com/)
 2. Allez dans **Products** et créez 3 produits :
-   - **Rapport à l'unité** : 19,99€ (paiement unique)
-   - **Pack 3 rapports** : 29,99€ (paiement unique)
-   - **Pack 10 rapports** : 79,99€ (paiement unique)
+   - **Rapport à l'unité** : 4,99€ (paiement unique)
+   - **Pack 3 rapports** : 7,99€ (paiement unique)
+   - **Pack 10 rapports** : 19,99€ (paiement unique)
 3. Récupérez les **Price IDs** (commencent par `price_...`)
 4. Récupérez vos clés API dans **Developers** > **API keys**
 5. Configurez un webhook dans **Developers** > **Webhooks**

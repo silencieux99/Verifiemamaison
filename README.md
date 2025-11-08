@@ -41,9 +41,9 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 
 ## 📦 Tarifs
 
-- **Unité** : 19,99€ (1 rapport)
-- **Pack 3** : 29,99€ (3 rapports)
-- **Pack 10** : 79,99€ (10 rapports)
+- **Unité** : 4,99€ (1 rapport)
+- **Pack 3** : 7,99€ (3 rapports)
+- **Pack 10** : 19,99€ (10 rapports)
 
 ## 🛠️ Développement
 

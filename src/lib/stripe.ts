@@ -11,7 +11,7 @@ export const stripe = key
   : null;
 
 // Prix unitaire pour un rapport (en EUR) - VerifieMaMaison
-export const PRICE_EUR = 19.99;
+export const PRICE_EUR = 4.99;
 
 // Configuration des prix Stripe
 export const STRIPE_PRICES = {

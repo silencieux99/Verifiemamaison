@@ -10,8 +10,8 @@ export const pricingPlans: readonly PricingPlan[] = [
     sku: 'unite',
     name: 'Rapport à l\'unité',
     description: 'Idéal pour une vérification unique',
-    price: 19.99,
-    priceLabel: '19,99 €',
+    price: 4.99,
+    priceLabel: '4,99 €',
     reports: 1,
     features: [
       'Rapport complet (PDF + interactif)',
@@ -25,15 +25,15 @@ export const pricingPlans: readonly PricingPlan[] = [
     sku: 'pack3',
     name: 'Pack 3 rapports',
     description: 'Pour analyser plusieurs biens à moindre coût',
-    price: 29.99,
-    priceLabel: '29,99 €',
+    price: 7.99,
+    priceLabel: '7,99 €',
     reports: 3,
     features: [
       '3 rapports complets',
-      'Économisez 30% sur le prix unitaire',
+      'Économisez 47% sur le prix unitaire',
       'Validité illimitée des crédits'
     ],
-    savingsNote: 'Économisez 30%',
+    savingsNote: 'Économisez 47%',
     highlight: true,
     badge: 'POPULAIRE'
   },
@@ -42,8 +42,8 @@ export const pricingPlans: readonly PricingPlan[] = [
     sku: 'pack10',
     name: 'Pack 10 rapports',
     description: 'Solution pro pour agences ou investisseurs',
-    price: 79.99,
-    priceLabel: '79,99 €',
+    price: 19.99,
+    priceLabel: '19,99 €',
     reports: 10,
     features: [
       '10 rapports complets',
@@ -67,7 +67,7 @@ export const getHighlightedPlan = (): PricingPlan | undefined => {
 export const calculateSavings = (plan: PricingPlan): number | null => {
   if (plan.sku === 'unite') return null;
   
-  const unitPrice = 19.99;
+  const unitPrice = 4.99;
   const totalUnitPrice = typeof plan.reports === 'number' ? plan.reports * unitPrice : 0;
   
   if (totalUnitPrice === 0) return null;
