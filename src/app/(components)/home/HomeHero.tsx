@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Container from '../Container';
 import { motion } from 'framer-motion';
 import TrustBadges from './TrustBadges';
 
@@ -175,7 +174,7 @@ export default function HomeHero() {
   };
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center bg-gradient-to-b from-white via-purple-50/30 to-gray-50 overflow-hidden pt-20 sm:pt-24 md:pt-28">
+    <section className="relative min-h-[90vh] sm:min-h-screen flex items-center justify-center bg-gradient-to-b from-white via-purple-50/30 to-gray-50 overflow-hidden pt-16 sm:pt-24 md:pt-28 pb-8 sm:pb-0">
       {/* Gradient animé de fond */}
       <div className="absolute inset-0 bg-gradient-to-br from-purple-100/40 via-pink-100/40 to-purple-100/40 animate-gradient-shift"></div>
       
@@ -210,30 +209,30 @@ export default function HomeHero() {
       <div className="absolute top-1/4 -left-1/4 w-96 h-96 bg-purple-200 rounded-full blur-[128px] opacity-50 animate-pulse"></div>
       <div className="absolute bottom-1/4 -right-1/4 w-96 h-96 bg-pink-200 rounded-full blur-[128px] opacity-50 animate-pulse" style={{ animationDelay: '2s' }}></div>
 
-      <Container className="relative z-10">
+      <div className="relative z-10 w-full">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="max-w-5xl mx-auto px-4 sm:px-6"
+          className="w-full mx-auto"
         >
           {/* Badge d'introduction */}
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2 }}
-            className="flex justify-center mb-6"
+            className="flex justify-center mb-3 sm:mb-6"
           >
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-100 to-pink-100 backdrop-blur-md px-4 py-2 rounded-full border border-purple-300">
+            <div className="inline-flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-purple-100 to-pink-100 backdrop-blur-md px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-purple-300">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-green-600"></span>
               </span>
-              <span className="text-sm text-purple-700 font-medium">IA Nouvelle Génération</span>
+              <span className="text-xs sm:text-sm text-purple-700 font-medium">IA Nouvelle Génération</span>
             </div>
           </motion.div>
 
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black mb-4 sm:mb-6 md:mb-8 leading-tight text-center">
+          <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black mb-3 sm:mb-6 md:mb-8 leading-tight text-center">
             <motion.span 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -262,7 +261,7 @@ export default function HomeHero() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
-            className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-700 mb-6 sm:mb-8 md:mb-12 max-w-3xl mx-auto leading-relaxed text-center"
+            className="text-sm sm:text-lg md:text-xl lg:text-2xl text-gray-700 mb-4 sm:mb-8 md:mb-12 max-w-3xl mx-auto leading-relaxed text-center px-2"
           >
             Notre IA révolutionnaire analyse <span className="text-purple-600 font-semibold">127 points de contrôle</span> pour 
             détecter les vices cachés, estimer les travaux et vous protéger des mauvaises surprises.
@@ -275,7 +274,7 @@ export default function HomeHero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            className="grid grid-cols-3 gap-2 sm:gap-4 mb-6 sm:mb-8 md:mb-12 max-w-2xl mx-auto"
+            className="grid grid-cols-3 gap-1 sm:gap-4 mb-4 sm:mb-8 md:mb-12 max-w-2xl mx-auto"
           >
             <div className="text-center">
               <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-1">
@@ -330,20 +329,20 @@ export default function HomeHero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7 }}
             onSubmit={handleSubmit} 
-            className="w-full max-w-4xl mx-auto relative z-40"
+            className="w-full mx-auto relative z-40"
           >
             <div className="relative">
-              {/* Glow effect amélioré */}
-              <div className="absolute -inset-2 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 rounded-3xl blur-2xl opacity-40 group-hover:opacity-60 transition duration-1000 animate-pulse"></div>
+              {/* Glow effect amélioré - caché sur mobile */}
+              <div className="absolute -inset-2 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 rounded-3xl blur-2xl opacity-40 group-hover:opacity-60 transition duration-1000 animate-pulse hidden sm:block"></div>
               
               {/* Card principale améliorée */}
-              <div className="relative bg-white/95 backdrop-blur-2xl rounded-2xl sm:rounded-3xl border-2 border-purple-200/50 p-6 sm:p-8 md:p-10 shadow-2xl shadow-purple-500/20">
-                {/* Header avec icône amélioré */}
-                <div className="flex items-center justify-center mb-6 sm:mb-8">
+              <div className="relative bg-white/95 backdrop-blur-2xl rounded-none sm:rounded-2xl md:rounded-3xl border-0 sm:border-2 border-purple-200/50 p-4 sm:p-6 md:p-8 lg:p-10 shadow-xl sm:shadow-2xl shadow-purple-500/20">
+                {/* Header avec icône amélioré - réduit sur mobile */}
+                <div className="flex items-center justify-center mb-3 sm:mb-6 md:mb-8">
                   <div className="relative group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur-2xl opacity-60 group-hover:opacity-80 transition duration-500"></div>
-                    <div className="relative bg-gradient-to-r from-purple-600 to-pink-600 p-3 sm:p-4 rounded-xl sm:rounded-2xl shadow-lg transform group-hover:scale-110 transition-transform duration-300">
-                      <svg className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur-2xl opacity-60 group-hover:opacity-80 transition duration-500 hidden sm:block"></div>
+                    <div className="relative bg-gradient-to-r from-purple-600 to-pink-600 p-2 sm:p-3 md:p-4 rounded-lg sm:rounded-xl md:rounded-2xl shadow-lg transform group-hover:scale-110 transition-transform duration-300">
+                      <svg className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 lg:w-10 lg:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                       </svg>
                     </div>
@@ -351,8 +350,8 @@ export default function HomeHero() {
                 </div>
 
                 {/* Input principal d'adresse amélioré */}
-                <div className="relative mb-4 sm:mb-5 z-50">
-                  <label className="block text-sm sm:text-base font-semibold text-purple-700 mb-2">
+                <div className="relative mb-3 sm:mb-5 z-50">
+                  <label className="block text-xs sm:text-sm md:text-base font-semibold text-purple-700 mb-1.5 sm:mb-2">
                     Adresse du bien
                   </label>
                   <div className="relative group">
@@ -461,9 +460,9 @@ export default function HomeHero() {
                 </div>
 
                 {/* Code postal et ville en grille moderne améliorée */}
-                <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-4 sm:mb-5">
+                <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-5">
                   <div className="relative">
-                    <label className="block text-xs sm:text-sm font-semibold text-purple-700 mb-1.5 sm:mb-2">
+                    <label className="block text-xs sm:text-sm font-semibold text-purple-700 mb-1 sm:mb-2">
                       Code postal
                     </label>
                     <div className="relative">
@@ -489,7 +488,7 @@ export default function HomeHero() {
                   </div>
                   
                   <div className="relative">
-                    <label className="block text-xs sm:text-sm font-semibold text-purple-700 mb-1.5 sm:mb-2">
+                    <label className="block text-xs sm:text-sm font-semibold text-purple-700 mb-1 sm:mb-2">
                       Ville
                     </label>
                     <div className="relative">
@@ -534,12 +533,12 @@ export default function HomeHero() {
                   type="submit"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="relative group w-full overflow-hidden rounded-2xl p-[3px] transition-all duration-300"
+                  className="relative group w-full overflow-hidden rounded-xl sm:rounded-2xl p-[2px] sm:p-[3px] transition-all duration-300"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-[length:200%_100%] animate-gradient-x"></div>
-                  <div className="relative flex items-center justify-center gap-3 sm:gap-4 rounded-xl sm:rounded-2xl px-6 sm:px-8 md:px-10 py-4 sm:py-5 md:py-6 transition-all duration-300 bg-gradient-to-r from-purple-600 to-pink-600">
-                    <span className="text-base sm:text-lg md:text-xl lg:text-2xl font-black text-white relative z-10">Analyser ce bien</span>
-                    <svg className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-white transition-transform group-hover:translate-x-2 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="relative flex items-center justify-center gap-2 sm:gap-3 md:gap-4 rounded-lg sm:rounded-xl md:rounded-2xl px-4 sm:px-6 md:px-8 lg:px-10 py-3 sm:py-4 md:py-5 lg:py-6 transition-all duration-300 bg-gradient-to-r from-purple-600 to-pink-600">
+                    <span className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl font-black text-white relative z-10">Analyser ce bien</span>
+                    <svg className="w-4 h-4 sm:w-5 sm:h-6 md:w-6 md:h-7 text-white transition-transform group-hover:translate-x-2 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                     </svg>
                   </div>
@@ -550,9 +549,9 @@ export default function HomeHero() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.75 }}
-                  className="mt-6 sm:mt-8"
+                  className="mt-4 sm:mt-6 md:mt-8"
                 >
-                  <p className="text-center text-xs sm:text-sm md:text-base text-gray-500 mb-3 sm:mb-4 font-medium">
+                  <p className="text-center text-[10px] sm:text-xs md:text-sm lg:text-base text-gray-500 mb-2 sm:mb-3 md:mb-4 font-medium">
                     Paiement sécurisé accepté
                   </p>
                   <div className="flex items-center justify-center gap-3 sm:gap-4 md:gap-5 flex-wrap">
@@ -592,7 +591,7 @@ export default function HomeHero() {
                 </motion.div>
 
                 {/* Trust badges améliorés */}
-                <div className="mt-8 flex flex-wrap items-center justify-center gap-4 sm:gap-6 md:gap-8 text-xs sm:text-sm text-gray-600">
+                <div className="mt-4 sm:mt-6 md:mt-8 flex flex-wrap items-center justify-center gap-2 sm:gap-4 md:gap-6 lg:gap-8 text-[10px] sm:text-xs md:text-sm text-gray-600">
                   <div className="flex items-center gap-2">
                     <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -957,7 +956,7 @@ export default function HomeHero() {
             </div>
           </motion.div>
         </motion.div>
-      </Container>
+      </div>
     </section>
   );
 }
