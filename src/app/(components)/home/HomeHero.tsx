@@ -68,7 +68,7 @@ export default function HomeHero() {
   };
 
   return (
-    <section className="relative min-h-[90vh] flex flex-col pt-32 md:pt-0 md:justify-center items-center bg-white selection:bg-black selection:text-white">
+    <section className="relative min-h-[80vh] flex flex-col pt-32 md:pt-0 md:justify-center items-center bg-white selection:bg-black selection:text-white">
       {/* Background Layer - Clipped for overflow */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Grid Background - Ultra subtle */}
@@ -81,16 +81,30 @@ export default function HomeHero() {
       <div className="relative z-20 w-full max-w-5xl px-4 md:px-8 text-center flex flex-col items-center">
 
         {/* Badge Redesigned */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="mb-8 md:mb-12"
-        >
-          <span className="px-4 py-1.5 rounded-full border border-gray-200 bg-white/50 backdrop-blur-md text-[10px] md:text-xs font-semibold tracking-[0.2em] uppercase text-gray-500 shadow-sm">
-            Intelligence Immobilière
-          </span>
-        </motion.div>
+        <div className="flex flex-col items-center gap-4 mb-8 md:mb-12">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <span className="px-4 py-1.5 rounded-full border border-gray-200 bg-white/50 backdrop-blur-md text-[10px] md:text-xs font-semibold tracking-[0.2em] uppercase text-gray-500 shadow-sm">
+              Intelligence Immobilière
+            </span>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+            className="flex items-center gap-2"
+          >
+            <div className="h-px w-8 bg-gradient-to-r from-transparent to-gray-300"></div>
+            <span className="text-[10px] md:text-[11px] font-medium text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+              <span className="text-amber-500/80">★</span> Distinction Excellence 2025
+            </span>
+            <div className="h-px w-8 bg-gradient-to-l from-transparent to-gray-300"></div>
+          </motion.div>
+        </div>
 
         {/* Hero Title - Larger & Cleaner */}
         <motion.h1
@@ -203,7 +217,7 @@ export default function HomeHero() {
       </div>
 
       {/* Decorative Footer Gradient */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white to-transparent pointer-events-none z-10"></div>
+      <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent pointer-events-none z-10"></div>
     </section>
   );
 }

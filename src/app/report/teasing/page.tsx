@@ -22,7 +22,9 @@ import {
     WifiIcon,
     TruckIcon,
     HandRaisedIcon,
-    PlusIcon
+    PlusIcon,
+    BuildingStorefrontIcon,
+    MapIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import LoadingScreen from '@/app/(components)/ui/LoadingScreen';
@@ -33,6 +35,21 @@ const PropertyMap = dynamic(() => import('@/app/(components)/ui/PropertyMap'), {
     ssr: false,
     loading: () => <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400 text-xs">Chargement...</div>
 });
+
+interface DPEData {
+    found: boolean;
+    classe_energie?: string;  // A, B, C, D, E, F, G
+    classe_ges?: string;
+    consommation_energie?: number;
+    estimation_ges?: number;
+    annee_construction?: number;
+    surface?: number;
+    type_batiment?: string;
+    date_etablissement?: string;
+    numero_dpe?: string;
+    geo_score?: number;
+    adresse_dpe?: string;
+}
 
 interface ReportPreviewData {
     address: {
@@ -59,6 +76,7 @@ interface ReportPreviewData {
         transactionsCount: number;
         history: any[];
     };
+    dpe: DPEData;
     hasDvfData: boolean;
 }
 
@@ -275,21 +293,102 @@ function TeasingContent() {
                             </div>
                         </div>
 
-                        {/* Locked Row: DPE */}
+                        {/* Locked Row: Commerce */}
                         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden relative">
+                            <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                                <div className="flex items-center gap-2">
+                                    <BuildingStorefrontIcon className="w-4 h-4 text-orange-500" />
+                                    <span className="text-xs font-semibold text-gray-800">Commerces & Services</span>
+                                </div>
+                                <LockClosedIcon className="w-3 h-3 text-gray-400" />
+                            </div>
+                            <div className="p-4 flex gap-3 justify-center opacity-40 blur-[3px]">
+                                <div className="h-6 w-16 bg-orange-50 rounded-full"></div>
+                                <div className="h-6 w-20 bg-gray-50 rounded-full"></div>
+                                <div className="h-6 w-14 bg-gray-50 rounded-full"></div>
+                            </div>
+                        </div>
+
+                        {/* Locked Row: Transport */}
+                        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden relative">
+                            <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                                <div className="flex items-center gap-2">
+                                    <MapIcon className="w-4 h-4 text-blue-500" />
+                                    <span className="text-xs font-semibold text-gray-800">Transports & Mobilité</span>
+                                </div>
+                                <LockClosedIcon className="w-3 h-3 text-gray-400" />
+                            </div>
+                            <div className="p-4 flex flex-col gap-2 opacity-40 blur-[3px]">
+                                <div className="h-4 w-full bg-blue-50 rounded"></div>
+                                <div className="h-4 w-4/5 bg-gray-50 rounded"></div>
+                            </div>
+                        </div>
+
+
+                        {/* DPE Section - REAL DATA */}
+                        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
                             <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
                                 <div className="flex items-center gap-2">
                                     <BoltIcon className="w-4 h-4 text-emerald-600" />
                                     <span className="text-xs font-semibold text-gray-800">DPE & Isolation</span>
                                 </div>
-                                <LockClosedIcon className="w-3 h-3 text-gray-400" />
+                                {data.dpe.found && data.dpe.annee_construction && (
+                                    <span className="text-[9px] text-gray-400">Construit en {data.dpe.annee_construction}</span>
+                                )}
                             </div>
-                            <div className="p-4 flex gap-1 overflow-hidden opacity-40 blur-[3px]">
-                                {['A', 'B', 'C', 'D', 'E', 'F', 'G'].map(l => (
-                                    <div key={l} className="flex-1 h-6 bg-gray-100 rounded flex items-center justify-center text-[8px] font-bold text-gray-300">{l}</div>
-                                ))}
-                            </div>
+
+                            {data.dpe.found ? (
+                                <div className="p-4 space-y-3">
+                                    {/* Energy Class Badges */}
+                                    <div className="flex gap-1">
+                                        {['A', 'B', 'C', 'D', 'E', 'F', 'G'].map(letter => {
+                                            const isActive = data.dpe.classe_energie === letter;
+                                            const colors: Record<string, string> = {
+                                                'A': 'bg-green-500',
+                                                'B': 'bg-lime-400',
+                                                'C': 'bg-yellow-400',
+                                                'D': 'bg-yellow-500',
+                                                'E': 'bg-orange-400',
+                                                'F': 'bg-orange-600',
+                                                'G': 'bg-red-600'
+                                            };
+                                            return (
+                                                <div
+                                                    key={letter}
+                                                    className={`flex-1 h-8 rounded flex items-center justify-center text-[10px] font-bold transition-all ${isActive
+                                                        ? `${colors[letter]} text-white scale-110 shadow-md`
+                                                        : 'bg-gray-100 text-gray-300'
+                                                        }`}
+                                                >
+                                                    {letter}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {/* Consumption & GES */}
+                                    <div className="grid grid-cols-2 gap-2 text-[10px]">
+                                        {data.dpe.consommation_energie && (
+                                            <div className="bg-gray-50 rounded p-2">
+                                                <div className="text-gray-400 uppercase tracking-wide">Consommation</div>
+                                                <div className="font-semibold text-gray-900">{data.dpe.consommation_energie} kWh/m²/an</div>
+                                            </div>
+                                        )}
+                                        {data.dpe.classe_ges && (
+                                            <div className="bg-gray-50 rounded p-2">
+                                                <div className="text-gray-400 uppercase tracking-wide">GES</div>
+                                                <div className="font-semibold text-gray-900">Classe {data.dpe.classe_ges}</div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="p-4 text-center text-xs text-gray-400">
+                                    Données DPE non disponibles
+                                </div>
+                            )}
                         </div>
+
 
                     </div>
                 </div>

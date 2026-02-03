@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import { Header } from "./(components)/Header";
 import HomeHero from "./(components)/home/HomeHero";
+import BrandSection from "./(components)/home/BrandSection";
 import HowItWorks from "./(components)/home/HowItWorks";
 import Testimonials from "./(components)/home/Testimonials";
 import Faq from "./(components)/home/Faq";
@@ -55,6 +56,7 @@ export default function Home() {
       <Header />
       <main>
         <HomeHero />
+        <BrandSection />
         <HowItWorks />
         <Testimonials />
         <Faq />

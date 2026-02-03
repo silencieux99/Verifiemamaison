@@ -22,7 +22,7 @@ export default function HowItWorks() {
   ];
 
   return (
-    <section className="py-32 bg-white border-t border-gray-100">
+    <section className="py-20 bg-white border-t border-gray-100">
       <Container>
         <div className="flex flex-col md:flex-row justify-between items-start mb-24 gap-8">
           <div className="max-w-xl">

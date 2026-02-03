@@ -1,0 +1,53 @@
+=== RAPPORT DVF COMPLET ===
+
+Adresse testée: 36 bis rue auguste blanqui, Aulnay-sous-Bois 93600
+Coordonnées: Lon 2.501362, Lat 48.936905
+Code commune: 93005
+Section cadastrale: 000AJ
+
+NOMBRE TOTAL DE TRANSACTIONS: 122
+
+=== EXEMPLE: PREMIERE TRANSACTION ===
+
+adresse_code_voie                       : None
+adresse_nom_voie                        : None
+adresse_numero                          : nan
+adresse_suffixe                         : None
+ancien_code_commune                     : None
+ancien_id_parcelle                      : None
+ancien_nom_commune                      : None
+code_commune                            : 93005
+code_departement                        : 93
+code_nature_culture                     : None
+code_nature_culture_speciale            : None
+code_postal                             : None
+code_type_local                         : None
+date_mutation                           : 2025-06-19
+id_mutation                             : 2025-469620
+id_parcelle                             : 93005000AJ0234
+latitude                                : 48.938094
+longitude                               : 2.501408
+lot1_numero                             : 226
+lot1_surface_carrez                     : nan
+lot2_numero                             : None
+lot2_surface_carrez                     : None
+lot3_numero                             : None
+lot3_surface_carrez                     : None
+lot4_numero                             : None
+lot4_surface_carrez                     : None
+lot5_numero                             : None
+lot5_surface_carrez                     : None
+nature_culture                          : None
+nature_culture_speciale                 : None
+nature_mutation                         : Vente en l'état futur d'achèvement
+nom_commune                             : Aulnay-sous-Bois
+nombre_lots                             : 1
+nombre_pieces_principales               : nan
+numero_disposition                      : 1
+numero_volume                           : None
+section_prefixe                         : 000AJ
+surface_reelle_bati                     : nan
+surface_terrain                         : nan
+type_local                              : None
+valeur_fonciere                         : 262900.0
+

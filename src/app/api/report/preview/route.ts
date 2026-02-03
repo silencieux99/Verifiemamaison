@@ -127,6 +127,19 @@ export async function GET(request: Request) {
             ? `https://maps.googleapis.com/maps/api/streetview?size=800x600&location=${lat},${lon}&key=${googleApiKey}`
             : null;
 
+        // DPE (Diagnostic de Performance Énergétique)
+        let dpeData = { found: false };
+        try {
+            const dpeRes = await fetch(`http://localhost:3000/api/dpe/search?address=${encodeURIComponent(address)}`);
+            if (dpeRes.ok) {
+                dpeData = await dpeRes.json();
+            }
+        } catch (dpeError) {
+            console.error('DPE API Error:', dpeError);
+            // Continue sans DPE si erreur
+        }
+
+
         return NextResponse.json({
             address: {
                 label: feature.properties.label,
@@ -146,6 +159,7 @@ export async function GET(request: Request) {
                 transactionsCount: cleanTransactions.length, // NEIGHBORHOOD VOLUME
                 history: exactMatches.slice(0, 5) // EXACT MATCH HISTORY
             },
+            dpe: dpeData, // DPE DATA
             hasDvfData: exactMatches.length > 0 // Flag if we found the property
         });
 

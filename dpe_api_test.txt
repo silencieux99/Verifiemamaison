@@ -1,0 +1,33 @@
+=== TEST API DPE DATA.GOUV.FR ===
+
+URL: https://data.ademe.fr/data-fair/api/v1/datasets/dpe-france/
+Adresse testée: 36 bis rue auguste blanqui, Aulnay-sous-Bois
+
+NOMBRE TOTAL DE DPE EN FRANCE: 5156983
+
+=== PREMIER RESULTAT (TOUS LES CHAMPS) ===
+
+_geopoint                                         : 48.932782,2.193378
+_i                                                : 132277
+_id                                               : EABDCrIJ34oEcdq_cPlxj
+_rand                                             : 671061
+_score                                            : 62.95735
+annee_construction                                : 1977
+classe_consommation_energie                       : F
+classe_estimation_ges                             : G
+code_insee_commune_actualise                      : 78311
+consommation_energie                              : 349
+date_etablissement_dpe                            : 2018-09-21
+estimation_ges                                    : 82
+geo_adresse                                       : 36 Rue Auguste Blanqui 78800 Houilles
+geo_score                                         : 0.97
+latitude                                          : 48.932782
+longitude                                         : 2.193378
+nom_methode_dpe                                   : 3CL - DPE
+numero_dpe                                        : 1878V1006791G
+surface_thermique_lot                             : 55
+tr001_modele_dpe_type_libelle                     : Vente
+tr002_type_batiment_description                   : Maison Individuelle
+tv016_departement_code                            : 78
+version_methode_dpe                               : V1.3
+
