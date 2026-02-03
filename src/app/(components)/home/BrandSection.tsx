@@ -8,13 +8,13 @@ export default function BrandSection() {
     const brands = [
         {
             name: 'Notaires de France',
-            logo: '/marques/notaires.png',
+            logo: '/Marques/notaires.png',
             height: 40,
             width: 120
         },
         {
             name: 'FNAIM',
-            logo: '/marques/fnaim.png',
+            logo: '/Marques/fnaim.png',
             height: 45,
             width: 100
         }

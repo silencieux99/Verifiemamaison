@@ -130,7 +130,8 @@ export async function GET(request: Request) {
         // DPE (Diagnostic de Performance Énergétique)
         let dpeData = { found: false };
         try {
-            const dpeRes = await fetch(`http://localhost:3000/api/dpe/search?address=${encodeURIComponent(address)}`);
+            const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+            const dpeRes = await fetch(`${siteUrl}/api/dpe/search?address=${encodeURIComponent(address)}`);
             if (dpeRes.ok) {
                 dpeData = await dpeRes.json();
             }

@@ -5,40 +5,34 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
-    CheckBadgeIcon,
-    ArrowDownTrayIcon,
-    ShieldCheckIcon,
     HomeModernIcon,
-    ChartBarIcon,
-    MapPinIcon,
     DocumentMagnifyingGlassIcon,
     BoltIcon,
     LockClosedIcon,
-    StarIcon,
     CurrencyEuroIcon,
     ClockIcon,
     ShieldExclamationIcon,
     AcademicCapIcon,
     WifiIcon,
-    TruckIcon,
     HandRaisedIcon,
-    PlusIcon,
     BuildingStorefrontIcon,
-    MapIcon
+    MapIcon,
+    ArrowRightIcon,
+    CheckIcon,
+    PlusIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import LoadingScreen from '@/app/(components)/ui/LoadingScreen';
 import dynamic from 'next/dynamic';
 
-// Dynamic import to avoid SSR issues with Leaflet
 const PropertyMap = dynamic(() => import('@/app/(components)/ui/PropertyMap'), {
     ssr: false,
-    loading: () => <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400 text-xs">Chargement...</div>
+    loading: () => <div className="w-full h-full bg-gray-200 animate-pulse" />
 });
 
 interface DPEData {
     found: boolean;
-    classe_energie?: string;  // A, B, C, D, E, F, G
+    classe_energie?: string;
     classe_ges?: string;
     consommation_energie?: number;
     estimation_ges?: number;
@@ -90,7 +84,7 @@ function TeasingContent() {
 
     useEffect(() => {
         if (addressQuery) {
-            const minDelay = new Promise(resolve => setTimeout(resolve, 4000));
+            const minDelay = new Promise(resolve => setTimeout(resolve, 3000));
             const fetchData = fetch(`/api/report/preview?address=${encodeURIComponent(addressQuery)}`).then(res => res.json());
 
             Promise.all([fetchData, minDelay])
@@ -114,42 +108,33 @@ function TeasingContent() {
     }
 
     if (!data) {
-        return <div className="min-h-screen bg-[#F5F5F7] flex items-center justify-center text-gray-900 font-light">Données indisponibles.</div>;
+        return <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center text-sm font-medium text-gray-400">Données indisponibles.</div>;
     }
 
-    // Formatters
     const formatPrice = (price: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(price);
     const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString('fr-FR', { year: 'numeric', month: 'short' });
 
-    // Mock Data for UI
-    const reviews = [
-        { name: "Thomas M.", role: "Acheteur à Lyon", text: "Le rapport m'a permis de négocier 15k€ en montrant les prix réels du quartier. Rentabilisé x1000.", stars: 5 },
-        { name: "Sarah L.", role: "Investisseur", text: "Indispensable pour vérifier si le DPE colle avec l'année de construction. J'ai évité une passoire thermique.", stars: 5 },
-        { name: "Marc D.", role: "Primo-accédant", text: "Simple, clair et immédiat. 19€ pour éviter une erreur à 300 000€, c'est vite vu.", stars: 5 }
-    ];
-
-    const faqs = [
-        { q: "D'où viennent les données ?", a: "Nous agrégeons les données officielles de l'État : DVF (Notaires), Géorisques, Cadastre, et l'INSEE." },
-        { q: "Est-ce que je reçois le rapport tout de suite ?", a: "Oui, instantanément. Une fois le paiement validé, le PDF complet est généré et envoyé sur votre email." },
-        { q: "Et si le rapport est vide ?", a: "Si nous ne trouvons aucune donnée pertinente pour votre adresse, nous vous remboursons intégralement votre commande." }
-    ];
-
     return (
-        <div className="min-h-screen bg-[#F5F5F7] text-gray-900 font-sans pb-32 md:pb-0">
-            {/* Header Compact */}
-            <nav className="fixed top-0 w-full z-40 px-4 py-3 flex justify-between items-center bg-white/90 backdrop-blur-md border-b border-gray-200 shadow-sm">
-                <div className="text-[10px] tracking-[0.2em] uppercase font-bold text-gray-900">VerifieMaMaison<span className="text-emerald-500">.</span></div>
-                <div className="text-[9px] text-gray-400 font-mono hidden md:block">PREVIEW MODE</div>
+        <div className="min-h-screen bg-[#FAFAFA] text-[#111] font-sans selection:bg-gray-200">
+            <nav className="fixed top-0 w-full z-50 px-6 py-6 flex justify-between items-center bg-[#FAFAFA]/80 backdrop-blur-md transition-colors">
+                <div className="text-xs font-bold tracking-[0.2em] uppercase">VerifieMaMaison</div>
             </nav>
 
-            <main className="max-w-5xl mx-auto pt-16 md:pt-24 px-4 md:px-8">
+            <main className="max-w-2xl mx-auto pt-32 pb-32 px-6">
 
-                {/* 1. Hero Card */}
-                <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="relative w-full aspect-video md:aspect-[21/9] rounded-2xl overflow-hidden shadow-xl mb-6 group border border-gray-200"
-                >
+                {/* 1. Header Section */}
+                <div className="mb-12">
+                    <h1 className="text-2xl md:text-3xl font-semibold mb-2 tracking-tight">
+                        Rapport disponible pour <br />
+                        <span className="text-gray-400">{data.address.label}</span>
+                    </h1>
+                    <p className="text-sm text-gray-500 mt-2 font-medium">
+                        {data.address.city}, {data.address.zipCode}
+                    </p>
+                </div>
+
+                {/* 2. Map */}
+                <div className="relative w-full aspect-video bg-gray-100 mb-16 grayscale-[10%] hover:grayscale-0 transition-all duration-700">
                     {data.address.coordinates ? (
                         <PropertyMap
                             lat={data.address.coordinates.lat}
@@ -157,337 +142,308 @@ function TeasingContent() {
                             address={data.address.label}
                         />
                     ) : (
-                        <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400 text-xs">Carte non disponible</div>
+                        <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">Carte masquée</div>
                     )}
+                    <div className="absolute inset-0 ring-1 ring-inset ring-black/5 pointer-events-none"></div>
+                </div>
 
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-
-                    <div className="absolute bottom-0 left-0 p-4 md:p-8 text-white w-full">
-                        <div className="inline-flex items-center gap-2 px-2 py-0.5 bg-white/20 backdrop-blur-md rounded-full mb-2 border border-white/10">
-                            <div className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse"></div>
-                            <span className="text-[9px] font-semibold tracking-widest uppercase">Rapport Prêt</span>
-                        </div>
-                        <h1 className="text-xl md:text-3xl font-medium tracking-tight leading-snug truncate">
-                            {data.address.label}
-                        </h1>
-                        <p className="text-white/70 text-xs md:text-sm mt-1 font-light">{data.address.city} ({data.address.zipCode})</p>
-                    </div>
-                </motion.div>
-
-                {/* 2. Denser Grid Layout */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8">
-
-                    {/* KEY METRIC: Last Sale */}
-                    <div className="col-span-2 bg-white p-4 md:p-6 rounded-2xl border border-gray-200 shadow-sm">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2 text-gray-500">
-                                <HomeModernIcon className="w-4 h-4" />
-                                <span className="text-[10px] font-bold uppercase tracking-widest">Valeur Actée</span>
-                            </div>
-                            <span className="bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase border border-emerald-100">Officiel</span>
-                        </div>
-                        <div className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">
+                {/* 3. Metrics */}
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-y-12 gap-x-8 mb-20 border-t border-gray-100 pt-10">
+                    <div className="col-span-2 md:col-span-1">
+                        <div className="text-[10px] uppercase tracking-wider font-medium text-gray-400 mb-2">Dernière Vente</div>
+                        <div className="text-2xl font-semibold tracking-tight">
                             {data.market.lastSale ? formatPrice(data.market.lastSale.price) : 'N/C'}
                         </div>
-                        <div className="text-xs text-gray-400 mt-1 flex items-center gap-2">
-                            {data.market.lastSale ? `Le ${formatDate(data.market.lastSale.date)}` : 'Pas de vente récente'}
-                            {data.market.lastSale && <span className="text-gray-300">•</span>}
-                            {data.market.lastSale && <span>{data.market.lastSale.surface} m²</span>}
+                        <div className="text-xs text-gray-400 mt-1">
+                            {data.market.lastSale ? formatDate(data.market.lastSale.date) : '-'}
                         </div>
                     </div>
-
-                    {/* METRIC: Price M2 */}
-                    <div className="col-span-1 bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex flex-col justify-center">
-                        <div className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">Prix Quartier</div>
-                        <div className="text-lg md:text-xl font-semibold text-gray-900">
+                    <div>
+                        <div className="text-[10px] uppercase tracking-wider font-medium text-gray-400 mb-2">Prix Quartier</div>
+                        <div className="text-xl font-medium text-gray-900">
                             {data.market.averagePriceM2 > 0 ? formatPrice(data.market.averagePriceM2) : '-'}
                         </div>
-                        <div className="text-[9px] text-gray-400">/ m² moyen</div>
+                        <div className="text-[10px] text-gray-400 mt-1">/ m² moyen</div>
                     </div>
-
-                    {/* METRIC: Risks */}
-                    <div className="col-span-1 bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex flex-col justify-center">
-                        <div className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">Risques</div>
-                        <div className="flex items-center gap-2">
-                            <span className={`text-lg md:text-xl font-semibold ${data.risks.count > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                                {data.risks.count > 0 ? data.risks.count : '0'}
-                            </span>
-                            <span className="text-[9px] text-gray-400">identifiés</span>
+                    <div>
+                        <div className="text-[10px] uppercase tracking-wider font-medium text-gray-400 mb-2">Points de Vigilance</div>
+                        <div className={`text-xl font-medium ${data.risks.count > 0 ? 'text-orange-600' : 'text-emerald-600'}`}>
+                            {data.risks.count} détectés
                         </div>
+                        <div className="text-[10px] text-gray-400 mt-1">sur l'adresse</div>
                     </div>
                 </div>
 
-                {/* 3. Locked Content Preview - Expanded */}
-                <div className="space-y-6 mb-12">
-                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1 ml-1">Ce que contient le rapport complet</h3>
+                {/* 4. Locked Content List */}
+                <div className="mb-24">
+                    <div className="flex items-center gap-4 mb-8">
+                        <span className="text-xs font-bold uppercase tracking-widest text-gray-900">Contenu du rapport</span>
+                        <div className="h-px bg-gray-100 flex-1"></div>
+                    </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-
-                        {/* Locked Row: History - Full Width */}
-                        <div className="md:col-span-2 bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden relative">
-                            <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                    <div className="space-y-0">
+                        {[
+                            { icon: DocumentMagnifyingGlassIcon, label: "Historique des Transactions", sub: "2014 - 2024", locked: true },
+                            { icon: HandRaisedIcon, label: "Délinquance & Criminologie", sub: "Données locales", locked: true },
+                            { icon: AcademicCapIcon, label: "Établissements Scolaires", sub: "Carte scolaire", locked: true },
+                            { icon: WifiIcon, label: "Couverture Fibre & Internet", sub: "Débits réels", locked: true },
+                            { icon: BuildingStorefrontIcon, label: "Commerces de proximité", sub: "Services", locked: true },
+                            { icon: MapIcon, label: "Transports en commun", sub: "Lignes & Arrêts", locked: true },
+                            { icon: PlusIcon, label: "Et 100+ autres points", sub: "Analysés par nos algorithmes", locked: true },
+                        ].map((item, i) => (
+                            <div key={i} className="group flex items-center justify-between py-5 border-b border-gray-100 last:border-0 hover:bg-gray-50/50 transition-colors -mx-4 px-4 cursor-default">
+                                <div className="flex items-center gap-4">
+                                    <item.icon className="w-5 h-5 text-gray-400 stroke-[1.5]" />
+                                    <div>
+                                        <div className="text-sm font-medium text-gray-900">{item.label}</div>
+                                        <div className="text-[11px] text-gray-400">{item.sub}</div>
+                                    </div>
+                                </div>
                                 <div className="flex items-center gap-2">
-                                    <DocumentMagnifyingGlassIcon className="w-4 h-4 text-gray-600" />
-                                    <span className="text-xs font-semibold text-gray-800">Historique des Ventes (2014-2024)</span>
-                                </div>
-                                <LockClosedIcon className="w-3 h-3 text-gray-400" />
-                            </div>
-                            <div className="p-4 space-y-3 opacity-50 blur-[2px] select-none pointer-events-none">
-                                <div className="flex justify-between text-xs"><span className="w-20 h-3 bg-gray-200 rounded"></span> <span className="w-12 h-3 bg-gray-200 rounded"></span></div>
-                                <div className="flex justify-between text-xs"><span className="w-24 h-3 bg-gray-200 rounded"></span> <span className="w-16 h-3 bg-gray-200 rounded"></span></div>
-                            </div>
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="px-3 py-1 bg-white/90 backdrop-blur border border-gray-200 rounded-full text-[10px] font-medium shadow-sm text-gray-600">
-                                    3 transactions masquées
+                                    <span className="text-[10px] font-medium text-gray-400 bg-gray-100 px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity">Masqué</span>
+                                    <LockClosedIcon className="w-4 h-4 text-gray-300" />
                                 </div>
                             </div>
-                        </div>
+                        ))}
+                    </div>
+                </div>
 
-                        {/* Locked Row: Criminality */}
-                        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden relative">
-                            <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-                                <div className="flex items-center gap-2">
-                                    <HandRaisedIcon className="w-4 h-4 text-red-500" />
-                                    <span className="text-xs font-semibold text-gray-800">Délinquance & Criminologie</span>
-                                </div>
-                                <LockClosedIcon className="w-3 h-3 text-gray-400" />
-                            </div>
-                            <div className="h-16 flex items-center justify-center p-4">
-                                <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden blur-[1px]">
-                                    <div className="w-[40%] h-full bg-red-300"></div>
-                                </div>
-                            </div>
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <span className="text-[9px] font-semibold text-gray-400 bg-white/80 px-2 py-0.5 rounded">Score masqué</span>
-                            </div>
-                        </div>
+                {/* 5. DPE - Redesigned Minimal & Elegant */}
+                <div className="mb-24">
+                    <div className="flex items-center gap-4 mb-6">
+                        <span className="text-xs font-bold uppercase tracking-widest text-gray-900">Performance Énergétique</span>
+                        <div className="h-px bg-gray-100 flex-1"></div>
+                    </div>
 
-                        {/* Locked Row: Education */}
-                        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden relative">
-                            <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-                                <div className="flex items-center gap-2">
-                                    <AcademicCapIcon className="w-4 h-4 text-indigo-500" />
-                                    <span className="text-xs font-semibold text-gray-800">Établissements Scolaires</span>
+                    {data.dpe.found ? (
+                        <div className="py-2">
+                            <div className="flex items-center justify-between mb-6">
+                                <div className="flex items-center gap-4">
+                                    <div className={`text-6xl font-black tracking-tighter ${data.dpe.classe_energie === 'A' ? 'text-emerald-500' :
+                                        data.dpe.classe_energie === 'B' ? 'text-lime-500' :
+                                            data.dpe.classe_energie === 'C' ? 'text-yellow-400' :
+                                                data.dpe.classe_energie === 'D' ? 'text-yellow-500' :
+                                                    data.dpe.classe_energie === 'E' ? 'text-orange-400' :
+                                                        data.dpe.classe_energie === 'F' ? 'text-orange-600' : 'text-red-500'
+                                        }`}>
+                                        {data.dpe.classe_energie}
+                                    </div>
+                                    <div className="flex flex-col justify-center">
+                                        <div className="text-sm font-semibold text-gray-900">
+                                            {data.dpe.consommation_energie} <span className="text-xs text-gray-400 font-normal">kWh/m²</span>
+                                        </div>
+                                        {data.dpe.annee_construction && data.dpe.annee_construction > 1000 && (
+                                            <div className="text-[10px] uppercase tracking-wide text-gray-400 mt-0.5">
+                                                Bâti {data.dpe.annee_construction}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                                <LockClosedIcon className="w-3 h-3 text-gray-400" />
-                            </div>
-                            <div className="p-4 space-y-2 opacity-50 blur-[2px]">
-                                <div className="flex justify-between"><div className="w-32 h-2 bg-gray-200 rounded"></div> <div className="w-8 h-2 bg-indigo-100 rounded"></div></div>
-                                <div className="flex justify-between"><div className="w-24 h-2 bg-gray-200 rounded"></div> <div className="w-8 h-2 bg-indigo-100 rounded"></div></div>
-                            </div>
-                        </div>
 
-                        {/* Locked Row: Internet */}
-                        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden relative">
-                            <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-                                <div className="flex items-center gap-2">
-                                    <WifiIcon className="w-4 h-4 text-cyan-500" />
-                                    <span className="text-xs font-semibold text-gray-800">Couverture Internet & Fibre</span>
-                                </div>
-                                <LockClosedIcon className="w-3 h-3 text-gray-400" />
-                            </div>
-                            <div className="p-4 flex gap-4 justify-center opacity-40 blur-[1px]">
-                                <div className="w-8 h-8 rounded-full bg-cyan-100"></div>
-                                <div className="w-8 h-8 rounded-full bg-gray-100"></div>
-                                <div className="w-8 h-8 rounded-full bg-gray-100"></div>
-                            </div>
-                        </div>
-
-                        {/* Locked Row: Commerce */}
-                        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden relative">
-                            <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-                                <div className="flex items-center gap-2">
-                                    <BuildingStorefrontIcon className="w-4 h-4 text-orange-500" />
-                                    <span className="text-xs font-semibold text-gray-800">Commerces & Services</span>
-                                </div>
-                                <LockClosedIcon className="w-3 h-3 text-gray-400" />
-                            </div>
-                            <div className="p-4 flex gap-3 justify-center opacity-40 blur-[3px]">
-                                <div className="h-6 w-16 bg-orange-50 rounded-full"></div>
-                                <div className="h-6 w-20 bg-gray-50 rounded-full"></div>
-                                <div className="h-6 w-14 bg-gray-50 rounded-full"></div>
-                            </div>
-                        </div>
-
-                        {/* Locked Row: Transport */}
-                        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden relative">
-                            <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-                                <div className="flex items-center gap-2">
-                                    <MapIcon className="w-4 h-4 text-blue-500" />
-                                    <span className="text-xs font-semibold text-gray-800">Transports & Mobilité</span>
-                                </div>
-                                <LockClosedIcon className="w-3 h-3 text-gray-400" />
-                            </div>
-                            <div className="p-4 flex flex-col gap-2 opacity-40 blur-[3px]">
-                                <div className="h-4 w-full bg-blue-50 rounded"></div>
-                                <div className="h-4 w-4/5 bg-gray-50 rounded"></div>
-                            </div>
-                        </div>
-
-
-                        {/* DPE Section - REAL DATA */}
-                        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                            <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-                                <div className="flex items-center gap-2">
-                                    <BoltIcon className="w-4 h-4 text-emerald-600" />
-                                    <span className="text-xs font-semibold text-gray-800">DPE & Isolation</span>
-                                </div>
-                                {data.dpe.found && data.dpe.annee_construction && (
-                                    <span className="text-[9px] text-gray-400">Construit en {data.dpe.annee_construction}</span>
+                                {data.dpe.classe_ges && (
+                                    <div className="text-right">
+                                        <div className="text-[10px] uppercase tracking-wider text-gray-400 mb-1">GES</div>
+                                        <div className="text-xl font-bold text-gray-900">{data.dpe.classe_ges}</div>
+                                    </div>
                                 )}
                             </div>
 
-                            {data.dpe.found ? (
-                                <div className="p-4 space-y-3">
-                                    {/* Energy Class Badges */}
-                                    <div className="flex gap-1">
-                                        {['A', 'B', 'C', 'D', 'E', 'F', 'G'].map(letter => {
-                                            const isActive = data.dpe.classe_energie === letter;
-                                            const colors: Record<string, string> = {
-                                                'A': 'bg-green-500',
-                                                'B': 'bg-lime-400',
-                                                'C': 'bg-yellow-400',
-                                                'D': 'bg-yellow-500',
-                                                'E': 'bg-orange-400',
-                                                'F': 'bg-orange-600',
-                                                'G': 'bg-red-600'
-                                            };
-                                            return (
-                                                <div
-                                                    key={letter}
-                                                    className={`flex-1 h-8 rounded flex items-center justify-center text-[10px] font-bold transition-all ${isActive
-                                                        ? `${colors[letter]} text-white scale-110 shadow-md`
-                                                        : 'bg-gray-100 text-gray-300'
-                                                        }`}
-                                                >
-                                                    {letter}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
+                            <div className="relative h-1.5 w-full bg-gray-100 rounded-full overflow-hidden flex">
+                                {['A', 'B', 'C', 'D', 'E', 'F', 'G'].map((letter) => {
+                                    const colors: Record<string, string> = {
+                                        'A': 'bg-emerald-500', 'B': 'bg-lime-500', 'C': 'bg-yellow-400',
+                                        'D': 'bg-yellow-500', 'E': 'bg-orange-400', 'F': 'bg-orange-600', 'G': 'bg-red-500'
+                                    };
+                                    const isCurrent = data.dpe.classe_energie === letter;
+                                    return (
+                                        <div key={letter} className={`flex-1 ${colors[letter]} ${isCurrent ? 'opacity-100' : 'opacity-20'} transition-opacity`} />
+                                    );
+                                })}
+                            </div>
 
-                                    {/* Consumption & GES */}
-                                    <div className="grid grid-cols-2 gap-2 text-[10px]">
-                                        {data.dpe.consommation_energie && (
-                                            <div className="bg-gray-50 rounded p-2">
-                                                <div className="text-gray-400 uppercase tracking-wide">Consommation</div>
-                                                <div className="font-semibold text-gray-900">{data.dpe.consommation_energie} kWh/m²/an</div>
-                                            </div>
-                                        )}
-                                        {data.dpe.classe_ges && (
-                                            <div className="bg-gray-50 rounded p-2">
-                                                <div className="text-gray-400 uppercase tracking-wide">GES</div>
-                                                <div className="font-semibold text-gray-900">Classe {data.dpe.classe_ges}</div>
-                                            </div>
-                                        )}
+                            <div className="flex justify-between mt-2 px-1">
+                                {['A', 'B', 'C', 'D', 'E', 'F', 'G'].map((letter) => (
+                                    <div key={letter} className={`text-[9px] font-bold w-4 text-center ${data.dpe.classe_energie === letter ? 'text-gray-900' : 'text-gray-300'}`}>
+                                        {letter}
                                     </div>
-                                </div>
-                            ) : (
-                                <div className="p-4 text-center text-xs text-gray-400">
-                                    Données DPE non disponibles
-                                </div>
-                            )}
+                                ))}
+                            </div>
                         </div>
-
-
-                    </div>
+                    ) : (
+                        <div className="py-6 text-center">
+                            <div className="inline-flex items-center justify-center w-10 h-10 bg-gray-50 rounded-full mb-3">
+                                <BoltIcon className="w-5 h-5 text-gray-300" />
+                            </div>
+                            <p className="text-xs text-gray-400 italic">Données de performance énergétique non disponibles.</p>
+                        </div>
+                    )}
                 </div>
 
-                {/* 100+ Data Points Label */}
-                <div className="mb-20 flex justify-center">
-                    <div className="inline-flex flex-col items-center gap-1">
-                        <div className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-full text-[10px] uppercase font-bold tracking-widest shadow-lg">
-                            <PlusIcon className="w-3 h-3 text-emerald-400" />
-                            <span>Plus de 100 données analysées</span>
+                {/* 6. Why */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-24 pt-12 border-t border-gray-100">
+                    {[
+                        { title: "Négociez", desc: "Le prix au m² réel est votre meilleur argument." },
+                        { title: "Sécurisez", desc: "Découvrez les vices cachés avant de signer." },
+                        { title: "Gagnez du temps", desc: "Plus de 100 points de contrôle en 1 clic." }
+                    ].map((item, i) => (
+                        <div key={i}>
+                            <h3 className="text-sm font-bold text-gray-900 mb-2">{item.title}</h3>
+                            <p className="text-xs text-gray-500 leading-relaxed">{item.desc}</p>
                         </div>
-                        <p className="text-[10px] text-gray-400 font-medium italic mt-2">
-                            Nuisances sonores, Antennes relais, Permis de construire...
+                    ))}
+                </div>
+
+                {/* 7. Reviews */}
+                <div className="mb-32">
+                    <div className="text-center mb-8">
+                        <div className="flex justify-center gap-1 text-[#111] mb-4">
+                            {[1, 2, 3, 4, 5].map(s => <StarIconSolid key={s} className="w-3 h-3" />)}
+                        </div>
+                        <p className="text-lg font-medium text-gray-900 italic max-w-lg mx-auto leading-relaxed">
+                            "Le rapport m'a évité d'acheter une maison en zone inondable. Les 19€ les mieux investis de mon projet."
                         </p>
+                        <div className="mt-4 text-xs font-bold text-gray-400 uppercase tracking-widest">
+                            Sophie D. — Acheteuse
+                        </div>
                     </div>
                 </div>
 
-                {/* 4. Value Proposition */}
-                <div className="mb-16">
-                    <h3 className="text-center text-xs font-bold text-gray-500 uppercase tracking-widest mb-8">Pourquoi Vérifier ?</h3>
+                {/* 8. Pricing - High-End, Light & Square */}
+                <div id="pricing" className="mb-32 pt-16 border-t border-gray-100">
+                    <div className="flex items-center justify-center mb-16">
+                        <h2 className="text-xl font-bold text-gray-900 tracking-tight">Sélectionnez votre offre</h2>
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {[
-                            { icon: CurrencyEuroIcon, title: "Négociez le prix", desc: "Utilisez les ventes réelles du quartier comme levier de négociation." },
-                            { icon: ShieldExclamationIcon, title: "Évitez les risques", desc: "Inondations,  sécheresse... ne découvrez pas les problèmes après avoir signé." },
-                            { icon: ClockIcon, title: "Rapport Instantané", desc: "Ne perdez pas des heures à chercher. Tout est agrégé en 2 minutes." }
-                        ].map((item, i) => (
-                            <div key={i} className="flex flex-col items-center text-center p-4">
-                                <div className="w-10 h-10 bg-white border border-gray-200 shadow-sm rounded-full flex items-center justify-center mb-4 text-gray-900">
-                                    <item.icon className="w-5 h-5" />
-                                </div>
-                                <h4 className="font-semibold text-sm text-gray-900 mb-2">{item.title}</h4>
-                                <p className="text-xs text-gray-500 max-w-[200px]">{item.desc}</p>
+                        {/* Pack 1 - Unitaire */}
+                        <div
+                            onClick={() => window.location.href = `/api/checkout?plan=report_one_shot&address=${encodeURIComponent(addressQuery || '')}`}
+                            className="group relative flex flex-col p-8 rounded-3xl bg-white border border-gray-100 hover:border-gray-200 hover:shadow-xl transition-all duration-300 cursor-pointer min-h-[400px]"
+                        >
+                            <div className="text-center mb-6">
+                                <span className="inline-block px-3 py-1 mb-4 rounded-full bg-gray-50 text-gray-500 text-[10px] font-bold uppercase tracking-widest">
+                                    Découverte
+                                </span>
+                                <div className="text-3xl font-black text-gray-900 mb-1">19,99€</div>
+                                <div className="text-xs text-gray-400 font-medium">pour 1 rapport</div>
                             </div>
-                        ))}
-                    </div>
-                </div>
 
-                {/* 5. Social Proof */}
-                <div className="mb-16 bg-white -mx-4 md:mx-0 p-6 md:p-8 md:rounded-3xl border-y md:border border-gray-200 shadow-sm">
-                    <h3 className="text-center text-xs font-bold text-gray-500 uppercase tracking-widest mb-8">Ils ont économisé</h3>
-                    <div className="space-y-6 md:space-y-0 md:grid md:grid-cols-3 md:gap-6">
-                        {reviews.map((review, i) => (
-                            <div key={i} className="flex flex-col gap-3 p-4 bg-gray-50 rounded-xl border border-gray-100">
-                                <div className="flex text-yellow-400 gap-0.5">
-                                    {[1, 2, 3, 4, 5].map(s => <StarIconSolid key={s} className="w-3 h-3" />)}
+                            <div className="flex-1 space-y-3 mb-8">
+                                <div className="flex items-center gap-3 text-sm text-gray-600">
+                                    <CheckIcon className="w-4 h-4 text-emerald-500" />
+                                    <span>Rapport complet PDF</span>
                                 </div>
-                                <p className="text-sm text-gray-700 italic">"{review.text}"</p>
-                                <div>
-                                    <div className="text-xs font-semibold text-gray-900">{review.name}</div>
-                                    <div className="text-[10px] text-gray-400">{review.role}</div>
+                                <div className="flex items-center gap-3 text-sm text-gray-600">
+                                    <CheckIcon className="w-4 h-4 text-emerald-500" />
+                                    <span>Accès immédiat</span>
+                                </div>
+                                <div className="flex items-center gap-3 text-sm text-gray-600">
+                                    <CheckIcon className="w-4 h-4 text-emerald-500" />
+                                    <span>Mises à jour (30j)</span>
                                 </div>
                             </div>
-                        ))}
-                    </div>
-                </div>
 
-                {/* 6. FAQ Section */}
-                <div className="mb-24 md:mb-32">
-                    <h3 className="text-center text-xs font-bold text-gray-500 uppercase tracking-widest mb-8">Questions Fréquentes</h3>
-                    <div className="space-y-3 max-w-2xl mx-auto">
-                        {faqs.map((faq, i) => (
-                            <div key={i} className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-                                <h4 className="text-sm font-semibold text-gray-900 mb-2">{faq.q}</h4>
-                                <p className="text-xs text-gray-500 leading-relaxed">{faq.a}</p>
+                            <button className="w-full h-10 bg-gray-50 text-gray-900 rounded-xl text-xs font-bold uppercase tracking-wide group-hover:bg-gray-900 group-hover:text-white transition-colors">
+                                Choisir
+                            </button>
+                        </div>
+
+                        {/* Pack 2 - Smart (Popular) */}
+                        <div
+                            onClick={() => window.location.href = `/api/checkout?plan=pack_4&address=${encodeURIComponent(addressQuery || '')}`}
+                            className="group relative flex flex-col p-8 rounded-3xl bg-white border-2 border-gray-900 shadow-2xl transition-all duration-300 cursor-pointer transform md:-translate-y-4 min-h-[400px] z-10"
+                        >
+                            <div className="absolute top-4 left-1/2 -translate-x-1/2 w-full text-center">
+                                <span className="inline-block px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase tracking-widest">
+                                    Recommandé
+                                </span>
                             </div>
-                        ))}
+                            <div className="text-center mb-6 mt-4">
+                                <div className="text-4xl font-black text-gray-900 mb-1">29,99€</div>
+                                <div className="text-xs text-gray-400 font-medium mb-2">pour 4 rapports</div>
+                                <div className="inline-block bg-emerald-500 text-white text-[10px] font-bold px-2 py-1 rounded">
+                                    2 + 2 Offerts
+                                </div>
+                            </div>
+
+                            <div className="flex-1 space-y-3 mb-8">
+                                <div className="flex items-center gap-3 text-sm text-gray-900 font-medium">
+                                    <CheckIcon className="w-4 h-4 text-emerald-500" />
+                                    <span>Tout du pack Découverte</span>
+                                </div>
+                                <div className="flex items-center gap-3 text-sm text-gray-900 font-medium">
+                                    <CheckIcon className="w-4 h-4 text-emerald-500" />
+                                    <span>Valable 1 an</span>
+                                </div>
+                                <div className="flex items-center gap-3 text-sm text-gray-900 font-medium">
+                                    <CheckIcon className="w-4 h-4 text-emerald-500" />
+                                    <span>Soit 7,50€ / rapport</span>
+                                </div>
+                            </div>
+
+                            <button className="w-full bg-gray-900 text-white h-10 px-6 rounded-xl text-xs font-bold uppercase tracking-wide hover:bg-black transition-colors">
+                                Choisir
+                            </button>
+                        </div>
+
+                        {/* Pack 3 - Investor */}
+                        <div
+                            onClick={() => window.location.href = `/api/checkout?plan=pack_10&address=${encodeURIComponent(addressQuery || '')}`}
+                            className="group relative flex flex-col p-8 rounded-3xl bg-white border border-gray-100 hover:border-gray-200 hover:shadow-xl transition-all duration-300 cursor-pointer min-h-[400px]"
+                        >
+                            <div className="text-center mb-6">
+                                <span className="inline-block px-3 py-1 mb-4 rounded-full bg-gray-50 text-gray-500 text-[10px] font-bold uppercase tracking-widest">
+                                    Expert
+                                </span>
+                                <div className="text-3xl font-black text-gray-900 mb-1">39,99€</div>
+                                <div className="text-xs text-gray-400 font-medium">pour 10 rapports</div>
+                            </div>
+
+                            <div className="flex-1 space-y-3 mb-8">
+                                <div className="flex items-center gap-3 text-sm text-gray-600">
+                                    <CheckIcon className="w-4 h-4 text-emerald-500" />
+                                    <span>Idéal Investisseurs</span>
+                                </div>
+                                <div className="flex items-center gap-3 text-sm text-gray-600">
+                                    <CheckIcon className="w-4 h-4 text-emerald-500" />
+                                    <span>Valable à vie</span>
+                                </div>
+                                <div className="flex items-center gap-3 text-sm text-gray-600">
+                                    <CheckIcon className="w-4 h-4 text-emerald-500" />
+                                    <span>Soit 3,99€ / rapport</span>
+                                </div>
+                            </div>
+
+                            <button className="w-full h-10 bg-gray-50 text-gray-900 rounded-xl text-xs font-bold uppercase tracking-wide group-hover:bg-gray-900 group-hover:text-white transition-colors">
+                                Choisir
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Reassurance Footer with Color Logos */}
+                    <div className="mt-16 flex flex-col items-center justify-center opacity-80">
+                        <div className="flex items-center gap-6 mb-4 grayscale-[0%] transition-all duration-500">
+                            {/* SVG Icons from public folder */}
+                            <img src="/payment-icons/visa.svg" alt="Visa" className="h-6 w-auto" />
+                            <img src="/payment-icons/mastercard.svg" alt="Mastercard" className="h-6 w-auto" />
+                            <img src="/payment-icons/american_express.svg" alt="Amex" className="h-6 w-auto" />
+                            <img src="/payment-icons/paypal.svg" alt="PayPal" className="h-5 w-auto" />
+                        </div>
+                        <p className="text-[10px] text-gray-400 font-medium uppercase tracking-widest">
+                            Paiement 100% Sécurisé & Crypté SSL
+                        </p>
                     </div>
                 </div>
 
             </main>
 
-            {/* Sticky Mobile CTA */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/90 backdrop-blur-xl border-t border-gray-200 z-50 md:hidden pb-6 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-                <button
-                    onClick={handlePayment}
-                    className="w-full bg-[#111] text-white h-12 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 shadow-xl active:scale-95 transition-transform"
-                >
-                    <ArrowDownTrayIcon className="w-4 h-4" />
-                    Débloquer le Rapport Complet (19€)
-                </button>
-            </div>
-
-            {/* Desktop CTA */}
-            <div className="hidden md:block fixed bottom-8 right-8 z-50">
-                <button
-                    onClick={handlePayment}
-                    className="bg-[#111] text-white px-6 py-3 rounded-xl font-medium text-sm flex items-center gap-2 shadow-2xl hover:bg-gray-800 transition-all hover:-translate-y-1"
-                >
-                    <ArrowDownTrayIcon className="w-4 h-4" />
-                    Télécharger le Rapport
-                </button>
-            </div>
         </div>
     );
 }
 
 export default function TeasingPage() {
     return (
-        <Suspense fallback={<div className="min-h-screen bg-white" />}>
+        <Suspense fallback={<div className="min-h-screen bg-[#FAFAFA]" />}>
             <TeasingContent />
         </Suspense>
     );
