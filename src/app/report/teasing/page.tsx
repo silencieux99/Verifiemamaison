@@ -1,9 +1,7 @@
-
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
 import {
     HomeModernIcon,
     DocumentMagnifyingGlassIcon,
@@ -24,6 +22,8 @@ import {
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import LoadingScreen from '@/app/(components)/ui/LoadingScreen';
 import dynamic from 'next/dynamic';
+import CheckoutModal from '@/app/(components)/home/CheckoutModal';
+import { PlanType } from '@/lib/types';
 
 const PropertyMap = dynamic(() => import('@/app/(components)/ui/PropertyMap'), {
     ssr: false,
@@ -82,33 +82,65 @@ function TeasingContent() {
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState<ReportPreviewData | null>(null);
 
-    useEffect(() => {
-        if (addressQuery) {
-            const minDelay = new Promise(resolve => setTimeout(resolve, 3000));
-            const fetchData = fetch(`/api/report/preview?address=${encodeURIComponent(addressQuery)}`).then(res => res.json());
+    // Checkout Modal State
+    const [checkoutOpen, setCheckoutOpen] = useState(false);
+    const [selectedPlan, setSelectedPlan] = useState<PlanType | null>(null);
+    const [selectedPrice, setSelectedPrice] = useState(0);
 
-            Promise.all([fetchData, minDelay])
-                .then(([data]) => {
-                    setData(data);
-                    setLoading(false);
-                })
-                .catch(err => {
-                    console.error(err);
-                    setLoading(false);
-                });
-        }
+    useEffect(() => {
+        if (!addressQuery) return;
+
+        const minDelay = new Promise(resolve => setTimeout(resolve, 3000)); // Teasing delay
+        const fetchData = fetch(`/api/report/preview?address=${encodeURIComponent(addressQuery)}`)
+            .then(res => {
+                if (!res.ok) throw new Error('Failed to fetch data');
+                return res.json();
+            });
+
+        Promise.all([fetchData, minDelay])
+            .then(([data]) => {
+                setData(data);
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error("Preview fetch error:", err);
+                setData(null);
+                setLoading(false);
+            });
     }, [addressQuery]);
 
-    const handlePayment = async () => {
-        window.location.href = `/api/checkout?plan=report_one_shot&address=${encodeURIComponent(addressQuery || '')}`;
+    const openCheckout = (plan: PlanType, priceCents: number) => {
+        setSelectedPlan(plan);
+        setSelectedPrice(priceCents);
+        setCheckoutOpen(true);
     };
 
     if (loading) {
         return <LoadingScreen />;
     }
 
-    if (!data) {
-        return <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center text-sm font-medium text-gray-400">Données indisponibles.</div>;
+    if (!data || !data.address) {
+        return (
+            <div className="min-h-screen bg-[#FAFAFA] flex flex-col items-center justify-center text-sm font-medium text-gray-400 p-6 text-center">
+                <p className="mb-4">Désolé, nous n'avons pas trouvé de données suffisantes pour cette adresse.</p>
+                <div className="flex gap-4">
+                    <button
+                        onClick={() => router.push('/')}
+                        className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg text-xs font-bold hover:bg-gray-200 transition-colors"
+                    >
+                        Retour
+                    </button>
+                    {addressQuery && (
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="px-4 py-2 bg-black text-white rounded-lg text-xs font-bold hover:bg-gray-900 transition-colors"
+                        >
+                            Réessayer
+                        </button>
+                    )}
+                </div>
+            </div>
+        );
     }
 
     const formatPrice = (price: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(price);
@@ -317,7 +349,7 @@ function TeasingContent() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {/* Pack 1 - Unitaire */}
                         <div
-                            onClick={() => window.location.href = `/api/checkout?plan=report_one_shot&address=${encodeURIComponent(addressQuery || '')}`}
+                            onClick={() => openCheckout('unite', 1999)}
                             className="group relative flex flex-col p-8 rounded-3xl bg-white border border-gray-100 hover:border-gray-200 hover:shadow-xl transition-all duration-300 cursor-pointer min-h-[400px]"
                         >
                             <div className="text-center mb-6">
@@ -350,7 +382,7 @@ function TeasingContent() {
 
                         {/* Pack 2 - Smart (Popular) */}
                         <div
-                            onClick={() => window.location.href = `/api/checkout?plan=pack_4&address=${encodeURIComponent(addressQuery || '')}`}
+                            onClick={() => openCheckout('pack4', 2999)}
                             className="group relative flex flex-col p-8 rounded-3xl bg-white border-2 border-gray-900 shadow-2xl transition-all duration-300 cursor-pointer transform md:-translate-y-4 min-h-[400px] z-10"
                         >
                             <div className="absolute top-4 left-1/2 -translate-x-1/2 w-full text-center">
@@ -388,7 +420,7 @@ function TeasingContent() {
 
                         {/* Pack 3 - Investor */}
                         <div
-                            onClick={() => window.location.href = `/api/checkout?plan=pack_10&address=${encodeURIComponent(addressQuery || '')}`}
+                            onClick={() => openCheckout('pack10', 3999)}
                             className="group relative flex flex-col p-8 rounded-3xl bg-white border border-gray-100 hover:border-gray-200 hover:shadow-xl transition-all duration-300 cursor-pointer min-h-[400px]"
                         >
                             <div className="text-center mb-6">
@@ -436,6 +468,14 @@ function TeasingContent() {
                 </div>
 
             </main>
+
+            <CheckoutModal
+                isOpen={checkoutOpen}
+                onClose={() => setCheckoutOpen(false)}
+                plan={selectedPlan}
+                price={selectedPrice}
+                address={data.address.label}
+            />
 
         </div>
     );

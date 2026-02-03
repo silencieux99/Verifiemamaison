@@ -47,7 +47,7 @@ export interface Alert {
   message: string;
 }
 
-export type PlanType = 'unite' | 'pack3' | 'pack10';
+export type PlanType = 'unite' | 'pack4' | 'pack10';
 
 export interface Order {
   id?: string;
@@ -56,27 +56,27 @@ export interface Order {
   amount: number; // en centimes
   currency: string;
   status: 'pending' | 'paid' | 'failed' | 'refunded' | 'PROCESSING' | 'GENERATING_REPORT' | 'COMPLETE';
-  
+
   customerEmail: string;
   customerUid?: string;
-  
+
   sku?: PlanType;
   productName?: string;
   creditsAdded?: number;
-  
+
   houseData?: HouseData;
   source?: string;
-  
+
   pdfGenerated: boolean;
   pdfStoragePath?: string;
   pdfUrl?: string;
-  
+
   reportData?: HouseReport;
-  
+
   refundId?: string;
   refundAmount?: number;
   refundReason?: string;
-  
+
   promoCode?: {
     code: string;
     type: 'fixed' | 'percentage';
@@ -85,7 +85,7 @@ export interface Order {
     isFreeReport: boolean;
     promoCodeId: string;
   } | null;
-  
+
   createdAt: number;
   updatedAt: number;
   emailSent: boolean;
@@ -112,7 +112,7 @@ export interface Credits {
 export interface CreditHistoryEntry {
   type: 'add' | 'consume';
   qty: number;
-  source: 'unite' | 'pack3' | 'pack10';
+  source: 'unite' | 'pack4' | 'pack10';
   ts: number;
   note?: string;
 }

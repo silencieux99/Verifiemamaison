@@ -10,8 +10,8 @@ export const pricingPlans: readonly PricingPlan[] = [
     sku: 'unite',
     name: 'Rapport à l\'unité',
     description: 'Idéal pour une vérification unique',
-    price: 4.99,
-    priceLabel: '4,99 €',
+    price: 19.99,
+    priceLabel: '19,99 €',
     reports: 1,
     features: [
       'Rapport complet (PDF + interactif)',
@@ -21,19 +21,19 @@ export const pricingPlans: readonly PricingPlan[] = [
     highlight: false
   },
   {
-    id: 'pack3',
-    sku: 'pack3',
-    name: 'Pack 3 rapports',
+    id: 'pack4',
+    sku: 'pack4',
+    name: 'Pack 4 rapports',
     description: 'Pour analyser plusieurs biens à moindre coût',
-    price: 7.99,
-    priceLabel: '7,99 €',
-    reports: 3,
+    price: 29.99,
+    priceLabel: '29,99 €',
+    reports: 4,
     features: [
-      '3 rapports complets',
-      'Économisez 47% sur le prix unitaire',
-      'Validité illimitée des crédits'
+      '4 rapports complets (2 achetés + 2 offerts)',
+      'Économisez sur le prix unitaire',
+      'Validité 1 an'
     ],
-    savingsNote: 'Économisez 47%',
+    savingsNote: '2+2 Offerts',
     highlight: true,
     badge: 'POPULAIRE'
   },
@@ -42,15 +42,15 @@ export const pricingPlans: readonly PricingPlan[] = [
     sku: 'pack10',
     name: 'Pack 10 rapports',
     description: 'Solution pro pour agences ou investisseurs',
-    price: 19.99,
-    priceLabel: '19,99 €',
+    price: 39.99,
+    priceLabel: '39,99 €',
     reports: 10,
     features: [
-      '10 rapports complets',
-      'Économisez 60% sur le prix unitaire',
-      'Compte rendu détaillé pour chaque bien'
+      '10 rapports complets (5 achetés + 5 offerts)',
+      'Prix imbattable au rapport',
+      'Validité à vie'
     ],
-    savingsNote: 'Économisez 60%',
+    savingsNote: '5+5 Offerts',
     highlight: true,
     badge: 'MEILLEURE OFFRE'
   }
@@ -66,12 +66,12 @@ export const getHighlightedPlan = (): PricingPlan | undefined => {
 
 export const calculateSavings = (plan: PricingPlan): number | null => {
   if (plan.sku === 'unite') return null;
-  
+
   const unitPrice = 4.99;
   const totalUnitPrice = typeof plan.reports === 'number' ? plan.reports * unitPrice : 0;
-  
+
   if (totalUnitPrice === 0) return null;
-  
+
   return totalUnitPrice - plan.price;
 };
 
