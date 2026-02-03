@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
@@ -25,16 +26,12 @@ interface CheckoutModalProps {
 export default function CheckoutModal({ isOpen, onClose, plan, price, address }: CheckoutModalProps) {
     const [clientSecret, setClientSecret] = useState<string | null>(null);
     const [email, setEmail] = useState('');
+    const [mounted, setMounted] = useState(false);
 
-    // Body scroll lock
     useEffect(() => {
-        if (isOpen) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = 'unset';
-        }
-        return () => { document.body.style.overflow = 'unset'; };
-    }, [isOpen]);
+        setMounted(true);
+        return () => setMounted(false);
+    }, []);
 
     // Fetch Payment Intent
     useEffect(() => {
@@ -57,9 +54,10 @@ export default function CheckoutModal({ isOpen, onClose, plan, price, address }:
         }
     }, [isOpen, plan, price]);
 
-    if (!isOpen) return null;
+    if (!isOpen || !mounted) return null;
 
-    return (
+    // Utilisation d'un portail React pour sortir du contexte DOM parent (évite les problèmes de z-index/overflow/stacking)
+    return createPortal(
         <div className="relative z-[9999]" aria-labelledby="modal-title" role="dialog" aria-modal="true">
             {/* Background overlay */}
             <div
@@ -71,7 +69,8 @@ export default function CheckoutModal({ isOpen, onClose, plan, price, address }:
                 <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
                     {/* Modal Panel */}
                     <div
-                        className="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg"
+                        className="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl sm:my-8 sm:w-full sm:max-w-lg w-full"
+                        onClick={(e) => e.stopPropagation()} // Stop click propagation to background
                     >
                         {/* Header */}
                         <div className="bg-gray-50 px-4 py-3 sm:px-6 flex justify-between items-center border-b border-gray-100">
@@ -119,7 +118,8 @@ export default function CheckoutModal({ isOpen, onClose, plan, price, address }:
                     </div>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }
 

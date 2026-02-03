@@ -110,6 +110,7 @@ function TeasingContent() {
     }, [addressQuery]);
 
     const openCheckout = (plan: PlanType, priceCents: number) => {
+        console.log("Opening checkout:", plan, priceCents);
         setSelectedPlan(plan);
         setSelectedPrice(priceCents);
         setCheckoutOpen(true);
@@ -349,7 +350,6 @@ function TeasingContent() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {/* Pack 1 - Unitaire */}
                         <div
-                            onClick={() => openCheckout('unite', 1999)}
                             className="group relative flex flex-col p-8 rounded-3xl bg-white border border-gray-100 hover:border-gray-200 hover:shadow-xl transition-all duration-300 cursor-pointer min-h-[400px]"
                         >
                             <div className="text-center mb-6">
@@ -375,14 +375,16 @@ function TeasingContent() {
                                 </div>
                             </div>
 
-                            <button className="w-full h-10 bg-gray-50 text-gray-900 rounded-xl text-xs font-bold uppercase tracking-wide group-hover:bg-gray-900 group-hover:text-white transition-colors">
+                            <button
+                                onClick={(e) => { e.stopPropagation(); openCheckout('unite', 1999); }}
+                                className="w-full h-10 bg-gray-900 text-white rounded-xl text-xs font-bold uppercase tracking-wide transition-colors relative z-20"
+                            >
                                 Choisir
                             </button>
                         </div>
 
                         {/* Pack 2 - Smart (Popular) */}
                         <div
-                            onClick={() => openCheckout('pack4', 2999)}
                             className="group relative flex flex-col p-8 rounded-3xl bg-white border-2 border-gray-900 shadow-2xl transition-all duration-300 cursor-pointer transform md:-translate-y-4 min-h-[400px] z-10"
                         >
                             <div className="absolute top-4 left-1/2 -translate-x-1/2 w-full text-center">
@@ -413,14 +415,16 @@ function TeasingContent() {
                                 </div>
                             </div>
 
-                            <button className="w-full bg-gray-900 text-white h-10 px-6 rounded-xl text-xs font-bold uppercase tracking-wide hover:bg-black transition-colors">
+                            <button
+                                onClick={(e) => { e.stopPropagation(); openCheckout('pack4', 2999); }}
+                                className="w-full bg-black text-white h-10 px-6 rounded-xl text-xs font-bold uppercase tracking-wide transition-colors relative z-20 shadow-lg"
+                            >
                                 Choisir
                             </button>
                         </div>
 
                         {/* Pack 3 - Investor */}
                         <div
-                            onClick={() => openCheckout('pack10', 3999)}
                             className="group relative flex flex-col p-8 rounded-3xl bg-white border border-gray-100 hover:border-gray-200 hover:shadow-xl transition-all duration-300 cursor-pointer min-h-[400px]"
                         >
                             <div className="text-center mb-6">
@@ -446,7 +450,10 @@ function TeasingContent() {
                                 </div>
                             </div>
 
-                            <button className="w-full h-10 bg-gray-50 text-gray-900 rounded-xl text-xs font-bold uppercase tracking-wide group-hover:bg-gray-900 group-hover:text-white transition-colors">
+                            <button
+                                onClick={(e) => { e.stopPropagation(); openCheckout('pack10', 3999); }}
+                                className="w-full h-10 bg-gray-900 text-white rounded-xl text-xs font-bold uppercase tracking-wide transition-colors relative z-20"
+                            >
                                 Choisir
                             </button>
                         </div>

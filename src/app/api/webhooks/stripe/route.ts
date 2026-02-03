@@ -154,10 +154,8 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
     if (isNewUser) {
       await sendWelcomeEmail({
         email,
-        name: email.split('@')[0],
         password,
-        loginUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/login`,
-        planName: plan.title // Ou autre libellé
+        plan: plan.name
       });
       console.log('📧 Email Bienvenue + Credentials envoyé');
     } else {

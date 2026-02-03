@@ -55,7 +55,7 @@ function ConfirmationContent() {
             <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.5, ease: "outBack" }}
+                transition={{ duration: 0.5, ease: "backOut" }}
                 className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mb-8"
             >
                 <CheckCircleIcon className="w-10 h-10 text-emerald-600" />
