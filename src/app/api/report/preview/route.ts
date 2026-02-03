@@ -104,7 +104,10 @@ export async function GET(request: Request) {
         const averagePriceM2 = countM2 > 0 ? Math.round(totalPriceM2 / countM2) : 0;
 
         // IMPORTANT: Last Sale must be the property itself, not the neighbor!
-        const lastSale = exactMatches.length > 0 ? exactMatches[0] : null;
+        // BUT: If no exact match, use most recent neighborhood sale as estimate
+        const lastSale = exactMatches.length > 0
+            ? exactMatches[0]
+            : (cleanTransactions.length > 0 ? cleanTransactions[0] : null);
 
         const risksRes = await fetch(`https://georisques.gouv.fr/api/v1/gaspar/risques?latlon=${lon},${lat}`);
         const risksData = await risksRes.ok ? await risksRes.json() : { data: [] };

@@ -21,17 +21,28 @@ import {
     AcademicCapIcon,
     WifiIcon,
     TruckIcon,
-    HandRaisedIcon
+    HandRaisedIcon,
+    PlusIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
-import Image from 'next/image';
 import LoadingScreen from '@/app/(components)/ui/LoadingScreen';
+import dynamic from 'next/dynamic';
+
+// Dynamic import to avoid SSR issues with Leaflet
+const PropertyMap = dynamic(() => import('@/app/(components)/ui/PropertyMap'), {
+    ssr: false,
+    loading: () => <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400 text-xs">Chargement...</div>
+});
 
 interface ReportPreviewData {
     address: {
         label: string;
         city: string;
         zipCode: string;
+        coordinates?: {
+            lat: number;
+            lon: number;
+        };
     };
     streetViewUrl: string | null;
     risks: {
@@ -121,16 +132,14 @@ function TeasingContent() {
                     animate={{ opacity: 1, y: 0 }}
                     className="relative w-full aspect-video md:aspect-[21/9] rounded-2xl overflow-hidden shadow-xl mb-6 group border border-gray-200"
                 >
-                    {data.streetViewUrl ? (
-                        <Image
-                            src={data.streetViewUrl}
-                            alt="Property View"
-                            layout="fill"
-                            objectFit="cover"
-                            className="scale-105 group-hover:scale-110 transition-transform duration-[3s] ease-out"
+                    {data.address.coordinates ? (
+                        <PropertyMap
+                            lat={data.address.coordinates.lat}
+                            lon={data.address.coordinates.lon}
+                            address={data.address.label}
                         />
                     ) : (
-                        <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400 text-[10px] tracking-widest uppercase">Image Satellite</div>
+                        <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400 text-xs">Carte non disponible</div>
                     )}
 
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
@@ -191,7 +200,7 @@ function TeasingContent() {
                 </div>
 
                 {/* 3. Locked Content Preview - Expanded */}
-                <div className="space-y-6 mb-16">
+                <div className="space-y-6 mb-12">
                     <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1 ml-1">Ce que contient le rapport complet</h3>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -282,6 +291,19 @@ function TeasingContent() {
                             </div>
                         </div>
 
+                    </div>
+                </div>
+
+                {/* 100+ Data Points Label */}
+                <div className="mb-20 flex justify-center">
+                    <div className="inline-flex flex-col items-center gap-1">
+                        <div className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-full text-[10px] uppercase font-bold tracking-widest shadow-lg">
+                            <PlusIcon className="w-3 h-3 text-emerald-400" />
+                            <span>Plus de 100 données analysées</span>
+                        </div>
+                        <p className="text-[10px] text-gray-400 font-medium italic mt-2">
+                            Nuisances sonores, Antennes relais, Permis de construire...
+                        </p>
                     </div>
                 </div>
 
