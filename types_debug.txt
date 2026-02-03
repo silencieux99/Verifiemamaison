@@ -1,0 +1,6 @@
+Fetching: https://app.dvf.etalab.gouv.fr/api/mutations3/93005/000AJ
+First Mutation Types:
+code_type_local: None (Type: string)
+valeur_fonciere: 262900.0 (Type: string)
+surface_reelle_bati: nan (Type: string)
+nature_mutation: 'Vente en l'état futur d'achèvement'

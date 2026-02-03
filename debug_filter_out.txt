@@ -1,0 +1,5 @@
+Debugging Filters: 36 Auguste Blanqui
+Total Mutations in Section: 122
+[CANDIDATE] Num: 36.0, Suffix: None, Street: RUE AUGUSTE BLANQUI, Type: 1, Nature: Vente
+[CANDIDATE] Num: 36.0, Suffix: B, Street: RUE AUGUSTE BLANQUI, Type: 1, Nature: Vente
+Found 2 candidates with number 36.

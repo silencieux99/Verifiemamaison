@@ -1,0 +1,9 @@
+Testing DVF URLs...
+Testing: https://api.dvf.etalab.gouv.fr/v2/mutations?lat=48.85&lon=2.35&dist=100
+❌ ERROR: https://api.dvf.etalab.gouv.fr/v2/mutations?lat=48.85&lon=2.35&dist=100 - fetch failed
+Testing: https://app.dvf.etalab.gouv.fr/api/mutations?lat=48.85&lon=2.35&dist=100
+❌ FAILED (404): https://app.dvf.etalab.gouv.fr/api/mutations?lat=48.85&lon=2.35&dist=100
+Testing: https://apidvf.etalab.gouv.fr/api/mutations?lat=48.85&lon=2.35&dist=100
+❌ ERROR: https://apidvf.etalab.gouv.fr/api/mutations?lat=48.85&lon=2.35&dist=100 - fetch failed
+Testing: http://api.cquest.org/dvf?lat=48.85&lon=2.35&dist=100
+❌ FAILED (502): http://api.cquest.org/dvf?lat=48.85&lon=2.35&dist=100

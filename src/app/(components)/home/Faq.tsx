@@ -1,83 +1,67 @@
 'use client';
 
-import { useState } from 'react';
 import Container from '../Container';
+import { Disclosure, Transition } from '@headlessui/react';
 import { ChevronDownIcon } from '@heroicons/react/24/outline';
 
-/**
- * Section FAQ pour VerifieMaMaison
- */
+const faqs = [
+  {
+    question: "Quelle est la précision de l'IA ?",
+    answer: "Notre IA croise les données de plus de 50 sources officielles (Notaires, Cadastre, Insee, Géorisques...). Elle atteint une précision de 98% sur les estimations de risques et de prix, bien supérieure aux estimations humaines classiques."
+  },
+  {
+    question: "Le rapport est-il valable juridiquement ?",
+    answer: "Le rapport est informatif et ne remplace pas les diagnostics obligatoires (DPE, Amiante...). Cependant, il va beaucoup plus loin en révélant des informations que les diagnostics ne couvrent pas : nuisances sonores, projets d'urbanisme à venir, évolution du quartier, criminalité..."
+  },
+  {
+    question: "Combien de temps faut-il pour obtenir le rapport ?",
+    answer: "L'analyse est instantanée. Dès que vous confirmez l'adresse, nos serveurs génèrent votre rapport complet en moins de 45 secondes."
+  },
+  {
+    question: "Puis-je analyser un bien partout en France ?",
+    answer: "Oui, nous couvrons 100% du territoire français, y compris les zones rurales et les DOM-TOM."
+  }
+];
+
 export default function Faq() {
-  const [openIndex, setOpenIndex] = useState<number | null>(0);
-
-  const faqs = [
-    {
-      question: "Que contient précisément le rapport VerifieMaMaison ?",
-      answer: "Le rapport comprend une analyse complète de la structure, de la toiture, de l'isolation, des installations électriques et plomberie, un score global de l'état du bien, des alertes sur les problèmes majeurs détectés, et des recommandations personnalisées. Tout cela basé sur les informations que vous fournissez."
-    },
-    {
-      question: "En combien de temps vais-je recevoir le rapport ?",
-      answer: "Le rapport est généré automatiquement en quelques minutes après la soumission du formulaire et le paiement. Vous recevrez à la fois un PDF téléchargeable et un lien vers la version interactive en ligne."
-    },
-    {
-      question: "Mes informations sont-elles confidentielles ?",
-      answer: "Absolument. Toutes vos données sont sécurisées et cryptées. Nous ne partageons aucune information avec des tiers. Vos rapports sont uniquement accessibles depuis votre compte utilisateur."
-    },
-    {
-      question: "Que faire si le rapport signale un problème sérieux ?",
-      answer: "Si des anomalies majeures sont détectées, nous vous recommandons de faire appel à un expert professionnel pour une inspection approfondie. Le rapport peut vous aider à négocier le prix ou à demander des travaux avant l'achat."
-    },
-    {
-      question: "Quelle est la source des données utilisées ?",
-      answer: "Le rapport est principalement basé sur les informations que vous fournissez dans le formulaire. À l'avenir, nous pourrions intégrer des données publiques (risques naturels, diagnostics obligatoires, etc.) pour enrichir l'analyse."
-    },
-    {
-      question: "Puis-je utiliser un rapport pour plusieurs biens ?",
-      answer: "Non, chaque rapport correspond à un bien spécifique. Si vous souhaitez analyser plusieurs biens, nous vous recommandons d'acheter un pack (3 ou 10 rapports) qui vous permet d'économiser sur le prix unitaire."
-    }
-  ];
-
   return (
-    <section id="faq" className="py-12 sm:py-16 md:py-20 bg-white">
-      <Container>
-        <div className="text-center mb-8 sm:mb-12 md:mb-16">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4">
-            <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-              Questions fréquentes
-            </span>
+    <section className="py-24 bg-brand-950">
+      <Container className="max-w-3xl">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
+            Questions Fréquentes
           </h2>
-          <p className="text-gray-600 text-sm sm:text-base md:text-lg max-w-2xl mx-auto px-4">
-            Tout ce que vous devez savoir sur VerifieMaMaison
-          </p>
         </div>
 
-        <div className="max-w-3xl mx-auto space-y-3 sm:space-y-4 px-4">
+        <div className="space-y-4">
           {faqs.map((faq, index) => (
-            <div
-              key={index}
-              className="bg-white border border-purple-200 rounded-lg sm:rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow"
-            >
-              <button
-                onClick={() => setOpenIndex(openIndex === index ? null : index)}
-                className="w-full px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between text-left hover:bg-purple-50 transition-colors"
-              >
-                <span className="text-gray-900 font-semibold pr-4 text-sm sm:text-base">{faq.question}</span>
-                <ChevronDownIcon
-                  className={`h-5 w-5 text-purple-600 flex-shrink-0 transition-transform ${
-                    openIndex === index ? 'transform rotate-180' : ''
-                  }`}
-                />
-              </button>
-              {openIndex === index && (
-                <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-purple-200 bg-gray-50">
-                  <p className="text-gray-700 text-sm sm:text-base leading-relaxed">{faq.answer}</p>
-                </div>
+            <Disclosure key={index} as="div" className="border border-white/10 rounded-xl bg-white/5 backdrop-blur-sm overflow-hidden">
+              {({ open }) => (
+                <>
+                  <Disclosure.Button className="flex w-full justify-between items-center px-6 py-5 text-left text-white hover:bg-white/5 transition-colors">
+                    <span className="font-medium text-lg">{faq.question}</span>
+                    <ChevronDownIcon
+                      className={`${open ? 'rotate-180 transform' : ''} h-5 w-5 text-brand-400 transition-transform duration-200`}
+                    />
+                  </Disclosure.Button>
+                  <Transition
+                    enter="transition duration-100 ease-out"
+                    enterFrom="transform scale-95 opacity-0"
+                    enterTo="transform scale-100 opacity-100"
+                    leave="transition duration-75 ease-out"
+                    leaveFrom="transform scale-100 opacity-100"
+                    leaveTo="transform scale-95 opacity-0"
+                  >
+                    <Disclosure.Panel className="px-6 pb-6 pt-2 text-gray-400 leading-relaxed">
+                      {faq.answer}
+                    </Disclosure.Panel>
+                  </Transition>
+                </>
               )}
-            </div>
+            </Disclosure>
           ))}
         </div>
       </Container>
     </section>
   );
 }
-

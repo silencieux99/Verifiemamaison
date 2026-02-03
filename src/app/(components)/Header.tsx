@@ -2,17 +2,27 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Container from './Container';
 import { CreditsDisplay } from './CreditsDisplay';
 import { useAuth } from '@/app/(context)/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const { firebaseUser, signOut } = useAuth();
   const router = useRouter();
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 10);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -24,89 +34,86 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-purple-200 bg-white/95 backdrop-blur-lg shadow-md shadow-purple-500/5">
-      <Container className="flex h-24 sm:h-28 md:h-32 items-center justify-between">
-        <Link href="/" className="flex items-center gap-2" aria-label="VerifieMaMaison.fr - Accueil">
-          <div className="h-16 sm:h-20 md:h-24 flex items-center">
+    <header
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled
+          ? 'bg-white/90 backdrop-blur-xl border-b border-gray-100 shadow-sm'
+          : 'bg-transparent'
+        }`}
+    >
+      <Container className="flex h-20 items-center justify-between">
+        <Link href="/" className="flex items-center gap-2 relative group" aria-label="VerifieMaMaison.fr - Accueil">
+          <div className="relative h-10 w-auto">
+            {/* Logo sans inversion pour le thème clair */}
             <Image
               src="/logos/logo.png"
               alt="VerifieMaMaison"
-              width={200}
-              height={80}
+              width={160}
+              height={50}
               className="h-full w-auto object-contain"
               priority
             />
           </div>
         </Link>
-        
+
         {/* Navigation desktop */}
-        <nav className="hidden lg:flex items-center space-x-6" role="navigation">
+        <nav className="hidden lg:flex items-center space-x-1" role="navigation">
           <CreditsDisplay />
-          
-          <Link 
-            href="/tarifs" 
-            className="text-gray-700 hover:text-purple-600 hover:bg-purple-50 px-3 py-2 rounded-lg transition-all duration-200"
-          >
-            Tarifs
-          </Link>
-          <Link 
-            href="/checkout" 
-            className="text-gray-700 hover:text-purple-600 hover:bg-purple-50 px-3 py-2 rounded-lg transition-all duration-200 font-medium"
-          >
-            Acheter des packs
-          </Link>
-          <Link 
-            href="/legal" 
-            className="text-gray-700 hover:text-purple-600 hover:bg-purple-50 px-3 py-2 rounded-lg transition-all duration-200"
-          >
-            Mentions légales
-          </Link>
-          
-          {firebaseUser ? (
-            <>
-              <Link 
-                href="/account" 
-                className="text-gray-700 hover:text-purple-600 hover:bg-purple-50 px-3 py-2 rounded-lg transition-all duration-200"
+
+          <div className="flex items-center px-4 space-x-8">
+            <Link
+              href="/tarifs"
+              className="text-sm font-medium text-gray-600 hover:text-black transition-colors"
+            >
+              Tarifs
+            </Link>
+            <Link
+              href="/checkout"
+              className="text-sm font-medium text-gray-600 hover:text-black transition-colors"
+            >
+              Crédits
+            </Link>
+            {firebaseUser && (
+              <Link
+                href="/account"
+                className="text-sm font-medium text-gray-600 hover:text-black transition-colors"
               >
                 Mon compte
               </Link>
+            )}
+          </div>
+
+          <div className="flex items-center space-x-3 ml-4 pl-4 border-l border-gray-200">
+            {firebaseUser ? (
               <button
                 onClick={handleLogout}
-                className="text-gray-700 hover:text-purple-600 hover:bg-purple-50 px-3 py-2 rounded-lg transition-all duration-200"
+                className="text-sm font-medium text-gray-600 hover:text-black transition-colors"
               >
                 Déconnexion
               </button>
-            </>
-          ) : (
-            <>
-              <Link 
-                href="/login" 
-                className="text-gray-700 hover:text-purple-600 hover:bg-purple-50 px-3 py-2 rounded-lg transition-all duration-200"
-              >
-                Connexion
-              </Link>
-              <Link 
-                href="/create-account" 
-                className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-lg hover:shadow-lg hover:shadow-purple-500/30 transition-all duration-200 font-medium"
-              >
-                S'inscrire
-              </Link>
-            </>
-          )}
-          
-          <Link 
-            href="mailto:contact@verifiemamaison.fr" 
-            className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-lg hover:shadow-lg hover:shadow-purple-500/30 transition-all duration-200 font-medium"
-          >
-            Contact
-          </Link>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="text-sm font-medium text-gray-600 hover:text-black px-4 py-2 transition-colors"
+                >
+                  Connexion
+                </Link>
+                <Link
+                  href="/create-account"
+                  className="group relative inline-flex items-center justify-center px-6 py-2.5 text-sm font-semibold text-white transition-all duration-200 bg-[#0A0A0A] rounded-full hover:bg-gray-800 hover:scale-105 focus:outline-none"
+                >
+                  <span className="relative">S'inscrire</span>
+                </Link>
+              </>
+            )}
+          </div>
         </nav>
 
         {/* Menu mobile */}
         <div className="lg:hidden">
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="text-gray-700 hover:text-purple-600 p-2"
+            className="text-gray-900 p-2"
             aria-label="Menu"
           >
             {mobileMenuOpen ? (
@@ -119,48 +126,48 @@ export function Header() {
       </Container>
 
       {/* Menu mobile déroulant */}
-      {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-purple-200 bg-white/98 backdrop-blur-lg">
-          <Container className="py-4 space-y-3">
-            <CreditsDisplay />
-            <Link href="/tarifs" className="block text-gray-700 hover:text-purple-600 py-2">
-              Tarifs
-            </Link>
-            <Link href="/checkout" className="block text-gray-700 hover:text-purple-600 py-2">
-              Acheter des packs
-            </Link>
-            <Link href="/legal" className="block text-gray-700 hover:text-purple-600 py-2">
-              Mentions légales
-            </Link>
-            {firebaseUser ? (
-              <>
-                <Link href="/account" className="block text-gray-700 hover:text-purple-600 py-2">
-                  Mon compte
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="block text-gray-700 hover:text-purple-600 py-2 w-full text-left"
-                >
-                  Déconnexion
-                </button>
-              </>
-            ) : (
-              <>
-                <Link href="/login" className="block text-gray-700 hover:text-purple-600 py-2">
-                  Connexion
-                </Link>
-                <Link href="/create-account" className="block bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-lg text-center">
-                  S'inscrire
-                </Link>
-              </>
-            )}
-            <Link href="mailto:contact@verifiemamaison.fr" className="block bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-lg text-center">
-              Contact
-            </Link>
-          </Container>
-        </div>
-      )}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="lg:hidden bg-white/95 backdrop-blur-xl border-t border-gray-100 overflow-hidden shadow-xl"
+          >
+            <Container className="py-6 space-y-4">
+              <CreditsDisplay />
+              <Link href="/tarifs" className="block text-base font-medium text-gray-600 hover:text-black py-2">
+                Tarifs
+              </Link>
+              <Link href="/checkout" className="block text-base font-medium text-gray-600 hover:text-black py-2">
+                Acheter des packs
+              </Link>
+              {firebaseUser ? (
+                <>
+                  <Link href="/account" className="block text-base font-medium text-gray-600 hover:text-black py-2">
+                    Mon compte
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="block text-base font-medium text-gray-600 hover:text-black py-2 w-full text-left"
+                  >
+                    Déconnexion
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link href="/login" className="block text-base font-medium text-gray-600 hover:text-black py-2">
+                    Connexion
+                  </Link>
+                  <Link href="/create-account" className="block w-full text-center bg-black hover:bg-gray-800 text-white font-semibold px-4 py-3 rounded-xl transition-all">
+                    Commencer l'analyse
+                  </Link>
+                </>
+              )}
+            </Container>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   );
 }
-

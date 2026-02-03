@@ -1,0 +1,16 @@
+Testing Chain for [No Mock] - Debug Mode
+[IGN] Request: https://apicarto.ign.fr/api/cadastre/division?geom=%7B%22type%22%3A%22Point%22%2C%22coordinates%22%3A%5B2.501362%2C48.936905%5D%7D
+[IGN] Status: 200
+[IGN] Raw Body: {"type":"FeatureCollection","features":[{"type":"Feature","id":"divcad.591558","geometry":{"type":"MultiPolygon","coordinates":[[[[2.50326151,48.93727158],[2.50321763,48.93724901],[2.50285116,48.93704...
+[IGN] Props: {
+  feuille: 1,
+  section: 'AJ',
+  code_dep: '93',
+  nom_com: 'Aulnay-sous-Bois',
+  code_com: '005',
+  com_abs: '000',
+  echelle: '500',
+  edition: 6,
+  code_arr: '000',
+  code_insee: '93005'
+}
