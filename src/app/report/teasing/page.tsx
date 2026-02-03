@@ -18,7 +18,10 @@ import {
     CurrencyEuroIcon,
     ClockIcon,
     ShieldExclamationIcon,
-    ChevronDownIcon
+    AcademicCapIcon,
+    WifiIcon,
+    TruckIcon,
+    HandRaisedIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import Image from 'next/image';
@@ -104,7 +107,7 @@ function TeasingContent() {
 
     return (
         <div className="min-h-screen bg-[#F5F5F7] text-gray-900 font-sans pb-32 md:pb-0">
-            {/* Header Compact - Slight border reinforcement */}
+            {/* Header Compact */}
             <nav className="fixed top-0 w-full z-40 px-4 py-3 flex justify-between items-center bg-white/90 backdrop-blur-md border-b border-gray-200 shadow-sm">
                 <div className="text-[10px] tracking-[0.2em] uppercase font-bold text-gray-900">VerifieMaMaison<span className="text-emerald-500">.</span></div>
                 <div className="text-[9px] text-gray-400 font-mono hidden md:block">PREVIEW MODE</div>
@@ -112,7 +115,7 @@ function TeasingContent() {
 
             <main className="max-w-5xl mx-auto pt-16 md:pt-24 px-4 md:px-8">
 
-                {/* 1. Hero Card - More Compact on Mobile */}
+                {/* 1. Hero Card */}
                 <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -144,7 +147,7 @@ function TeasingContent() {
                     </div>
                 </motion.div>
 
-                {/* 2. Denser Grid Layout - Cards with stronger contrast borders */}
+                {/* 2. Denser Grid Layout */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8">
 
                     {/* KEY METRIC: Last Sale */}
@@ -187,66 +190,102 @@ function TeasingContent() {
                     </div>
                 </div>
 
-                {/* 3. Locked Content Preview - Darker Headers */}
-                <div className="space-y-3 mb-16">
+                {/* 3. Locked Content Preview - Expanded */}
+                <div className="space-y-6 mb-16">
                     <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1 ml-1">Ce que contient le rapport complet</h3>
 
-                    {/* Locked Row: History */}
-                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden relative">
-                        <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-                            <div className="flex items-center gap-2">
-                                <DocumentMagnifyingGlassIcon className="w-4 h-4 text-gray-600" />
-                                <span className="text-xs font-semibold text-gray-800">Historique des Ventes (2014-2024)</span>
-                            </div>
-                            <LockClosedIcon className="w-3 h-3 text-gray-400" />
-                        </div>
-                        <div className="p-4 space-y-3 opacity-50 blur-[2px] select-none pointer-events-none">
-                            <div className="flex justify-between text-xs"><span className="w-20 h-3 bg-gray-200 rounded"></span> <span className="w-12 h-3 bg-gray-200 rounded"></span></div>
-                            <div className="flex justify-between text-xs"><span className="w-24 h-3 bg-gray-200 rounded"></span> <span className="w-16 h-3 bg-gray-200 rounded"></span></div>
-                        </div>
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="px-3 py-1 bg-white/90 backdrop-blur border border-gray-200 rounded-full text-[10px] font-medium shadow-sm text-gray-600">
-                                3 transactions masquées
-                            </div>
-                        </div>
-                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 
-                    {/* Locked Row: DPE & Energy */}
-                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden relative">
-                        <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-                            <div className="flex items-center gap-2">
-                                <BoltIcon className="w-4 h-4 text-emerald-600" />
-                                <span className="text-xs font-semibold text-gray-800">Performance Énergétique (DPE)</span>
+                        {/* Locked Row: History - Full Width */}
+                        <div className="md:col-span-2 bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden relative">
+                            <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                                <div className="flex items-center gap-2">
+                                    <DocumentMagnifyingGlassIcon className="w-4 h-4 text-gray-600" />
+                                    <span className="text-xs font-semibold text-gray-800">Historique des Ventes (2014-2024)</span>
+                                </div>
+                                <LockClosedIcon className="w-3 h-3 text-gray-400" />
                             </div>
-                            <LockClosedIcon className="w-3 h-3 text-gray-400" />
+                            <div className="p-4 space-y-3 opacity-50 blur-[2px] select-none pointer-events-none">
+                                <div className="flex justify-between text-xs"><span className="w-20 h-3 bg-gray-200 rounded"></span> <span className="w-12 h-3 bg-gray-200 rounded"></span></div>
+                                <div className="flex justify-between text-xs"><span className="w-24 h-3 bg-gray-200 rounded"></span> <span className="w-16 h-3 bg-gray-200 rounded"></span></div>
+                            </div>
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="px-3 py-1 bg-white/90 backdrop-blur border border-gray-200 rounded-full text-[10px] font-medium shadow-sm text-gray-600">
+                                    3 transactions masquées
+                                </div>
+                            </div>
                         </div>
-                        <div className="p-4 flex gap-2 overflow-hidden opacity-40 blur-[3px]">
-                            {['A', 'B', 'C', 'D', 'E', 'F', 'G'].map(l => (
-                                <div key={l} className="flex-1 h-8 bg-gray-100 rounded flex items-center justify-center text-[10px] font-bold text-gray-300">{l}</div>
-                            ))}
-                        </div>
-                    </div>
 
-                    {/* Locked Row: Cadastre */}
-                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden relative pointer-events-none">
-                        <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-                            <div className="flex items-center gap-2">
-                                <MapPinIcon className="w-4 h-4 text-blue-600" />
-                                <span className="text-xs font-semibold text-gray-800">Plan Cadastral & Bornage</span>
+                        {/* Locked Row: Criminality */}
+                        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden relative">
+                            <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                                <div className="flex items-center gap-2">
+                                    <HandRaisedIcon className="w-4 h-4 text-red-500" />
+                                    <span className="text-xs font-semibold text-gray-800">Délinquance & Criminologie</span>
+                                </div>
+                                <LockClosedIcon className="w-3 h-3 text-gray-400" />
                             </div>
-                            <LockClosedIcon className="w-3 h-3 text-gray-400" />
-                        </div>
-                        <div className="h-24 bg-gray-100 w-full relative overflow-hidden">
-                            {/* Mock Map Pattern */}
-                            <div className="absolute inset-0 bg-[linear-gradient(45deg,#00000005_1px,transparent_1px)] bg-[size:10px_10px]"></div>
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-3 py-1 bg-white shadow-sm rounded border border-gray-200 text-[9px] text-gray-500">
-                                Section AB-124
+                            <div className="h-16 flex items-center justify-center p-4">
+                                <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden blur-[1px]">
+                                    <div className="w-[40%] h-full bg-red-300"></div>
+                                </div>
+                            </div>
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <span className="text-[9px] font-semibold text-gray-400 bg-white/80 px-2 py-0.5 rounded">Score masqué</span>
                             </div>
                         </div>
+
+                        {/* Locked Row: Education */}
+                        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden relative">
+                            <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                                <div className="flex items-center gap-2">
+                                    <AcademicCapIcon className="w-4 h-4 text-indigo-500" />
+                                    <span className="text-xs font-semibold text-gray-800">Établissements Scolaires</span>
+                                </div>
+                                <LockClosedIcon className="w-3 h-3 text-gray-400" />
+                            </div>
+                            <div className="p-4 space-y-2 opacity-50 blur-[2px]">
+                                <div className="flex justify-between"><div className="w-32 h-2 bg-gray-200 rounded"></div> <div className="w-8 h-2 bg-indigo-100 rounded"></div></div>
+                                <div className="flex justify-between"><div className="w-24 h-2 bg-gray-200 rounded"></div> <div className="w-8 h-2 bg-indigo-100 rounded"></div></div>
+                            </div>
+                        </div>
+
+                        {/* Locked Row: Internet */}
+                        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden relative">
+                            <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                                <div className="flex items-center gap-2">
+                                    <WifiIcon className="w-4 h-4 text-cyan-500" />
+                                    <span className="text-xs font-semibold text-gray-800">Couverture Internet & Fibre</span>
+                                </div>
+                                <LockClosedIcon className="w-3 h-3 text-gray-400" />
+                            </div>
+                            <div className="p-4 flex gap-4 justify-center opacity-40 blur-[1px]">
+                                <div className="w-8 h-8 rounded-full bg-cyan-100"></div>
+                                <div className="w-8 h-8 rounded-full bg-gray-100"></div>
+                                <div className="w-8 h-8 rounded-full bg-gray-100"></div>
+                            </div>
+                        </div>
+
+                        {/* Locked Row: DPE */}
+                        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden relative">
+                            <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                                <div className="flex items-center gap-2">
+                                    <BoltIcon className="w-4 h-4 text-emerald-600" />
+                                    <span className="text-xs font-semibold text-gray-800">DPE & Isolation</span>
+                                </div>
+                                <LockClosedIcon className="w-3 h-3 text-gray-400" />
+                            </div>
+                            <div className="p-4 flex gap-1 overflow-hidden opacity-40 blur-[3px]">
+                                {['A', 'B', 'C', 'D', 'E', 'F', 'G'].map(l => (
+                                    <div key={l} className="flex-1 h-6 bg-gray-100 rounded flex items-center justify-center text-[8px] font-bold text-gray-300">{l}</div>
+                                ))}
+                            </div>
+                        </div>
+
                     </div>
                 </div>
 
-                {/* 4. Value Proposition - Distinct Background? No, keep it flowing but with darker icons */}
+                {/* 4. Value Proposition */}
                 <div className="mb-16">
                     <h3 className="text-center text-xs font-bold text-gray-500 uppercase tracking-widest mb-8">Pourquoi Vérifier ?</h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -266,7 +305,7 @@ function TeasingContent() {
                     </div>
                 </div>
 
-                {/* 5. Social Proof - More Distinct Card */}
+                {/* 5. Social Proof */}
                 <div className="mb-16 bg-white -mx-4 md:mx-0 p-6 md:p-8 md:rounded-3xl border-y md:border border-gray-200 shadow-sm">
                     <h3 className="text-center text-xs font-bold text-gray-500 uppercase tracking-widest mb-8">Ils ont économisé</h3>
                     <div className="space-y-6 md:space-y-0 md:grid md:grid-cols-3 md:gap-6">
