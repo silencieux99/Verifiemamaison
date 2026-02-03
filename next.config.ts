@@ -16,10 +16,6 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "10mb",
     },
   },
-  // ESLint désactivé - utilisation de TypeScript uniquement
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   typescript: {
     // Vérification TypeScript stricte avant le build
     // La vérification est faite dans le script prebuild via "npm run type-check"
