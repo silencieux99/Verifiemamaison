@@ -14,6 +14,7 @@ import { sendWelcomeEmail, sendOrderConfirmationEmail } from '@/lib/email-servic
  * 4. Envoie email (Bienvenue+Credentials ou Confirmation)
  */
 export async function POST(request: NextRequest) {
+  console.log('🚀 [Stripe-Webhook] Request received at endpoint');
   try {
     const body = await request.text();
     const signature = request.headers.get('stripe-signature');
@@ -34,6 +35,7 @@ export async function POST(request: NextRequest) {
 
     if (event.type === 'payment_intent.succeeded') {
       const paymentIntent = event.data.object as Stripe.PaymentIntent;
+      console.log(`[Stripe-Webhook] Processing payment_intent.succeeded: ${paymentIntent.id}`);
       await handlePaymentSuccess(paymentIntent);
     }
     // On gère aussi checkout.session.completed pour compatibilité ancienne
@@ -57,6 +59,7 @@ export async function POST(request: NextRequest) {
 }
 
 async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
+  console.log(`[Stripe-Webhook] handlePaymentSuccess started for ${paymentIntent.id}`);
   const { sku, email: metaEmail } = paymentIntent.metadata;
   // L'email peut être dans metadata (notre modal) ou receipt_email (Stripe)
   const email = metaEmail || paymentIntent.receipt_email;
@@ -150,7 +153,28 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
       isNew: isNewUser
     });
 
-    // 5. Email Confirmation / Bienvenue
+    // 5. Générer un token d'auto-login et le stocker temporairement
+    try {
+      console.log(`[Stripe-Webhook] Generating auto-login token for user ${userId}`);
+      const customToken = await adminAuth!.createCustomToken(userId);
+
+      // Stocker le token temporairement dans Firestore (expire après 1h)
+      console.log(`[Stripe-Webhook] Saving token to authTokens/${paymentIntent.id}`);
+      await adminDb!.collection('authTokens').doc(paymentIntent.id).set({
+        userId,
+        customToken,
+        email,
+        password: isNewUser ? password : null,
+        createdAt: Date.now(),
+        expiresAt: Date.now() + 3600000, // 1 heure
+        isNewUser
+      });
+      console.log('🔑 [Stripe-Webhook] Token d\'auto-login créé avec succès');
+    } catch (tokenError) {
+      console.error('[Stripe-Webhook] Error during token creation/storage:', tokenError);
+    }
+
+    // 6. Email Confirmation / Bienvenue
     if (isNewUser) {
       await sendWelcomeEmail({
         email,

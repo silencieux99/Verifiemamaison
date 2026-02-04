@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
     HomeModernIcon,
@@ -22,7 +22,7 @@ import {
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import LoadingScreen from '@/app/(components)/ui/LoadingScreen';
 import dynamic from 'next/dynamic';
-import CheckoutModal from '@/app/(components)/home/CheckoutModal';
+import InlineCheckout from '@/app/(components)/home/InlineCheckout'; // NEW COMPONENT
 import { PlanType } from '@/lib/types';
 
 const PropertyMap = dynamic(() => import('@/app/(components)/ui/PropertyMap'), {
@@ -82,10 +82,10 @@ function TeasingContent() {
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState<ReportPreviewData | null>(null);
 
-    // Checkout Modal State
-    const [checkoutOpen, setCheckoutOpen] = useState(false);
+    // Checkout State
     const [selectedPlan, setSelectedPlan] = useState<PlanType | null>(null);
     const [selectedPrice, setSelectedPrice] = useState(0);
+    const checkoutRef = useRef<HTMLDivElement | null>(null); // Ref for scrolling
 
     useEffect(() => {
         if (!addressQuery) return;
@@ -110,12 +110,14 @@ function TeasingContent() {
     }, [addressQuery]);
 
     const openCheckout = (plan: PlanType, priceCents: number) => {
-        // DEBUG: Alert pour confirmer le clic sur mobile
-        // alert(`Debug: Ouverture du pack ${plan}`); 
-        console.log("Opening checkout:", plan, priceCents);
+        console.log("Selecting plan:", plan);
         setSelectedPlan(plan);
         setSelectedPrice(priceCents);
-        setCheckoutOpen(true);
+
+        // Scroll to checkout section smoothly
+        setTimeout(() => {
+            checkoutRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
     };
 
     if (loading) {
@@ -479,24 +481,26 @@ function TeasingContent() {
                     </div>
                 </div>
 
+                {/* INLINE CHECKOUT SECTION MOVED OUTSIDE MAIN */}
             </main>
 
-            <CheckoutModal
-                isOpen={checkoutOpen}
-                onClose={() => setCheckoutOpen(false)}
-                plan={selectedPlan}
-                price={selectedPrice}
-                address={data.address.label}
-            />
-
+            {/* INLINE CHECKOUT SECTION - Full Width Container */}
+            <div className="w-full bg-[#FAFAFA] pb-32">
+                 <InlineCheckout
+                    targetRef={checkoutRef}
+                    plan={selectedPlan}
+                    price={selectedPrice}
+                    address={data.address.label}
+                />
+            </div>
         </div>
-    );
+            );
 }
 
-export default function TeasingPage() {
+            export default function TeasingPage() {
     return (
-        <Suspense fallback={<div className="min-h-screen bg-[#FAFAFA]" />}>
-            <TeasingContent />
-        </Suspense>
-    );
+            <Suspense fallback={<div className="min-h-screen bg-[#FAFAFA]" />}>
+                <TeasingContent />
+            </Suspense>
+            );
 }
