@@ -35,7 +35,8 @@ export async function GET(req: NextRequest) {
         cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/report/teasing?address=${encodeURIComponent(address || '')}`,
         metadata: {
           type: 'one_shot_report',
-          address: address || 'N/A'
+          address: address || 'N/A',
+          sku: 'unite'
         }
       });
 

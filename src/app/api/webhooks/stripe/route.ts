@@ -15,11 +15,17 @@ import { sendWelcomeEmail, sendOrderConfirmationEmail } from '@/lib/email-servic
  */
 export async function POST(request: NextRequest) {
   console.log('🚀 [Stripe-Webhook] Request received at endpoint');
+
+  if (!STRIPE_WEBHOOK_SECRET) {
+    console.error('❌ [Stripe-Webhook] STRIPE_WEBHOOK_SECRET is missing in environment variables');
+  }
+
   try {
     const body = await request.text();
     const signature = request.headers.get('stripe-signature');
 
     if (!signature || !STRIPE_WEBHOOK_SECRET) {
+      console.error('⚠️ [Stripe-Webhook] Missing signature or webhook secret');
       return NextResponse.json({ error: 'Config error' }, { status: 400 });
     }
 
@@ -27,46 +33,71 @@ export async function POST(request: NextRequest) {
     try {
       event = stripe!.webhooks.constructEvent(body, signature, STRIPE_WEBHOOK_SECRET);
     } catch (err) {
-      console.error('Webhook signature failed:', err);
+      console.error('❌ [Stripe-Webhook] Webhook signature verification failed:', err);
       return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
     }
 
-    console.log(`🔔 Webhook reçu: ${event.type}`);
+    console.log(`🔔 [Stripe-Webhook] Event received: ${event.type} [${event.id}]`);
 
     if (event.type === 'payment_intent.succeeded') {
       const paymentIntent = event.data.object as Stripe.PaymentIntent;
       console.log(`[Stripe-Webhook] Processing payment_intent.succeeded: ${paymentIntent.id}`);
-      await handlePaymentSuccess(paymentIntent);
+
+      const { sku, email: metaEmail } = paymentIntent.metadata;
+      const email = metaEmail || paymentIntent.receipt_email;
+
+      await handlePaymentSuccess({
+        id: paymentIntent.id,
+        email: email || '',
+        sku: sku as string,
+        amount: paymentIntent.amount,
+        customerId: typeof paymentIntent.customer === 'string' ? paymentIntent.customer : null,
+        metadata: paymentIntent.metadata
+      });
     }
-    // On gère aussi checkout.session.completed pour compatibilité ancienne
     else if (event.type === 'checkout.session.completed') {
       const session = event.data.object as Stripe.Checkout.Session;
-      // On ne traite que si le paiement est confirmé (mode payment)
+      console.log(`[Stripe-Webhook] Processing checkout.session.completed: ${session.id}`);
+
       if (session.payment_status === 'paid') {
-        // Pour éviter doublon si payment_intent a déjà traité
-        // On peut vérifier via metadata ou idempotency, mais ici on refait pour être sûr
-        // Idéalement on se base sur le payment_intent ID
-        // Ici on va simplifier : on traite via payment_intent.succeeded en priorité
-        // Si c'est un checkout session, on laisse faire car souvent lié
+        const { sku, email: metaEmail } = session.metadata || {};
+        const email = metaEmail || session.customer_details?.email || session.customer_email;
+
+        await handlePaymentSuccess({
+          id: session.id,
+          email: email || '',
+          sku: sku as string,
+          amount: session.amount_total || 0,
+          customerId: typeof session.customer === 'string' ? session.customer : null,
+          metadata: session.metadata || {}
+        });
+      } else {
+        console.log(`[Stripe-Webhook] Session ${session.id} not paid yet, skipping.`);
       }
     }
 
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error('❌ Webhook error:', error);
+    console.error('❌ [Stripe-Webhook] Internal server error:', error);
     return NextResponse.json({ error: 'Handler failed' }, { status: 500 });
   }
 }
 
-async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
-  console.log(`[Stripe-Webhook] handlePaymentSuccess started for ${paymentIntent.id}`);
-  const { sku, email: metaEmail } = paymentIntent.metadata;
-  // L'email peut être dans metadata (notre modal) ou receipt_email (Stripe)
-  const email = metaEmail || paymentIntent.receipt_email;
-  const amount = paymentIntent.amount;
+interface PaymentData {
+  id: string;
+  email: string;
+  sku: string;
+  amount: number;
+  customerId: string | null;
+  metadata: Record<string, any>;
+}
+
+async function handlePaymentSuccess(data: PaymentData) {
+  const { id, email, sku, amount, customerId } = data;
+  console.log(`[Stripe-Webhook] handlePaymentSuccess started for ${id} (${email})`);
 
   if (!sku || !email) {
-    console.error('⚠️ Manque SKU ou Email dans le paiement', paymentIntent.id);
+    console.error('⚠️ Manque SKU ou Email dans le paiement', id);
     return;
   }
 
@@ -109,7 +140,7 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
         email,
         uid: userId,
         createdAt: Date.now(),
-        stripeCustomerId: paymentIntent.customer || null,
+        stripeCustomerId: customerId,
         role: 'user'
       });
     }
@@ -124,7 +155,7 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
       source: sku,
       amount: amount,
       ts: Date.now(),
-      paymentIntentId: paymentIntent.id
+      paymentIntentId: id
     };
 
     if (!creditDoc.exists) {
@@ -159,8 +190,8 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
       const customToken = await adminAuth!.createCustomToken(userId);
 
       // Stocker le token temporairement dans Firestore (expire après 1h)
-      console.log(`[Stripe-Webhook] Saving token to authTokens/${paymentIntent.id}`);
-      await adminDb!.collection('authTokens').doc(paymentIntent.id).set({
+      console.log(`[Stripe-Webhook] Saving token to authTokens/${id}`);
+      await adminDb!.collection('authTokens').doc(id).set({
         userId,
         customToken,
         email,

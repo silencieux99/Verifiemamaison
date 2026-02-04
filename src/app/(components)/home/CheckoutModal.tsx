@@ -7,12 +7,12 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { PlanType } from '@/lib/types';
 
-// Initialiser Stripe uniquement si la clé existe
-const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+// Initialiser Stripe uniquement si la clé existe - Supporte les deux variantes
+const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY;
 const stripePromise = stripeKey ? loadStripe(stripeKey) : null;
 
 if (!stripeKey) {
-    console.error("⚠️ La clé Stripe (NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) est manquante ! Le paiement ne fonctionnera pas.");
+    console.error("⚠️ La clé Stripe publique est manquante ! Vérifiez NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ou NEXT_PUBLIC_STRIPE_PUBLIC_KEY dans .env.local");
 }
 
 interface CheckoutModalProps {

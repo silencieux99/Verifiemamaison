@@ -6,9 +6,13 @@ import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-
 import { LockClosedIcon, CheckCircleIcon } from '@heroicons/react/24/solid';
 import { PlanType } from '@/lib/types';
 
-// Initialiser Stripe
-const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+// Initialiser Stripe - Supporte les deux variantes de nom de clé
+const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY;
 const stripePromise = stripeKey ? loadStripe(stripeKey) : null;
+
+if (!stripeKey && typeof window !== 'undefined') {
+    console.error("⚠️ La clé Stripe publique est manquante ! Vérifiez NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ou NEXT_PUBLIC_STRIPE_PUBLIC_KEY dans .env.local");
+}
 
 interface InlineCheckoutProps {
     plan: PlanType | null;
@@ -155,48 +159,58 @@ export default function InlineCheckout({ plan, price, address, targetRef }: Inli
                         )}
 
                         {/* STEP 2: STRIPE */}
-                        {step === 'payment' && clientSecret && stripePromise && (
+                        {step === 'payment' && clientSecret && (
                             <div className="fade-in">
-                                <Elements stripe={stripePromise} options={{
-                                    clientSecret,
-                                    appearance: {
-                                        theme: 'stripe',
-                                        variables: {
-                                            colorPrimary: '#000000',
-                                            borderRadius: '12px',
-                                            fontFamily: 'system-ui, -apple-system, sans-serif',
-                                            colorText: '#111827',
-                                            colorBackground: '#f9fafb',
-                                            spacingUnit: '5px',
-                                            gridRowSpacing: '20px'
-                                        },
-                                        rules: {
-                                            '.Input': {
-                                                borderColor: '#e5e7eb',
-                                                backgroundColor: '#f9fafb',
-                                                padding: '16px',
-                                                fontSize: '16px',
-                                                boxShadow: 'none',
+                                {!stripePromise ? (
+                                    <div className="p-8 text-center bg-red-50 border border-red-100 rounded-2xl">
+                                        <p className="text-red-600 font-medium">
+                                            Configuration de paiement incomplète.
+                                            <br />
+                                            <span className="text-sm opacity-80">Clé Stripe manquante (NEXT_PUBLIC_STRIPE_PUBLIC_KEY)</span>
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <Elements stripe={stripePromise} options={{
+                                        clientSecret,
+                                        appearance: {
+                                            theme: 'stripe',
+                                            variables: {
+                                                colorPrimary: '#000000',
+                                                borderRadius: '12px',
+                                                fontFamily: 'system-ui, -apple-system, sans-serif',
+                                                colorText: '#111827',
+                                                colorBackground: '#f9fafb',
+                                                spacingUnit: '5px',
+                                                gridRowSpacing: '20px'
                                             },
-                                            '.Input:focus': {
-                                                borderColor: '#000000',
-                                                backgroundColor: '#ffffff',
-                                                boxShadow: 'none',
-                                            },
-                                            '.Label': {
-                                                fontWeight: '600',
-                                                textTransform: 'uppercase',
-                                                fontSize: '11px',
-                                                letterSpacing: '0.05em',
-                                                color: '#9ca3af',
-                                                marginBottom: '8px'
+                                            rules: {
+                                                '.Input': {
+                                                    borderColor: '#e5e7eb',
+                                                    backgroundColor: '#f9fafb',
+                                                    padding: '16px',
+                                                    fontSize: '16px',
+                                                    boxShadow: 'none',
+                                                },
+                                                '.Input:focus': {
+                                                    borderColor: '#000000',
+                                                    backgroundColor: '#ffffff',
+                                                    boxShadow: 'none',
+                                                },
+                                                '.Label': {
+                                                    fontWeight: '600',
+                                                    textTransform: 'uppercase',
+                                                    fontSize: '11px',
+                                                    letterSpacing: '0.05em',
+                                                    color: '#9ca3af',
+                                                    marginBottom: '8px'
+                                                }
                                             }
-                                        }
-                                    },
-                                    locale: 'fr'
-                                }}>
-                                    <InlineStripeForm address={address} plan={plan} email={email} />
-                                </Elements>
+                                        },
+                                        locale: 'fr'
+                                    }}>
+                                        <InlineStripeForm address={address} plan={plan} email={email} />
+                                    </Elements>
+                                )}
                             </div>
                         )}
 
