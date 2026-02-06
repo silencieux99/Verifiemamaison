@@ -53,7 +53,56 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// Keep the existing POST for other flows if needed (we can merge logic later)
+import { getPlanBySku } from '@/lib/pricing';
+
 export async function POST(req: NextRequest) {
-  return NextResponse.json({ error: 'Use GET for this flow' }, { status: 405 });
+  try {
+    const body = await req.json();
+    const { sku, successUrl, cancelUrl } = body;
+
+    if (!stripe) {
+      return NextResponse.json({ error: 'Stripe not configured' }, { status: 500 });
+    }
+
+    if (!sku) {
+      return NextResponse.json({ error: 'Missing SKU' }, { status: 400 });
+    }
+
+    const plan = getPlanBySku(sku);
+    if (!plan) {
+      return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price_data: {
+            currency: 'eur',
+            product_data: {
+              name: plan.name,
+              description: plan.description,
+              images: ['https://verifiemamaison.fr/logos/logo.png'],
+            },
+            unit_amount: Math.round(plan.price * 100),
+          },
+          quantity: 1,
+        },
+      ],
+      mode: 'payment',
+      success_url: successUrl || `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: cancelUrl || `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/checkout`,
+      metadata: {
+        type: 'pack_purchase',
+        sku: plan.sku,
+        credits: plan.reports.toString()
+      }
+    });
+
+    return NextResponse.json({ url: session.url, sessionId: session.id });
+
+  } catch (error) {
+    console.error('Checkout POST Error:', error);
+    return NextResponse.json({ error: 'Internal Error' }, { status: 500 });
+  }
 }

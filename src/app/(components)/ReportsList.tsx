@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/app/(context)/AuthContext';
 import { useRouter } from 'next/navigation';
 import { HomeIcon, MapPinIcon, CalendarIcon, EyeIcon, DocumentArrowDownIcon, SparklesIcon } from '@heroicons/react/24/outline';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
 
 interface Report {
   id: string;
@@ -31,6 +32,21 @@ interface ReportsListProps {
   className?: string;
 }
 
+const containerVars: Variants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const itemVars: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 50, damping: 20 } }
+};
+
 export function ReportsList({ className = '' }: ReportsListProps) {
   const { firebaseUser } = useAuth();
   const router = useRouter();
@@ -42,7 +58,7 @@ export function ReportsList({ className = '' }: ReportsListProps) {
   const fetchReports = async (force = false) => {
     if (!firebaseUser) return;
 
-    if (!force && reports.length > 0 && !loading) return; // Éviter les appels inutiles
+    if (!force && reports.length > 0 && !loading) return;
 
     setLoading(true);
     setError(null);
@@ -145,8 +161,8 @@ export function ReportsList({ className = '' }: ReportsListProps) {
     return (
       <div className={`${className}`}>
         <div className="text-center py-16">
-          <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-sm text-gray-500">Chargement...</p>
+          <div className="w-8 h-8 border-2 border-gray-100 border-t-black rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-[10px] uppercase tracking-widest text-gray-400">Chargement...</p>
         </div>
       </div>
     );
@@ -171,82 +187,105 @@ export function ReportsList({ className = '' }: ReportsListProps) {
   return (
     <div className={`${className}`}>
       {reports.length === 0 ? (
-        <div className="text-center py-16">
-          <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-            <HomeIcon className="h-8 w-8 text-gray-400" />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center py-20"
+        >
+          <div className="w-20 h-20 rounded-[32px] bg-gray-50 flex items-center justify-center mx-auto mb-6">
+            <HomeIcon className="h-8 w-8 text-gray-300" />
           </div>
-          <p className="text-gray-900 font-medium mb-1">Aucun rapport</p>
-          <p className="text-sm text-gray-500">Générez votre premier rapport pour commencer</p>
-        </div>
+          <p className="text-gray-900 font-bold mb-2">Aucun rapport</p>
+          <p className="text-sm text-gray-400 max-w-xs mx-auto">Lancez votre première analyse pour voir apparaître votre historique ici.</p>
+        </motion.div>
       ) : (
-        <div className="divide-y divide-gray-100">
-          {reports.map((report) => (
-            <div
-              key={report.id}
-              className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-5 hover:bg-gray-50 transition-all group gap-4"
-            >
-              <div className="flex items-center gap-4 flex-1 min-w-0">
-                <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center flex-shrink-0 group-hover:bg-black transition-colors">
-                  <HomeIcon className="h-6 w-6 text-gray-900 group-hover:text-white" />
-                </div>
+        <motion.div
+          variants={containerVars}
+          initial="hidden"
+          animate="show"
+          className="divide-y divide-gray-100"
+        >
+          <AnimatePresence>
+            {reports.map((report) => (
+              <motion.div
+                key={report.id}
+                variants={itemVars}
+                className="flex flex-col p-6 hover:bg-gray-50/80 transition-colors group gap-6 cursor-default relative overflow-hidden"
+                whileHover={{ x: 4 }}
+              >
+                <div className="flex items-start gap-5 w-full">
+                  <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center flex-shrink-0 group-hover:bg-white group-hover:shadow-md transition-all duration-300 border border-transparent group-hover:border-gray-100">
+                    <HomeIcon className="h-5 w-5 text-gray-400 group-hover:text-black transition-colors" />
+                  </div>
 
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-black text-gray-900 truncate uppercase tracking-tight">
-                    {getReportDisplayName(report)}
-                  </h3>
-                  <div className="flex items-center gap-3 text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-widest">
-                    <span className="flex items-center gap-1">
-                      <CalendarIcon className="w-3 h-3" />
-                      {report.formattedDate}
-                    </span>
-                    {report.score > 0 && (
-                      <span className="flex items-center gap-1 text-emerald-600">
-                        <SparklesIcon className="w-3 h-3" />
-                        Score: {report.score}/100
+                  <div className="flex-1 min-w-0 pr-2">
+                    <h3 className="text-sm font-bold text-gray-900 leading-tight uppercase tracking-tight group-hover:text-black transition-colors break-words">
+                      {getReportDisplayName(report)}
+                    </h3>
+                    <div className="flex flex-wrap items-center gap-3 text-[10px] font-bold text-gray-400 mt-2 uppercase tracking-widest">
+                      <span className="flex items-center gap-1.5 bg-gray-50 px-2 py-0.5 rounded-md whitespace-nowrap">
+                        <CalendarIcon className="w-3 h-3" />
+                        {report.formattedDate}
                       </span>
-                    )}
+                      {report.score > 0 && (
+                        <span className="flex items-center gap-1 text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md whitespace-nowrap">
+                          <SparklesIcon className="w-3 h-3" />
+                          Score: {report.score}/100
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex items-center gap-3 flex-shrink-0 sm:self-auto self-end">
-                <button
-                  onClick={() => router.push(`/report/${report.reportId || report.id}`)}
-                  className="px-6 py-2.5 bg-black text-white rounded-xl hover:bg-gray-800 transition-all text-xs font-black uppercase tracking-widest flex items-center gap-2 shadow-xl shadow-black/5"
-                >
-                  <EyeIcon className="h-4 w-4" />
-                  Ouvrir
-                </button>
-
-                {report.pdfUrl && (
-                  <button
-                    onClick={() => handleDownload(report)}
-                    disabled={downloadStatus[report.id] === 'downloading'}
-                    className={`p-2.5 rounded-xl transition-all border ${downloadStatus[report.id] === 'success'
-                      ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
-                      : downloadStatus[report.id] === 'error'
-                        ? 'bg-red-50 border-red-100 text-red-700'
-                        : 'bg-white border-gray-100 text-gray-400 hover:text-black hover:border-black'
-                      } disabled:opacity-50 disabled:cursor-not-allowed shadow-sm`}
-                    title="Télécharger le PDF"
+                <div className="flex items-center gap-3 w-full sm:w-auto sm:self-end">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => router.push(`/report/${report.reportId || report.id}`)}
+                    className="flex-1 sm:flex-none px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-900 transition-colors text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-black/5"
                   >
-                    {downloadStatus[report.id] === 'downloading' ? (
-                      <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin"></div>
-                    ) : downloadStatus[report.id] === 'success' ? (
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    ) : (
-                      <DocumentArrowDownIcon className="h-4 w-4" />
-                    )}
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+                    <EyeIcon className="h-3.5 w-3.5" />
+                    Ouvrir
+                  </motion.button>
+
+                  {report.pdfUrl && (
+                    <motion.button
+                      whileHover={{ scale: 1.05, borderColor: '#000', color: '#000' }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleDownload(report)}
+                      disabled={downloadStatus[report.id] === 'downloading'}
+                      className={`p-3 rounded-xl transition-all border ${downloadStatus[report.id] === 'success'
+                        ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
+                        : downloadStatus[report.id] === 'error'
+                          ? 'bg-red-50 border-red-100 text-red-700'
+                          : 'bg-white border-gray-100 text-gray-400'
+                        } disabled:opacity-50 disabled:cursor-not-allowed shadow-sm`}
+                      title="Télécharger le PDF"
+                    >
+                      {downloadStatus[report.id] === 'downloading' ? (
+                        <div className="w-4 h-4 border-2 border-gray-200 border-t-black rounded-full animate-spin"></div>
+                      ) : downloadStatus[report.id] === 'success' ? (
+                        <CheckIcon className="h-4 w-4" />
+                      ) : (
+                        <DocumentArrowDownIcon className="h-4 w-4" />
+                      )}
+                    </motion.button>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </motion.div>
       )}
     </div>
+  );
+}
+
+function CheckIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+    </svg>
   );
 }
 

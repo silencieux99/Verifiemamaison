@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
 
     const token = authHeader.substring(7);
     let decodedToken;
-    
+
     try {
       decodedToken = await adminAuth?.verifyIdToken(token);
     } catch (error) {
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     // Vérifier les crédits disponibles (SANS débiter pour l'instant)
     const creditsRef = adminDb.collection('credits').doc(uid);
     const creditsDoc = await creditsRef.get();
-    
+
     if (!creditsDoc.exists) {
       return NextResponse.json(
         { error: 'No credits available' },
@@ -119,96 +119,17 @@ export async function POST(request: NextRequest) {
     // Nettoyer les données en supprimant les champs raw (surtout pappers.raw qui peut être très volumineux)
     const cleanedProfileData = removeRawFields(profileData) as HouseProfile;
 
+    // NOTE: Enrichissements (Melo, Gemini) désactivés sur demande utilisateur.
+    // On utilise uniquement les données récupérées lors de la phase de "teasing" (preview).
+    const enrichedProfileData = cleanedProfileData;
+
+    /*
     // Enrichir avec l'API Melo (enrichissement optionnel, ne bloque pas si échoue)
-    // ⚠️ TEMPORAIREMENT DÉSACTIVÉ - L'API Melo est en pause, pas encore d'accès
-    // Pour réactiver: décommenter le code ci-dessous et s'assurer que MELO_API_KEY est configurée
-    let enrichedProfileData = cleanedProfileData;
+    // ... code Melo commenté ou supprimé ...
     
-    const MELO_ENABLED = process.env.MELO_ENABLED === 'true'; // Flag pour activer/désactiver Melo
-    const meloApiKey = process.env.MELO_API_KEY;
-    
-    if (MELO_ENABLED && meloApiKey) {
-      const meloEnvironment = process.env.MELO_ENVIRONMENT || 'production';
-      console.log(`[Melo] Démarrage enrichissement (env: ${meloEnvironment})...`);
-      try {
-        const lat = cleanedProfileData.location?.gps?.lat;
-        const lon = cleanedProfileData.location?.gps?.lon;
-        
-        if (!lat || !lon) {
-          console.warn('[Melo] Coordonnées GPS manquantes, impossible d\'enrichir');
-        } else {
-          console.log(`[Melo] Recherche autour de ${lat}, ${lon} (rayon: 2000m)`);
-          
-          const meloEnrichment = await enrichMarketWithMelo(cleanedProfileData, {
-            radius_m: 2000, // 2km de rayon
-            limit: 20, // Maximum 20 annonces
-            propertyType: 'all',
-          });
-
-          if (meloEnrichment && meloEnrichment.similarListings?.length > 0) {
-            // Fusionner les données Melo avec les données de marché existantes
-            enrichedProfileData = {
-              ...cleanedProfileData,
-              market: mergeMeloWithMarket(cleanedProfileData.market, meloEnrichment),
-            };
-            
-            console.log(`✅ [Melo] ${meloEnrichment.similarListings.length} annonces similaires ajoutées`);
-            if (meloEnrichment.marketInsights?.averagePriceM2) {
-              console.log(`✅ [Melo] Prix/m² moyen: ${meloEnrichment.marketInsights.averagePriceM2.toLocaleString('fr-FR')} €/m²`);
-            }
-          } else {
-            console.log('[Melo] Aucune annonce trouvée dans la zone');
-          }
-        }
-      } catch (meloError: any) {
-        // Ne pas bloquer la génération du rapport si Melo échoue
-        const errorMessage = meloError?.message || String(meloError);
-        if (errorMessage.includes('ENOTFOUND') || errorMessage.includes('getaddrinfo')) {
-          console.warn('⚠️  [Melo] API non accessible (vérifiez la connexion réseau et l\'URL)');
-        } else if (errorMessage.includes('timeout')) {
-          console.warn('⚠️  [Melo] Timeout - enrichissement ignoré');
-        } else if (errorMessage.includes('401') || errorMessage.includes('Unauthorized')) {
-          console.warn('⚠️  [Melo] Erreur d\'authentification - vérifiez la clé API');
-        } else if (errorMessage.includes('403') || errorMessage.includes('Forbidden')) {
-          console.warn('⚠️  [Melo] Accès refusé (403) - La clé API peut être invalide pour l\'environnement production, ou l\'endpoint n\'est pas autorisé');
-          console.warn('⚠️  [Melo] Vérifiez que la clé API est bien une clé de production et que l\'environnement est correct');
-        } else {
-          // Ne logger que le début du message pour éviter les logs trop longs
-          const shortMessage = errorMessage.length > 100 ? errorMessage.substring(0, 100) + '...' : errorMessage;
-          console.warn(`⚠️  [Melo] Erreur: ${shortMessage}`);
-        }
-      }
-    } else {
-      // Enrichissement Melo désactivé (pas d'erreur, juste un log informatif)
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[Melo] Enrichissement désactivé (MELO_ENABLED=false ou clé API non configurée)');
-      }
-    }
-
     // Enrichir avec Gemini Crime Search si activé
-    if (process.env.GEMINI_API_KEY && process.env.GEMINI_WEB_SEARCH_ENABLED !== 'false') {
-      try {
-        console.log('[Gemini Crime] Recherche de données de criminalité...');
-        const crimeData = await enrichSafetyWithGeminiWebSearch(enrichedProfileData);
-        
-        if (crimeData) {
-          // Stocker les données de criminalité dans profileData.safety
-          if (!enrichedProfileData.safety) {
-            enrichedProfileData.safety = {} as any;
-          }
-          (enrichedProfileData.safety as any).gemini_crime_data = crimeData;
-          console.log(`✅ [Gemini Crime] Données trouvées: taux=${crimeData.crime_rate}, score=${crimeData.safety_score}/100`);
-        } else {
-          console.log('[Gemini Crime] Aucune donnée trouvée');
-        }
-      } catch (crimeError: any) {
-        console.warn('[Gemini Crime] Erreur recherche (ignoré):', crimeError?.message || crimeError);
-      }
-    } else {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[Gemini Crime] Recherche désactivée (GEMINI_API_KEY non configurée ou GEMINI_WEB_SEARCH_ENABLED=false)');
-      }
-    }
+    // ... code Gemini commenté ou supprimé ...
+    */
 
     // Créer le rapport dans Firestore
     const reportData = {
@@ -316,7 +237,7 @@ export async function POST(request: NextRequest) {
     } catch (saveError) {
       // En cas d'erreur lors de la sauvegarde, ne PAS débiter le crédit
       console.error('Erreur sauvegarde rapport:', saveError);
-      
+
       // Nettoyer le rapport partiel si créé
       try {
         await adminDb.collection('reports').doc(reportId).delete();
@@ -330,7 +251,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Erreur génération rapport:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Internal server error',
         message: error instanceof Error ? error.message : 'Unknown error'
       },
@@ -344,15 +265,15 @@ export async function POST(request: NextRequest) {
  */
 function calculateReportScore(profile: HouseProfile): number {
   let score = 100;
-  
+
   // Pénalités pour risques
   if (profile.risks?.normalized?.flood_level === 'élevé') score -= 15;
   else if (profile.risks?.normalized?.flood_level === 'moyen') score -= 8;
-  
+
   if (profile.risks?.normalized?.seismic_level && profile.risks.normalized.seismic_level >= 4) score -= 10;
-  
+
   if (profile.risks?.normalized?.radon_zone && profile.risks.normalized.radon_zone >= 2) score -= 5;
-  
+
   // Pénalités pour DPE
   if (profile.energy?.dpe?.class_energy) {
     const dpePenalty: Record<string, number> = {
@@ -366,17 +287,17 @@ function calculateReportScore(profile: HouseProfile): number {
     };
     score -= dpePenalty[profile.energy.dpe.class_energy] || 0;
   }
-  
+
   // Bonus pour connectivité
   if (profile.connectivity?.fiber_available) score += 5;
-  
+
   // Bonus pour commodités
   if (profile.amenities?.supermarkets && profile.amenities.supermarkets.length > 0) score += 3;
   if (profile.amenities?.transit && profile.amenities.transit.length > 0) score += 3;
-  
+
   // Bonus pour écoles
   if (profile.education?.schools && profile.education.schools.length > 0) score += 2;
-  
+
   return Math.max(0, Math.min(100, score));
 }
 
@@ -385,26 +306,26 @@ function calculateReportScore(profile: HouseProfile): number {
  */
 function generateReportSummary(profile: HouseProfile): string {
   const parts: string[] = [];
-  
+
   if (profile.location?.admin?.city) {
     parts.push(`Bien situé à ${profile.location.admin.city}`);
   }
-  
+
   if (profile.energy?.dpe?.class_energy) {
     parts.push(`DPE ${profile.energy.dpe.class_energy}`);
   }
-  
+
   if (profile.risks?.normalized?.flood_level) {
     parts.push(`Risque inondation: ${profile.risks.normalized.flood_level}`);
   }
-  
+
   if (profile.connectivity?.fiber_available) {
     parts.push('Fibre disponible');
   }
-  
+
   if (profile.market?.dvf?.summary?.price_m2_median_1y) {
     parts.push(`Prix/m²: ~${profile.market.dvf.summary.price_m2_median_1y}€`);
   }
-  
+
   return parts.length > 0 ? parts.join(' • ') : 'Rapport d\'analyse immobilière complet';
 }

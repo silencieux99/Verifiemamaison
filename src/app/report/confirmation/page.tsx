@@ -2,7 +2,13 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { ArrowRightIcon, SparklesIcon, KeyIcon } from '@heroicons/react/24/outline';
+import {
+    CheckIcon,
+    EnvelopeIcon,
+    LockClosedIcon,
+    ArrowRightIcon,
+    ExclamationTriangleIcon
+} from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { signInWithCustomToken } from 'firebase/auth';
@@ -27,50 +33,52 @@ function ConfirmationContent() {
     const [isLoggingIn, setIsLoggingIn] = useState(false);
 
     // Stripe params
-    const paymentIntentClientSecret = searchParams.get('payment_intent_client_secret');
+    const paymentIntentClientSecret = searchParams.get('payment_intent_client_secret') || searchParams.get('payment_intent_client_secret');
     const redirectStatus = searchParams.get('redirect_status');
     const address = searchParams.get('address');
 
     useEffect(() => {
-        if (!paymentIntentClientSecret) {
+        if (!paymentIntentClientSecret && !searchParams.get('session_id')) {
+            if (searchParams.get('session_id')) {
+                setStatus('success');
+                return;
+            }
             setStatus('error');
             return;
         }
 
-        if (redirectStatus === 'succeeded') {
+        if (redirectStatus === 'succeeded' || searchParams.get('session_id')) {
             handleSuccessfulPayment();
         } else {
             setStatus('error');
         }
-    }, [paymentIntentClientSecret, redirectStatus]);
+    }, [paymentIntentClientSecret, redirectStatus, searchParams]);
 
     const handleSuccessfulPayment = async () => {
         try {
-            const paymentIntentId = paymentIntentClientSecret!.split('_secret_')[0];
-            console.log('🔍 Confirmation : Récupération du compte...', paymentIntentId);
+            const paymentIntentId = paymentIntentClientSecret?.split('_secret_')[0] || searchParams.get('session_id');
+            if (!paymentIntentId) {
+                setStatus('success');
+                return;
+            }
 
-            // Polling via API (pour éviter les problèmes de droits Firestore client)
             let tokenData: AuthTokenData | null = null;
             let attempts = 0;
-            const maxAttempts = 20; // 20 tentatives * 1.5s = 30 secondes
+            const maxAttempts = 15;
 
             while (attempts < maxAttempts) {
                 try {
-                    console.log(`[Confirmation] Tentative ${attempts + 1}/${maxAttempts}...`);
                     const response = await fetch(`/api/auth/get-token?paymentIntentId=${paymentIntentId}`);
                     if (response.ok) {
                         tokenData = await response.json();
                         break;
                     }
-                } catch (e) {
-                    console.error('Fetch error:', e);
-                }
+                } catch (e) { console.error(e); }
                 attempts++;
-                await new Promise(resolve => setTimeout(resolve, 1500)); // Attendre 1.5s entre chaque essai
+                await new Promise(resolve => setTimeout(resolve, 2000));
             }
 
             if (tokenData) {
-                console.log('✅ Compte récupéré !');
                 if (tokenData.isNewUser && tokenData.password) {
                     setCredentials({ email: tokenData.email, password: tokenData.password });
                     setIsNewUser(true);
@@ -79,144 +87,148 @@ function ConfirmationContent() {
                 setIsLoggingIn(true);
                 try {
                     await signInWithCustomToken(auth, tokenData.customToken);
-                    console.log('✅ Auto-login réussi');
-                } catch (e) {
-                    console.error('Auto-login failed:', e);
-                }
-            } else {
-                console.warn('🕒 Timeout : Le compte sera prêt dans quelques instants.');
+                } catch (e) { console.error(e); }
             }
 
             setStatus('success');
             setIsLoggingIn(false);
         } catch (error) {
-            console.error('Confirmation error:', error);
+            console.error(error);
             setStatus('success');
         }
     };
 
-    const handleAccessAccount = () => {
-        router.push('/account');
-    };
-
     if (status === 'loading') {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA]">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Finalisation de votre commande...</p>
-                </div>
+            <div className="min-h-screen bg-[#FAFAFA] flex flex-col items-center justify-center p-6">
+                <div className="w-12 h-12 border-2 border-gray-100 border-t-black rounded-full animate-spin mb-6" />
+                <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-gray-400 animate-pulse">Validation de votre commande</p>
             </div>
         );
     }
 
     if (status === 'error') {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-[#FAFAFA] p-6 text-center">
-                <div className="text-red-500 text-xl font-bold mb-4 uppercase tracking-tighter">Erreur de paiement</div>
-                <p className="text-gray-500 text-sm mb-8">Le paiement n'a pas pu être validé ou a été annulé.</p>
-                <Link href="/" className="px-8 py-4 bg-black text-white rounded-2xl text-xs font-black uppercase tracking-widest">Retour à l'accueil</Link>
+            <div className="min-h-screen bg-[#FAFAFA] flex flex-col items-center justify-center p-6 text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-50 mb-8">
+                    <ExclamationTriangleIcon className="w-8 h-8 text-red-500" />
+                </div>
+                <h1 className="text-2xl font-bold text-gray-900 mb-2 tracking-tight">Erreur de paiement</h1>
+                <p className="text-gray-500 text-sm mb-10 max-w-xs">La validation de votre transaction a échoué. Veuillez contacter notre support si le débit a eu lieu.</p>
+                <Link href="/" className="px-10 py-5 bg-black text-white rounded-2xl text-[10px] font-bold uppercase tracking-widest shadow-xl shadow-black/10 transition-transform active:scale-95">Retour à l'accueil</Link>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-[#FAFAFA] text-[#111] font-sans flex flex-col items-center justify-center p-6">
+        <div className="min-h-screen bg-[#FAFAFA] text-[#111] font-sans selection:bg-black selection:text-white">
+            <nav className="fixed top-0 w-full z-50 px-8 py-8 flex justify-between items-center bg-[#FAFAFA]/80 backdrop-blur-md transition-colors">
+                <div className="text-[10px] font-bold tracking-[0.2em] uppercase">VerifieMaMaison</div>
+                <div className="h-px bg-gray-100 flex-1 mx-8 hidden sm:block" />
+                <div className="text-[10px] font-bold tracking-[0.2em] uppercase text-gray-400">Succès</div>
+            </nav>
 
-            <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.5, ease: "backOut" }}
-                className="w-20 h-20 bg-black rounded-full flex items-center justify-center mb-8 shadow-2xl"
-            >
-                <SparklesIcon className="w-10 h-10 text-white" />
-            </motion.div>
+            <main className="max-w-screen-xl mx-auto px-6 sm:px-12 lg:px-20 pt-40 pb-32">
+                <div className="flex flex-col lg:flex-row gap-20 lg:gap-32 items-center lg:items-start">
 
-            <motion.h1
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.2 }}
-                className="text-3xl md:text-4xl font-black text-center mb-4 tracking-tight uppercase"
-            >
-                Succès !
-            </motion.h1>
+                    {/* Left : Message & Confirmation */}
+                    <div className="flex-1 max-w-2xl text-center lg:text-left">
+                        <motion.div
+                            initial={{ opacity: 0, y: 30 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="mb-10 lg:mb-16"
+                        >
+                            <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-black text-white mb-10 shadow-lg">
+                                <CheckIcon className="w-7 h-7" />
+                            </div>
+                            <h1 className="text-4xl md:text-6xl lg:text-8xl font-bold tracking-tighter text-gray-900 leading-[0.95] mb-8">
+                                Paiement <br className="hidden md:block" /> bien reçu.
+                            </h1>
+                            <p className="text-lg md:text-2xl text-gray-400 font-medium leading-relaxed mb-12 max-w-xl">
+                                {isNewUser
+                                    ? "Votre espace est désormais prêt. Vos rapports vous attendent à l'intérieur."
+                                    : "Vos nouveaux crédits ont été ajoutés instantanément à votre espace membre."}
+                            </p>
 
-            <motion.p
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.3 }}
-                className="text-gray-500 text-center max-w-md mb-12 text-sm leading-relaxed"
-            >
-                {isNewUser ? 'Votre compte a été créé avec succès.' : 'Vos crédits ont été ajoutés à votre compte.'}
-                {address && <span className="block mt-2 font-black text-gray-900 text-[10px] uppercase tracking-widest">Adresse : {decodeURIComponent(address)}</span>}
-            </motion.p>
+                            {address && (
+                                <div className="inline-block px-4 py-2 bg-gray-100 rounded-lg">
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mr-3">Dossier :</span>
+                                    <span className="text-xs font-bold text-gray-900">{decodeURIComponent(address)}</span>
+                                </div>
+                            )}
+                        </motion.div>
 
-            {credentials && (
-                <motion.div
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.4 }}
-                    className="w-full max-w-md bg-white rounded-[32px] p-8 mb-8 border border-gray-100 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)]"
-                >
-                    <div className="flex items-center gap-3 mb-8">
-                        <div className="p-2 bg-gray-50 rounded-xl">
-                            <KeyIcon className="w-5 h-5 text-black" />
-                        </div>
-                        <h3 className="font-black text-gray-900 text-xs uppercase tracking-widest">Vos Identifiants</h3>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.5 }}
+                        >
+                            <button
+                                onClick={() => router.push('/account')}
+                                disabled={isLoggingIn}
+                                className="group relative inline-flex items-center justify-between w-full sm:w-80 px-8 h-20 bg-black text-white rounded-3xl overflow-hidden shadow-2xl shadow-black/20 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+                            >
+                                <span className="text-[11px] font-bold uppercase tracking-widest relative z-10">
+                                    {isLoggingIn ? "Activation de l'accès..." : "Accéder à mes rapports"}
+                                </span>
+                                <ArrowRightIcon className="w-5 h-5 relative z-10 transition-transform group-hover:translate-x-1" />
+                            </button>
+                            <div className="mt-8 flex items-center justify-center lg:justify-start gap-3 opacity-30 text-[10px] font-bold uppercase tracking-widest">
+                                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                Connexion sécurisée active
+                            </div>
+                        </motion.div>
                     </div>
 
-                    <div className="space-y-6">
-                        <div>
-                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 block">Email</label>
-                            <div className="bg-gray-50 border border-gray-100 rounded-xl px-5 py-4 font-mono text-sm text-gray-900 overflow-hidden text-ellipsis">
-                                {credentials.email}
-                            </div>
-                        </div>
-                        <div>
-                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 block">Mot de passe provisoire</label>
-                            <div className="bg-gray-50 border border-gray-100 rounded-xl px-5 py-4 font-mono text-sm text-gray-900">
-                                {credentials.password}
-                            </div>
-                        </div>
-                    </div>
+                    {/* Right : Credentials / Details */}
+                    {credentials && isNewUser && (
+                        <motion.div
+                            initial={{ opacity: 0, x: 50 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.3 }}
+                            className="w-full max-w-md lg:mt-12"
+                        >
+                            <div className="bg-white border border-gray-100 rounded-[40px] p-10 md:p-14 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.06)] relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-gray-50 rounded-bl-full opacity-50" />
 
-                    <p className="text-[10px] font-bold text-gray-400 mt-6 text-center uppercase tracking-tighter">
-                        Utilisez ces accès pour vos futures connexions.
-                    </p>
-                </motion.div>
-            )}
+                                <div className="relative">
+                                    <h2 className="text-[11px] font-black uppercase tracking-[0.25em] text-gray-300 mb-12">Accès Personnel</h2>
 
-            <motion.div
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: credentials ? 0.5 : 0.4 }}
-                className="w-full max-w-md"
-            >
-                <button
-                    onClick={handleAccessAccount}
-                    disabled={isLoggingIn}
-                    className="w-full bg-black text-white h-16 rounded-2xl text-sm font-black uppercase tracking-widest hover:bg-gray-800 transition-all flex items-center justify-center gap-3 shadow-2xl shadow-black/20"
-                >
-                    {isLoggingIn ? (
-                        <>
-                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            Connexion...
-                        </>
-                    ) : (
-                        <>
-                            Accéder à mon Espace
-                            <ArrowRightIcon className="w-5 h-5" />
-                        </>
+                                    <div className="space-y-12 mb-16">
+                                        <div>
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <EnvelopeIcon className="w-4 h-4 text-gray-400" />
+                                                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Email</span>
+                                            </div>
+                                            <div className="text-lg font-bold text-gray-900 break-all">{credentials.email}</div>
+                                        </div>
+
+                                        <div>
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <LockClosedIcon className="w-4 h-4 text-gray-400" />
+                                                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Mot de passe temporaire</span>
+                                            </div>
+                                            <div className="text-2xl font-mono font-bold text-black bg-gray-50 px-5 py-4 rounded-2xl border border-gray-100 select-all tracking-wider font-mono">
+                                                {credentials.password}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-8 border-t border-gray-50">
+                                        <p className="text-[11px] text-gray-400 leading-relaxed font-medium">
+                                            Ces informations vous servent de laissez-passer pour vos futures connexions. Conservez-les précieusement.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
                     )}
-                </button>
+                </div>
+            </main>
 
-                {!credentials && (
-                    <p className="text-[10px] font-bold text-gray-400 text-center mt-6 uppercase tracking-widest">
-                        Vous êtes maintenant connecté.
-                    </p>
-                )}
-            </motion.div>
-
+            <footer className="fixed bottom-0 w-full py-10 px-10 text-center lg:text-left text-[10px] font-bold uppercase tracking-[0.4em] text-gray-300 pointer-events-none">
+                VerifieMaMaison © 2024
+            </footer>
         </div>
     );
 }

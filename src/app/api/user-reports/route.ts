@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
     if (!isFirebaseAdminInitialized() || !adminAuth || !adminDb) {
       console.error('❌ Firebase Admin non initialisé');
       return NextResponse.json(
-        { 
+        {
           error: 'Firebase Admin not initialized',
           message: 'Server configuration error. Please check Firebase Admin credentials.'
         },
@@ -26,15 +26,15 @@ export async function GET(request: NextRequest) {
 
     const token = authHeader.substring(7);
     let decodedToken;
-    
+
     try {
       decodedToken = await adminAuth.verifyIdToken(token);
     } catch (error: any) {
       console.error('❌ Erreur vérification token:', error);
       return NextResponse.json(
-        { 
+        {
           error: 'Invalid authentication token',
-          details: error.message 
+          details: error.message
         },
         { status: 401 }
       );
@@ -54,11 +54,33 @@ export async function GET(request: NextRequest) {
 
     try {
       // Récupérer les rapports de l'utilisateur depuis la collection 'reports'
-      const reportsSnapshot = await adminDb.collection('reports')
-        .where('userId', '==', uid)
-        .orderBy('createdAt', 'desc')
-        .limit(100)
-        .get();
+      let reportsSnapshot;
+
+      try {
+        // Tentative 1: Requête optimisée avec index (Tri par date DESC)
+        reportsSnapshot = await adminDb.collection('reports')
+          .where('userId', '==', uid)
+          .orderBy('createdAt', 'desc')
+          .limit(100)
+          .get();
+      } catch (queryError: any) {
+        // Si erreur d'index (code 9 ou message explicite), on bascule sur le fallback
+        if (queryError.code === 9 || queryError.message?.toString().toLowerCase().includes('index')) {
+          console.warn('⚠️ [UserReports] Index manquant, basculement sur le tri en mémoire.');
+
+          // Tentative 2: Requête simple sans tri (fallback)
+          reportsSnapshot = await adminDb.collection('reports')
+            .where('userId', '==', uid)
+            .limit(100)
+            .get();
+
+          // Si on a des docs, on devra les trier manuellement plus bas
+          // Note: Snapshot n'est pas un tableau, donc on triera le tableau `reports` final
+        } else {
+          // Autre erreur réelle -> on la remonte
+          throw queryError;
+        }
+      }
 
       console.log(`📊 Trouvé ${reportsSnapshot.docs.length} rapports pour ${uid}`);
 
@@ -66,11 +88,12 @@ export async function GET(request: NextRequest) {
 
       for (const doc of reportsSnapshot.docs) {
         const reportData = doc.data();
-        
+
         // Formater la date pour l'affichage
         let formattedDate = 'Date inconnue';
-        if (reportData.createdAt) {
-          const timestamp = reportData.createdAt;
+        let timestamp = reportData.createdAt;
+
+        if (timestamp) {
           // Convertir Firestore Timestamp en Date
           const date = timestamp?.toDate ? timestamp.toDate() : new Date(timestamp);
           formattedDate = date.toLocaleDateString('fr-FR', {
@@ -86,7 +109,7 @@ export async function GET(request: NextRequest) {
           id: doc.id,
           reportId: reportData.id || doc.id,
           orderId: reportData.orderId || doc.id,
-          createdAt: reportData.createdAt,
+          createdAt: timestamp, // Garder l'objet original pour le tri éventuel
           address: reportData.address || {},
           formattedDate: formattedDate,
           status: reportData.report?.status || 'complete',
@@ -101,7 +124,14 @@ export async function GET(request: NextRequest) {
         });
       }
 
-      console.log(`✅ ${reports.length} rapports formatés pour ${uid}`);
+      // Tri en mémoire de sécurité (si le tri DB a échoué ou n'a pas été fait)
+      reports.sort((a, b) => {
+        const dateA = a.createdAt?.toMillis ? a.createdAt.toMillis() : new Date(a.createdAt || 0).getTime();
+        const dateB = b.createdAt?.toMillis ? b.createdAt.toMillis() : new Date(b.createdAt || 0).getTime();
+        return dateB - dateA; // Plus récent en premier
+      });
+
+      console.log(`✅ ${reports.length} rapports récupérés et triés pour ${uid}`);
 
       return NextResponse.json({
         success: true,
@@ -109,29 +139,15 @@ export async function GET(request: NextRequest) {
         total: reports.length,
         userId: uid,
         userEmail: userEmail,
-        message: reports.length > 0 
+        message: reports.length > 0
           ? `${reports.length} rapport${reports.length > 1 ? 's' : ''} trouvé${reports.length > 1 ? 's' : ''}`
           : 'Aucun rapport trouvé'
       });
 
     } catch (error: any) {
       console.error('❌ [UserReports] Erreur Firestore:', error);
-      
-      // Si c'est une erreur d'index, la propager
-      if (error.code === 9 || error.message?.includes('index')) {
-        console.error('🚨 [UserReports] INDEX MANQUANT');
-        return NextResponse.json(
-          { 
-            error: 'Firestore index required',
-            code: error.code,
-            message: error.message,
-            details: 'This query requires a Firestore index. Check the console for the index creation link.'
-          },
-          { status: 400 }
-        );
-      }
-      
-      // En cas d'autre erreur, retourner une liste vide
+
+      // En cas d'erreur fatale, retourner une liste vide pour ne pas casser l'UI
       return NextResponse.json({
         success: true,
         reports: [],
@@ -144,9 +160,9 @@ export async function GET(request: NextRequest) {
 
   } catch (error: any) {
     console.error('❌ [UserReports] Erreur API globale:', error);
-    
+
     return NextResponse.json(
-      { 
+      {
         error: 'Internal server error',
         message: error instanceof Error ? error.message : 'Unknown error'
       },

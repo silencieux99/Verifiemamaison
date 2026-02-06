@@ -73,20 +73,20 @@ export default function RapportInteractifPage({ params }: { params: Promise<{ id
       try {
         // Récupérer le token Firebase
         const token = await firebaseUser.getIdToken();
-        
+
         const response = await fetch(`/api/reports/${reportId}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
         });
-        
+
         if (!response.ok) {
           throw new Error('Rapport non disponible');
         }
 
         const data = await response.json();
         const report = data.report;
-        
+
         // Debug: vérifier les données Melo
         if (report?.profileData?.market?.melo) {
           console.log('[Report Page] Données Melo trouvées:', {
@@ -96,9 +96,9 @@ export default function RapportInteractifPage({ params }: { params: Promise<{ id
         } else {
           console.log('[Report Page] Pas de données Melo dans le rapport');
         }
-        
+
         setReportData(report);
-        
+
         // Si les données DPE sont vides, essayer de les récupérer automatiquement
         if (!report?.profileData?.energy?.dpe || !report.profileData.energy.dpe.class_energy) {
           try {
@@ -107,7 +107,7 @@ export default function RapportInteractifPage({ params }: { params: Promise<{ id
                 'Authorization': `Bearer ${token}`,
               },
             });
-            
+
             if (energyResponse.ok) {
               const energyData = await energyResponse.json();
               if (energyData.success && energyData.energy?.dpe) {
@@ -117,7 +117,7 @@ export default function RapportInteractifPage({ params }: { params: Promise<{ id
                     'Authorization': `Bearer ${token}`,
                   },
                 });
-                
+
                 if (updatedResponse.ok) {
                   const updatedData = await updatedResponse.json();
                   setReportData(updatedData.report);
@@ -169,23 +169,33 @@ export default function RapportInteractifPage({ params }: { params: Promise<{ id
     );
   }
 
-  // Convertir les données en sections pour PremiumReportView
-  const sections = convertHouseProfileToSections(reportData.profileData);
+  // Conversion sécurisée
+  let sections: any[] = [];
+  try {
+    if (reportData.profileData) {
+      sections = convertHouseProfileToSections(reportData.profileData);
+    } else {
+      console.warn("Report profileData is missing in reportData", reportData);
+    }
+  } catch (err) {
+    console.error("Error converting profile to sections:", err);
+  }
+
+  // Préparation des données pour la vue Premium
+  // On passe un objet "report" conforme à l'interface de PremiumReportView
+  const premiumReportData = {
+    sections,
+    vehicleInfo: reportData.address, // mapping address to vehicleInfo (fallback prop name)
+    ai: reportData.report ? {
+      score: reportData.report.score,
+      summary: reportData.report.summary,
+      recommendations: reportData.profileData?.recommendations?.items?.map((item: any) => `${item.title}: ${item.reason}`) || []
+    } : undefined
+  };
 
   return (
-    <PremiumReportView 
-      sections={sections}
-      vehicleInfo={{
-        ...reportData.address,
-        profileData: reportData.profileData // Passer profileData pour accéder à safety.gemini_crime_data
-      }}
-      ai={reportData.report ? {
-        score: reportData.report.score,
-        summary: reportData.report.summary,
-        recommendations: reportData.profileData.recommendations?.items.map(item => `${item.title}: ${item.reason}`) || []
-      } : undefined}
-      reportId={reportId}
-      pdfUrl={reportData.pdfUrl}
+    <PremiumReportView
+      report={premiumReportData}
     />
   );
 }

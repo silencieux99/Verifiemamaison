@@ -63,12 +63,21 @@ export async function GET(request: Request) {
                             !isNaN(price) && price > 0 &&
                             !isNaN(surface) && surface > 9
                         ) {
+                            const typeLabel = typeLocal === 1 ? 'Maison' : (typeLocal === 2 ? 'Appartement' : 'Local');
+                            const rooms = m.nombre_pieces_principales ? parseInt(m.nombre_pieces_principales) : 0;
+                            // Lot number often contains floor info in some conventions, or just arbitrary. 
+                            // We pass it to help identification if small integer.
+                            const lot = m.lot1_numero || null;
+
                             const transaction = {
                                 date: m.date_mutation,
                                 price: price,
                                 surface: surface,
                                 address: m.adresse_nom_voie ? `${m.adresse_numero || ''} ${m.adresse_nom_voie}` : 'Adresse non précisée',
-                                id: m.id_mutation
+                                id: m.id_mutation,
+                                type: typeLabel,
+                                rooms: rooms,
+                                lot: lot
                             };
 
                             // Neighborhood Data (Price M2)
@@ -157,7 +166,8 @@ export async function GET(request: Request) {
             market: {
                 lastSale, // EXACT MATCH
                 averagePriceM2, // NEIGHBORHOOD AVG
-                transactionsCount: cleanTransactions.length, // NEIGHBORHOOD VOLUME
+                transactionsCount: exactMatches.length > 0 ? exactMatches.length : cleanTransactions.length, // SMART FALLBACK
+                matchType: exactMatches.length > 0 ? 'exact' : 'neighborhood',
                 history: exactMatches.slice(0, 5) // EXACT MATCH HISTORY
             },
             dpe: dpeData, // DPE DATA
